@@ -54,6 +54,18 @@ namespace TKMQ
             }
         }
     
+        public void SETFILE()
+        {
+            if (Directory.Exists(@"C:\MQTEMP\"))
+            {
+                //資料夾存在
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(@"C:\MQTEMP\");
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -61,7 +73,12 @@ namespace TKMQ
         {
             SENDMAIL();
         }
-
+        private void button2_Click(object sender, EventArgs e)
+        {
+            SETFILE();
+        }
         #endregion
+
+
     }
 }
