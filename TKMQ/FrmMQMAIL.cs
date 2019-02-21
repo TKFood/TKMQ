@@ -20,7 +20,11 @@ namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
     {
-
+        string DirectoryNAME = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd")+@"\";
+        string pathFile = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "MQ" + DateTime.Now.ToString("yyyyMMdd");
+        FileInfo info;
+        string[] tempFile;
+        string tFileName = "";
 
         public FrmMQMAIL()
         {
@@ -41,8 +45,27 @@ namespace TKMQ
             MyMail.Subject = "Email Test";
             MyMail.Body = "<h1>HIHI</h1>"; //設定信件內容
             MyMail.IsBodyHtml = true; //是否使用html格式
+
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
             MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+                        
+
+            if (Directory.Exists(DirectoryNAME))
+            {
+                tempFile = Directory.GetFiles(DirectoryNAME);//取得資料夾下所有檔案
+
+                foreach (string item in tempFile)
+                {
+                    info = new FileInfo(item);
+                    tFileName = info.Name.ToString().Trim();//取得檔名
+                    Attachment attch = new Attachment(DirectoryNAME+tFileName);
+                    MyMail.Attachments.Add(attch);
+
+                }
+
+            }
+                      
+
             try
             {
                 MySMTP.Send(MyMail);
@@ -58,9 +81,6 @@ namespace TKMQ
     
         public void SETFILE()
         {
-            string DirectoryNAME= @"C:\MQTEMP\";
-            string pathFile = DirectoryNAME+"MQ"+DateTime.Now.ToString("yyyyMMdd");
-
             if (Directory.Exists(DirectoryNAME))
             {
                 //資料夾存在
