@@ -320,12 +320,13 @@ namespace TKMQ
         #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
+            SETFILE();
             SERACHMAIL();
             SENDMAIL(dsMAIL);
         }
         private void button2_Click(object sender, EventArgs e)
         {
-            SETFILE();
+           
             MessageBox.Show("OK");
         }
         #endregion
