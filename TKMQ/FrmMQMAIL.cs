@@ -30,13 +30,22 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
         SqlDataAdapter adapterMAIL = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAIL = new SqlCommandBuilder();
+        SqlDataAdapter adapterCOPTE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderCOPTE = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
+
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
         DataSet ds1 = new DataSet();
         DataSet dsMAIL = new DataSet();
+        DataSet dsCOPTE = new DataSet();
+        DataSet dsMAILCOPTE = new DataSet();
 
         string DirectoryNAME = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd")+@"\";
-        string pathFile = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "MQ" + DateTime.Now.ToString("yyyyMMdd");
+        string pathFile = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "每日訂單-製令追踨表" + DateTime.Now.ToString("yyyyMMdd");
+        string pathFileCOPTE = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "每日訂單變更表" + DateTime.Now.ToString("yyyyMMdd");
+
         FileInfo info;
         string[] tempFile;
         string tFileName = "";
@@ -47,7 +56,7 @@ namespace TKMQ
         }
 
         #region FUNCTION
-        public void SENDMAIL(DataSet SEND)
+        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND,string Attachments)
         {            
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -55,30 +64,34 @@ namespace TKMQ
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-           
+
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-            MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-            MyMail.IsBodyHtml = true; //是否使用html格式
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = Subject.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = Body.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
             MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-                        
 
-            if (Directory.Exists(DirectoryNAME))
-            {
-                tempFile = Directory.GetFiles(DirectoryNAME);//取得資料夾下所有檔案
+            Attachment attch = new Attachment( Attachments+".xlsx");
+            MyMail.Attachments.Add(attch);
 
-                foreach (string item in tempFile)
-                {
-                    info = new FileInfo(item);
-                    tFileName = info.Name.ToString().Trim();//取得檔名
-                    Attachment attch = new Attachment(DirectoryNAME+tFileName);
-                    MyMail.Attachments.Add(attch);
+            //if (Directory.Exists(DirectoryNAME))
+            //{
+            //    tempFile = Directory.GetFiles(DirectoryNAME);//取得資料夾下所有檔案
 
-                }
+            //    foreach (string item in tempFile)
+            //    {
+            //        info = new FileInfo(item);
+            //        tFileName = info.Name.ToString().Trim();//取得檔名
+            //        Attachment attch = new Attachment(DirectoryNAME+tFileName);
+            //        MyMail.Attachments.Add(attch);
 
-            }
+            //    }
+
+            //}
 
             
             try
@@ -314,21 +327,188 @@ namespace TKMQ
 
             }
         }
-  
+
+        public void SETFILECOPTE()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            wBook.SaveAs(pathFileCOPTE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+            //SEARCH()
+            SEARCHCOPTE();
+        }
+
+        public void SEARCHCOPTE()
+        {
+            DateTime SEARCHDATE = DateTime.Now;
+            SEARCHDATE = SEARCHDATE.AddMonths(-1);
+
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.COPTE,[TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTF");
+                sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");
+                sbSql.AppendFormat(@"  AND TE001=TF001 AND TE002=TF002 AND TE003=TF003");
+                sbSql.AppendFormat(@"  AND MAILYN='N'");
+                sbSql.AppendFormat(@"  ORDER BY TE006,TE001,TE002,TF005");
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
+
+                adapterCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderCOPTE = new SqlCommandBuilder(adapterCOPTE);
+                sqlConn.Open();
+                dsCOPTE.Clear();
+                adapterCOPTE.Fill(dsCOPTE, "TEMPdsCOPTE");
+                sqlConn.Close();
+
+
+                if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsCOPTE, pathFileCOPTE);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILCOPTE()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'");
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder(adapterMAILCOPTE);
+                sqlConn.Open();
+                dsMAILCOPTE.Clear();
+                adapterMAILCOPTE.Fill(dsMAILCOPTE, "TEMPdsMAILCOPTE");
+                sqlConn.Close();
+
+
+                if (dsMAILCOPTE.Tables["TEMPdsMAILCOPTE"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILCOPTE.Tables["TEMPdsMAILCOPTE"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        
+
         #endregion
 
         #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
             SETFILE();
-            SERACHMAIL();
-            SENDMAIL(dsMAIL);
+            //SENDMAIL(dsMAIL);
+
         }
         private void button2_Click(object sender, EventArgs e)
         {
-           
-            MessageBox.Show("OK");
+            SETFILECOPTE();
+            SERACHMAILCOPTE();
+            
         }
+        private void button3_Click(object sender, EventArgs e)
+        {
+            SERACHMAIL();
+            StringBuilder SUBJEST = new StringBuilder();
+            SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            StringBuilder BODY = new StringBuilder();
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+            SENDMAIL(SUBJEST, BODY,dsMAIL, pathFile);
+        }
+
         #endregion
 
 
