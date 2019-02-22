@@ -110,7 +110,7 @@ namespace TKMQ
               
                 MyMail.Dispose(); //釋放資源
 
-                MessageBox.Show("OK");
+               
             }
             catch (Exception ex)
             {
@@ -490,23 +490,36 @@ namespace TKMQ
         private void button1_Click(object sender, EventArgs e)
         {
             SETFILE();
-            //SENDMAIL(dsMAIL);
+       
 
         }
         private void button2_Click(object sender, EventArgs e)
         {
             SETFILECOPTE();
-            SERACHMAILCOPTE();
+            
             
         }
         private void button3_Click(object sender, EventArgs e)
         {
-            SERACHMAIL();
             StringBuilder SUBJEST = new StringBuilder();
-            SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
             StringBuilder BODY = new StringBuilder();
+
+            SERACHMAIL();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
             SENDMAIL(SUBJEST, BODY,dsMAIL, pathFile);
+
+            SERACHMAILCOPTE();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+            SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+
+            MessageBox.Show("OK");
         }
 
         #endregion
