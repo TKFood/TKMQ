@@ -28,9 +28,12 @@ namespace TKMQ
         StringBuilder sbSqlQuery = new StringBuilder();
         SqlDataAdapter adapter1 = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAIL = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAIL = new SqlCommandBuilder();
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
         DataSet ds1 = new DataSet();
+        DataSet dsMAIL = new DataSet();
 
         string DirectoryNAME = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd")+@"\";
         string pathFile = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "MQ" + DateTime.Now.ToString("yyyyMMdd");
@@ -44,18 +47,18 @@ namespace TKMQ
         }
 
         #region FUNCTION
-        public void SENDMAIL()
-        {
+        public void SENDMAIL(DataSet SEND)
+        {            
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-            MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+           
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            MyMail.Subject = "Email Test";
-            MyMail.Body = "<h1>HIHI</h1>"; //設定信件內容
+            MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>"; //設定信件內容
             MyMail.IsBodyHtml = true; //是否使用html格式
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
@@ -76,11 +79,22 @@ namespace TKMQ
                 }
 
             }
-                      
 
+            
             try
             {
-                MySMTP.Send(MyMail);
+                int i = 0;
+                foreach (DataTable table in SEND.Tables)
+                {                    
+                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                    MyMail.To.Add(table.Rows[i].ItemArray[1].ToString()); //設定收件者Email
+                    MySMTP.Send(MyMail);
+
+                    i++;
+                }
+
+               
+              
                 MyMail.Dispose(); //釋放資源
 
                 MessageBox.Show("OK");
@@ -241,12 +255,62 @@ namespace TKMQ
             excelApp.Quit();
 
         }
+
+        public void SERACHMAIL()
+        {          
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+              
+                sbSql.AppendFormat(@" SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@" FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'");
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAIL = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAIL = new SqlCommandBuilder(adapterMAIL);
+                sqlConn.Open();
+                dsMAIL.Clear();
+                adapterMAIL.Fill(dsMAIL, "TEMPdsMAIL");
+                sqlConn.Close();
+
+
+                if (dsMAIL.Tables["TEMPdsMAIL"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAIL.Tables["TEMPdsMAIL"].Rows.Count >= 1)
+                    {
+                        
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+  
         #endregion
 
         #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
-            SENDMAIL();
+            SERACHMAIL();
+            SENDMAIL(dsMAIL);
         }
         private void button2_Click(object sender, EventArgs e)
         {
