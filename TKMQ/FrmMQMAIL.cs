@@ -58,7 +58,7 @@ namespace TKMQ
            
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
             MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-            MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>"; //設定信件內容
+            MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.IsBodyHtml = true; //是否使用html格式
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
@@ -246,9 +246,16 @@ namespace TKMQ
                     for (int k = 0; k < table.Columns.Count; k++)
                     {
                         excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
+                        // Set the range to fill.
+                       
                     }
                 }
+
+                //設定為按照內容自動調整欄寬
+                excelWorkSheet.Columns.AutoFit();
             }
+
+            
 
             excelWorkBook.Save();
             excelWorkBook.Close();
