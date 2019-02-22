@@ -158,6 +158,10 @@ namespace TKMQ
 
         public void SEARCH()
         {
+            DateTime SEARCHDATE = DateTime.Now;
+            SEARCHDATE = SEARCHDATE.AddMonths(-1);
+
+
             try
             {
                 connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
@@ -178,7 +182,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003");
                 sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
-                sbSql.AppendFormat(@"  AND TD013>='{0}' ",DateTime.Now.ToString("yyyyMM")+"01");
+                sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM")+"01");
                 sbSql.AppendFormat(@"  AND TD004 LIKE '4%'");
                 sbSql.AppendFormat(@"  AND (TD008-TD009+TD024-TD025)>0");
                 sbSql.AppendFormat(@"  AND TD021='Y' ");
