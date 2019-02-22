@@ -122,64 +122,8 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-            try
-            {
-                // 引用第一個工作表
-                wSheet = (Excel._Worksheet)wBook.Worksheets[1];
-
-                // 命名工作表的名稱
-                wSheet.Name = "工作表測試";
-
-                // 設定工作表焦點
-                wSheet.Activate();
-
-                excelApp.Cells[1, 1] = "Excel測試";
-
-                // 設定第1列資料
-                excelApp.Cells[1, 1] = "名稱";
-                excelApp.Cells[1, 2] = "數量";
-                // 設定第1列顏色
-                wRange = wSheet.Range[wSheet.Cells[1, 1], wSheet.Cells[1, 2]];
-                wRange.Select();
-                wRange.Font.Color = ColorTranslator.ToOle(Color.White);
-                wRange.Interior.Color = ColorTranslator.ToOle(Color.DimGray);
-
-                // 設定第2列資料
-                excelApp.Cells[2, 1] = "AA";
-                excelApp.Cells[2, 2] = "10";
-
-                excelApp.Cells[3, 1] = "總計";
-                // 設定總和公式 =SUM(B2:B4)
-                excelApp.Cells[5, 2].Formula = string.Format("=SUM(B{0}:B{1})", 2, 4);
-                // 設定第5列顏色
-                wRange = wSheet.Range[wSheet.Cells[5, 1], wSheet.Cells[5, 2]];
-                wRange.Select();
-                wRange.Font.Color = ColorTranslator.ToOle(Color.Red);
-                wRange.Interior.Color = ColorTranslator.ToOle(Color.Yellow);
-
-                // 自動調整欄寬
-                wRange = wSheet.Range[wSheet.Cells[1, 1], wSheet.Cells[5, 2]];
-                wRange.Select();
-                wRange.Columns.AutoFit();
-
-                try
-                {
-                    //另存活頁簿
-                    wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-                    Console.WriteLine("儲存文件於 " + Environment.NewLine + pathFile);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("儲存檔案出錯，檔案可能正在使用" + Environment.NewLine + ex.Message);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("產生報表時出錯！" + Environment.NewLine + ex.Message);
-            }
-
-            //關閉活頁簿
-            wBook.Close(false, Type.Missing, Type.Missing);
+            wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+                       
 
             //關閉Excel
             excelApp.Quit();
@@ -193,9 +137,12 @@ namespace TKMQ
             GC.Collect();
 
             Console.Read();
+
+            //SEARCH()
+            SEARCH();
         }
 
-        public void search()
+        public void SEARCH()
         {
             try
             {
@@ -217,7 +164,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003");
                 sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
-                sbSql.AppendFormat(@"  AND TD013>='{0}' ",DateTime.Now("yyyyMM")+"01");
+                sbSql.AppendFormat(@"  AND TD013>='{0}' ",DateTime.Now.ToString("yyyyMM")+"01");
                 sbSql.AppendFormat(@"  AND TD004 LIKE '4%'");
                 sbSql.AppendFormat(@"  AND (TD008-TD009+TD024-TD025)>0");
                 sbSql.AppendFormat(@"  AND TD021='Y' ");
@@ -240,13 +187,13 @@ namespace TKMQ
 
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
-                    ExportDataSetToExcel(ds1, pathFile);
+                   
                 }
                 else
                 {
                     if (ds1.Tables["TEMPds1"].Rows.Count >= 1)
                     {
-                        
+                        ExportDataSetToExcel(ds1, pathFile);
                     }
                 }
 
@@ -304,6 +251,7 @@ namespace TKMQ
         private void button2_Click(object sender, EventArgs e)
         {
             SETFILE();
+            MessageBox.Show("OK");
         }
         #endregion
 
