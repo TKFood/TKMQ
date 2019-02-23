@@ -501,6 +501,9 @@ namespace TKMQ
         }
         private void button3_Click(object sender, EventArgs e)
         {
+            SETFILE();
+            SETFILECOPTE();
+
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
