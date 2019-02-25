@@ -15,6 +15,7 @@ using FastReport.Data;
 using System.Net.Mail;//<-基本上發mail就用這個class
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Drawing;
+using System.Diagnostics;
 
 namespace TKMQ
 {
@@ -59,9 +60,20 @@ namespace TKMQ
             timer1.Interval = 1000 *60;
             //timer1.Interval = 1000 ;
             timer1.Start();
+
+            CLEAREXCEL();
         }
 
         #region FUNCTION
+        public void CLEAREXCEL()
+        {
+            System.Diagnostics.Process[] p = System.Diagnostics.Process.GetProcesses();
+            for (int i = 0; i < p.Length; i++)
+            {
+                if (p[i].ToString().IndexOf("EXCEL") > 0)
+                    p[i].Kill();
+            }
+        }
         public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND,string Attachments)
         {            
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
@@ -128,7 +140,12 @@ namespace TKMQ
         {
             if (Directory.Exists(DirectoryNAME))
             {
-                //資料夾存在
+                //資料夾存在，pathFile
+                if (File.Exists(pathFile + ".xlsx"))
+                {
+                    File.Delete(pathFile + ".xlsx");
+                }
+                  
             }
             else
             {
@@ -349,7 +366,11 @@ namespace TKMQ
         {
             if (Directory.Exists(DirectoryNAME))
             {
-                //資料夾存在
+                //資料夾存在，pathFileCOPTE
+                if (File.Exists(pathFileCOPTE + ".xlsx"))
+                {
+                    File.Delete(pathFileCOPTE + ".xlsx");
+                }
             }
             else
             {
@@ -509,7 +530,7 @@ namespace TKMQ
                     else
                     {
                         tran.Commit();      //執行交易  
-                        this.Close();
+                        
                     }
                 }
                 
@@ -616,23 +637,25 @@ namespace TKMQ
 
         #endregion
 
-            #region BUTTON
+        #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
             SETFILE();
-
+            CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button2_Click(object sender, EventArgs e)
         {
             SETFILECOPTE();
-
+            CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button3_Click(object sender, EventArgs e)
         {
             SETFILE();
+            CLEAREXCEL();
             SETFILECOPTE();
+            CLEAREXCEL();
 
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
