@@ -16,6 +16,7 @@ using System.Net.Mail;//<-基本上發mail就用這個class
 using Excel = Microsoft.Office.Interop.Excel;
 using System.Drawing;
 using System.Diagnostics;
+using System.Threading;
 
 namespace TKMQ
 {
@@ -603,8 +604,8 @@ namespace TKMQ
 
         public void HRAUTORUN()
         {
-            string hh = "7";
-            string mm = "10";
+            string hh = "17";
+            string mm = "26";
 
 
             if (DateTime.Now.Hour.ToString().Equals(hh) && DateTime.Now.Minute.ToString().Equals(mm))
@@ -665,7 +666,9 @@ namespace TKMQ
             BODY.Clear();
             SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-            SENDMAIL(SUBJEST, BODY,dsMAIL, pathFile);
+            SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+
+            Thread.Sleep(5000);
 
             SERACHMAILCOPTE();
             SUBJEST.Clear();
