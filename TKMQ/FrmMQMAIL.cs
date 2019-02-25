@@ -37,6 +37,7 @@ namespace TKMQ
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
+        int result;
         DataSet ds1 = new DataSet();
         DataSet dsMAIL = new DataSet();
         DataSet dsCOPTE = new DataSet();
@@ -53,6 +54,11 @@ namespace TKMQ
         public FrmMQMAIL()
         {
             InitializeComponent();
+
+            timer1.Enabled = true;
+            timer1.Interval = 1000 *60;
+            //timer1.Interval = 1000 ;
+            timer1.Start();
         }
 
         #region FUNCTION
@@ -149,7 +155,11 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-            wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            if(!File.Exists(pathFile+".xlsx"))
+            {
+                wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+            
                        
 
             //關閉Excel
@@ -165,8 +175,15 @@ namespace TKMQ
 
             Console.Read();
 
-            //SEARCH()
+
             SEARCH();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+                
+            //}
+                
         }
 
         public void SEARCH()
@@ -359,7 +376,12 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-            wBook.SaveAs(pathFileCOPTE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+
+            if (!File.Exists(pathFileCOPTE + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileCOPTE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+                
 
 
             //關閉Excel
@@ -375,8 +397,15 @@ namespace TKMQ
 
             Console.Read();
 
-            //SEARCH()
+
             SEARCHCOPTE();
+
+            //if (!File.Exists(pathFileCOPTE + ".xlsx"))
+            //{
+            //    //SEARCH()
+                
+            //}
+                
         }
 
         public void SEARCHCOPTE()
@@ -393,7 +422,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日'");
+                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.COPTE,[TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTF");
                 sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");
                 sbSql.AppendFormat(@"  AND TE001=TF001 AND TE002=TF002 AND TE003=TF003");
@@ -420,6 +449,8 @@ namespace TKMQ
                     if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
                     {
                         ExportDataSetToExcel(dsCOPTE, pathFileCOPTE);
+
+                        UPDATETRIGGERRECORDMAILYN();
                     }
                 }
 
@@ -431,6 +462,67 @@ namespace TKMQ
             finally
             {
 
+            }
+        }
+
+        public void UPDATETRIGGERRECORDMAILYN()
+        {
+            try
+            {
+                if(dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
+                {
+                    connectionString = ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString;
+                    sqlConn = new SqlConnection(connectionString);
+
+                    sqlConn.Close();
+                    sqlConn.Open();
+                    tran = sqlConn.BeginTransaction();
+
+                    sbSql.Clear();
+
+                    foreach (DataRow dr in dsCOPTE.Tables["TEMPdsCOPTE"].Rows)
+                    {
+                        var TE001 = dr["訂單"].ToString();
+                        var TE002 = dr["訂單號"].ToString();
+                        var TE003 = dr["訂單序號"].ToString();
+
+                        sbSql.AppendFormat(" UPDATE [TKMQ].[dbo].[TRIGGERRECORD]");
+                        sbSql.AppendFormat(" SET [MAILYN]='Y'");
+                        sbSql.AppendFormat(" WHERE [IDM]='{0}' AND [IDSUB]='{1}' AND [IDNO]='{2}'", TE001.ToString(), TE002.ToString(), TE003.ToString());
+                        sbSql.AppendFormat(" ");
+
+                    }
+
+                    sbSql.AppendFormat(" ");
+
+
+                    cmd.Connection = sqlConn;
+                    cmd.CommandTimeout = 60;
+                    cmd.CommandText = sbSql.ToString();
+                    cmd.Transaction = tran;
+                    result = cmd.ExecuteNonQuery();
+
+                    if (result == 0)
+                    {
+                        tran.Rollback();    //交易取消                        
+                    }
+                    else
+                    {
+                        tran.Commit();      //執行交易  
+                        this.Close();
+                    }
+                }
+                
+
+            }
+            catch
+            {
+
+            }
+
+            finally
+            {
+                sqlConn.Close();
             }
         }
 
@@ -482,22 +574,60 @@ namespace TKMQ
             }
         }
 
-        
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            label2.Text = DateTime.Now.ToString();
+            HRAUTORUN();
+        }
+
+        public void HRAUTORUN()
+        {
+            string hh = "7";
+            string mm = "10";
+
+
+            if (DateTime.Now.Hour.ToString().Equals(hh) && DateTime.Now.Minute.ToString().Equals(mm))
+            {
+                SETFILE();
+                SETFILECOPTE();
+
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                SERACHMAIL();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+
+                SERACHMAILCOPTE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+
+                MessageBox.Show("OK");
+            }
+        }
+
 
         #endregion
 
-        #region BUTTON
+            #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
             SETFILE();
-       
 
+            MessageBox.Show("OK");
         }
         private void button2_Click(object sender, EventArgs e)
         {
             SETFILECOPTE();
-            
-            
+
+            MessageBox.Show("OK");
         }
         private void button3_Click(object sender, EventArgs e)
         {
@@ -525,8 +655,9 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+
         #endregion
 
-
+       
     }
 }
