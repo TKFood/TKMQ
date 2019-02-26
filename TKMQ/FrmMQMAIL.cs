@@ -115,18 +115,15 @@ namespace TKMQ
             
             try
             {
-                int i = 0;
-                foreach (DataTable table in SEND.Tables)
+                foreach (DataRow od in SEND.Tables[0].Rows)
                 {                    
                     //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                    MyMail.To.Add(table.Rows[i].ItemArray[1].ToString()); //設定收件者Email
-                    MySMTP.Send(MyMail);
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail                  
 
-                    i++;
                 }
 
-               
-              
+                MySMTP.Send(MyMail);
+
                 MyMail.Dispose(); //釋放資源
 
                
@@ -227,7 +224,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  ,(CASE WHEN ISNULL(MOCTA.TA033,'')<>''  THEN '是' ELSE ''  END )  AS '製令發放'");
                 sbSql.AppendFormat(@"  ,(CASE WHEN CONVERT(datetime,TD013)<=CONVERT(datetime,MOCTA.TA009) THEN '是' ELSE ''  END )  AS '訂單是否延遲生產'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.COPTC,[TK].dbo.COPTD");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003");
+                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003 AND TD004=MOCTA.TA006");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003");
                 sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
                 sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM")+"01");
@@ -605,12 +602,14 @@ namespace TKMQ
         public void HRAUTORUN()
         {
             string RUNTIME = DateTime.Now.ToString("hh:mm");
-            string hhmm = "07:01";
+            string hhmm = "07:10";
 
             if (RUNTIME.Equals(hhmm))
             {
                 SETFILE();
+                CLEAREXCEL();
                 SETFILECOPTE();
+                CLEAREXCEL();
 
                 StringBuilder SUBJEST = new StringBuilder();
                 StringBuilder BODY = new StringBuilder();
@@ -622,6 +621,8 @@ namespace TKMQ
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
                 SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
 
+                Thread.Sleep(5000);
+
                 SERACHMAILCOPTE();
                 SUBJEST.Clear();
                 BODY.Clear();
@@ -629,8 +630,7 @@ namespace TKMQ
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
                 SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
-
-                MessageBox.Show("OK");
+                //MessageBox.Show("OK");
             }
         }
 
