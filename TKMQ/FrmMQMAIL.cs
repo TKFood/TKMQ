@@ -604,11 +604,10 @@ namespace TKMQ
 
         public void HRAUTORUN()
         {
-            string hh = "17";
-            string mm = "26";
+            string RUNTIME = DateTime.Now.ToString("hh:mm");
+            string hhmm = "07:01";
 
-
-            if (DateTime.Now.Hour.ToString().Equals(hh) && DateTime.Now.Minute.ToString().Equals(mm))
+            if (RUNTIME.Equals(hhmm))
             {
                 SETFILE();
                 SETFILECOPTE();
@@ -678,7 +677,7 @@ namespace TKMQ
             SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
 
-            MessageBox.Show("OK");
+            //MessageBox.Show("OK");
         }
 
 
