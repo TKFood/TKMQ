@@ -557,8 +557,10 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");                
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
                 sbSql.AppendFormat(@"  ");
 
                 adapterMAILCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
@@ -601,7 +603,7 @@ namespace TKMQ
 
         public void HRAUTORUN()
         {
-            string RUNTIME = DateTime.Now.ToString("hh:mm");
+            string RUNTIME = DateTime.Now.ToString("HH:mm");
             string hhmm = "07:10";
 
             if (RUNTIME.Equals(hhmm))
