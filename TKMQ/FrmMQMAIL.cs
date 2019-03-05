@@ -619,13 +619,17 @@ namespace TKMQ
 
             if (RUNTIME.Equals(hhmm))
             {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+
                 SETFILE();
                 CLEAREXCEL();
                 SETFILECOPTE();
                 CLEAREXCEL();
+                SETFILEPURTA();
+                CLEAREXCEL();
 
-                StringBuilder SUBJEST = new StringBuilder();
-                StringBuilder BODY = new StringBuilder();
 
                 SERACHMAIL();
                 SUBJEST.Clear();
@@ -642,6 +646,18 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
                 SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+
+                Thread.Sleep(5000);
+
+                SERACHMAILPURTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+
+
 
                 //MessageBox.Show("OK");
             }
@@ -879,7 +895,7 @@ namespace TKMQ
             SUBJEST.Clear();
             BODY.Clear();
             SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
 
             MessageBox.Show("OK");
