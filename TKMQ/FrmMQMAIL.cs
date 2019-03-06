@@ -743,10 +743,10 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-       
-                sbSql.AppendFormat(@"  SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')='' THEN '未請購' ELSE '已請購' END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ");
+                sbSql.AppendFormat(@"  SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')<>'' THEN '已請購' ELSE (CASE WHEN  ISNULL([COMMENT],'')<>'' THEN ''  ELSE '未請購'END ) END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ,[COMMENT] AS '備註'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
-                sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB] ON TA001=[MOCTA001] AND TA002=[MOCTA002] AND TA006=[MOCTA006]");
+                sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB] ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]");
+                sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK] ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]");
                 sbSql.AppendFormat(@"  WHERE TA003>='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND TA006 LIKE '4%'");
                 sbSql.AppendFormat(@"  ");
