@@ -461,9 +461,7 @@ namespace TKMQ
                 adapterCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilderCOPTE = new SqlCommandBuilder(adapterCOPTE);
-                sqlConn.Open();
-                sqlConn.Open();
-                sqlConn.Open();
+
                 sqlConn.Open();
                 dsCOPTE.Clear();
                 adapterCOPTE.Fill(dsCOPTE, "TEMPdsCOPTE");
