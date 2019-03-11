@@ -52,10 +52,12 @@ namespace TKMQ
         DataSet dsPURTA = new DataSet();
         DataSet dsMAILPURTA = new DataSet();
 
-        string DirectoryNAME = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd")+@"\";
-        string pathFile = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "每日訂單-製令追踨表" + DateTime.Now.ToString("yyyyMMdd");
-        string pathFileCOPTE = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "每日訂單變更表" + DateTime.Now.ToString("yyyyMMdd");
-        string pathFilePURTA = @"C:\MQTEMP\" + DateTime.Now.ToString("yyyyMMdd") + @"\" + "每日製令-請購表" + DateTime.Now.ToString("yyyyMMdd");
+        string DATES =null;
+        string DirectoryNAME=null;
+        string pathFile = null;
+        string pathFileCOPTE = null;
+        string pathFilePURTA = null;
+
 
         FileInfo info;
         string[] tempFile;
@@ -71,6 +73,7 @@ namespace TKMQ
             timer1.Start();
 
             CLEAREXCEL();
+
         }
 
         #region FUNCTION
@@ -125,10 +128,11 @@ namespace TKMQ
             {
                 foreach (DataRow od in SEND.Tables[0].Rows)
                 {                    
-                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail                  
-
+                   
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 MySMTP.Send(MyMail);
 
@@ -612,6 +616,15 @@ namespace TKMQ
 
         public void HRAUTORUN()
         {
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            pathFile = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單-製令追踨表" + DATES.ToString();
+            pathFileCOPTE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單變更表" + DATES.ToString();
+            pathFilePURTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
+
+
             string RUNTIME = DateTime.Now.ToString("HH:mm");
             string hhmm = "07:10";
 
