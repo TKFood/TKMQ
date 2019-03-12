@@ -760,7 +760,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK] ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]");
                 sbSql.AppendFormat(@"  WHERE TA003>='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND TA006 LIKE '4%'");
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  AND TA001 NOT IN ('A513') ");
                 sbSql.AppendFormat(@"  ");
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
