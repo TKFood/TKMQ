@@ -74,9 +74,22 @@ namespace TKMQ
 
             CLEAREXCEL();
 
+            SETPATH();
         }
 
         #region FUNCTION
+        public void SETPATH()
+        {
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            pathFile = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單-製令追踨表" + DATES.ToString();
+            pathFileCOPTE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單變更表" + DATES.ToString();
+            pathFilePURTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
+
+        }
+
         public void CLEAREXCEL()
         {
             System.Diagnostics.Process[] p = System.Diagnostics.Process.GetProcesses();
@@ -616,13 +629,7 @@ namespace TKMQ
 
         public void HRAUTORUN()
         {
-
-            DATES = DateTime.Now.ToString("yyyyMMdd");
-
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單-製令追踨表" + DATES.ToString();
-            pathFileCOPTE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單變更表" + DATES.ToString();
-            pathFilePURTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
+            SETPATH();
 
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
@@ -852,12 +859,14 @@ namespace TKMQ
         #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
+            SETPATH();
             SETFILE();
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button2_Click(object sender, EventArgs e)
         {
+            SETPATH();
             SETFILECOPTE();
             CLEAREXCEL();
             MessageBox.Show("OK");
@@ -865,6 +874,7 @@ namespace TKMQ
 
         private void button4_Click(object sender, EventArgs e)
         {
+            SETPATH();
             SETFILEPURTA();
             CLEAREXCEL();
             MessageBox.Show("OK");
