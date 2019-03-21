@@ -315,6 +315,11 @@ namespace TKMQ
                 for (int i = 1; i < table.Columns.Count + 1; i++)
                 {
                     excelWorkSheet.Cells[1, i] = table.Columns[i - 1].ColumnName;
+                    //畫框線
+                    wRange = excelWorkSheet.Cells[1, i];
+                    wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                    wRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+                    wRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
                 }
 
                 for (int j = 0; j < table.Rows.Count; j++)
@@ -323,12 +328,16 @@ namespace TKMQ
                     {
                         excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
 
-                        //檢查需求差異量是否為負，為負就紅字
+                        wRange = excelWorkSheet.Cells[j + 2, k + 1];
+
+                        //畫框線
+                        wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+
+                        //pathFilePURTA檢查需求差異量是否為負，為負就紅字
                         //string tt = table.Rows[j].ItemArray[k].ToString();
 
-                        if (k==5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString())<0)
+                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k==5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString())<0)
                         {
-                            wRange = excelWorkSheet.Cells[j + 2, k + 1];
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
                         }
@@ -774,12 +783,13 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
+                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
+                sbSql.AppendFormat(@"  FROM (");
                 sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
                 sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
                 sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(INT,SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(INT,NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
@@ -788,7 +798,9 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
                 sbSql.AppendFormat(@"  AND TA003>='{0}'",SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,TB018,MB002");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,TB018,MB002) AS TEMP");
+                sbSql.AppendFormat(@"  ORDER BY 需求差異量,品號 ");
+                sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
 
