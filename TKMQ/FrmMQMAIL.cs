@@ -304,6 +304,7 @@ namespace TKMQ
 
             //Create an Excel workbook instance and open it from the predefined location
             Excel.Workbook excelWorkBook = excelApp.Workbooks.Open(TopathFile);
+            Excel.Range wRange;
 
             foreach (DataTable table in ds.Tables)
             {
@@ -321,8 +322,20 @@ namespace TKMQ
                     for (int k = 0; k < table.Columns.Count; k++)
                     {
                         excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
-                        // Set the range to fill.
+
+                        //檢查需求差異量是否為負，為負就紅字
+                        //string tt = table.Rows[j].ItemArray[k].ToString();
+
+                        if (k==5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString())<0)
+                        {
+                            wRange = excelWorkSheet.Cells[j + 2, k + 1];
+                            wRange.Select();
+                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                        }
                        
+                        //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
+                        // Set the range to fill.
+
                     }
                 }
 
