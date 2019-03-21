@@ -259,8 +259,9 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND TD021='Y' ");
                 sbSql.AppendFormat(@"  AND TD016='N'");
                 sbSql.AppendFormat(@"  AND TC001 IN ('A221', 'A222','A223','A227','A228')");
+                //sbSql.AppendFormat(@"  AND TD002 IN ('20190318001','20190218009')");
                 sbSql.AppendFormat(@"  ORDER BY TC053,TD013,TD004");
-                sbSql.AppendFormat(@"  ");
+           
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
@@ -305,6 +306,8 @@ namespace TKMQ
             //Create an Excel workbook instance and open it from the predefined location
             Excel.Workbook excelWorkBook = excelApp.Workbooks.Open(TopathFile);
             Excel.Range wRange;
+            Excel.Range wRangepathFile;
+            Excel.Range wRangepathFilePURTA;
 
             foreach (DataTable table in ds.Tables)
             {
@@ -332,6 +335,18 @@ namespace TKMQ
 
                         //畫框線
                         wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+
+                        //pathFilePURTA檢查需求差異量是否為負，為負就紅字
+                        //string tt = table.Rows[j].ItemArray[k].ToString();
+
+                        if (TopathFile.Equals(pathFile.ToString()) && k == 15 && string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()))
+                        {
+                            string STARTCELL = "A"+(j+2).ToString();
+                            string ENDCELL = "AH" +(j+2).ToString();
+                            Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);                           
+                            newRng.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                 
+                        }
 
                         //pathFilePURTA檢查需求差異量是否為負，為負就紅字
                         //string tt = table.Rows[j].ItemArray[k].ToString();
