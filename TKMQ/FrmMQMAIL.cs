@@ -671,7 +671,7 @@ namespace TKMQ
 
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
-            string hhmm = "07:10";
+            string hhmm = "07:11";
 
             if (RUNTIME.Equals(hhmm))
             {
