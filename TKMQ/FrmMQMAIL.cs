@@ -809,11 +809,12 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
                 sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
+                //sbSql.AppendFormat(@"  AND TB018='Y'");
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
                 sbSql.AppendFormat(@"  AND TA003>='{0}'",SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,TB018,MB002) AS TEMP");
+                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
                 sbSql.AppendFormat(@"  WHERE  需求差異量<0 ");
                 sbSql.AppendFormat(@"  UNION ALL");
                 sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
@@ -827,14 +828,15 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
                 sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
+                //sbSql.AppendFormat(@"  AND TB018='Y'");
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
                 sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,TB018,MB002) AS TEMP");
+                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
                 sbSql.AppendFormat(@"  WHERE  需求差異量>0 ");
                 sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+              
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
