@@ -809,7 +809,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
                 sbSql.AppendFormat(@"  AND MB001=TB003");
-                //sbSql.AppendFormat(@"  AND TB018='Y'");
+                sbSql.AppendFormat(@"  AND TB018='Y'");
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
                 sbSql.AppendFormat(@"  AND TA003>='{0}'",SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
@@ -828,7 +828,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
                 sbSql.AppendFormat(@"  AND MB001=TB003");
-                //sbSql.AppendFormat(@"  AND TB018='Y'");
+                sbSql.AppendFormat(@"  AND TB018='Y'");
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
                 sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
