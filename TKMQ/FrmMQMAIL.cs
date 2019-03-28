@@ -1094,7 +1094,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON TA026=TD001 AND TA027=TD002 AND TA028=TD003 ");
                 sbSql.AppendFormat(@"  WHERE TA013='N'");
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ORDER BY TA001,TA002");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
