@@ -687,7 +687,7 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
 
-                SETFILE();
+                SETFILEMOCTA();
                 CLEAREXCEL();
                 Thread.Sleep(10000);
 
@@ -699,9 +699,19 @@ namespace TKMQ
                 CLEAREXCEL();
                 Thread.Sleep(10000);
 
-                SETFILEMOCTA();
+                SETFILE();
                 CLEAREXCEL();
+                Thread.Sleep(10000);
 
+
+                SERACHMAILMOCTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"每日製令-訂單表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-訂單表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
+
+                Thread.Sleep(10000);
 
                 SERACHMAILCOPTE();
                 SUBJEST.Clear();
@@ -729,17 +739,7 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
                 SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-
-                Thread.Sleep(10000);
-
-                SERACHMAILMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"每日製令-訂單表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-訂單表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
-
-
+                
 
 
                 //MessageBox.Show("OK");
