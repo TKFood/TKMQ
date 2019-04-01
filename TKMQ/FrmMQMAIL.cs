@@ -689,29 +689,29 @@ namespace TKMQ
 
                 SETFILEMOCTA();
                 CLEAREXCEL();
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SETFILECOPTE();
                 CLEAREXCEL();
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SETFILEPURTA();
                 CLEAREXCEL();
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SETFILE();
                 CLEAREXCEL();
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
 
                 SERACHMAILMOCTA();
                 SUBJEST.Clear();
                 BODY.Clear();
-                SUBJEST.AppendFormat(@"每日製令-訂單表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-訂單表，請查收" + Environment.NewLine + " ");
+                SUBJEST.AppendFormat(@"每日製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
 
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SERACHMAILCOPTE();
                 SUBJEST.Clear();
@@ -721,7 +721,7 @@ namespace TKMQ
                 SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
 
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SERACHMAILPURTA();
                 SUBJEST.Clear();
@@ -731,7 +731,7 @@ namespace TKMQ
                 SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
 
 
-                Thread.Sleep(10000);
+                Thread.Sleep(5000);
 
                 SERACHMAIL();
                 SUBJEST.Clear();
