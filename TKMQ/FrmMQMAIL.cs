@@ -17,6 +17,10 @@ using Excel = Microsoft.Office.Interop.Excel;
 using System.Drawing;
 using System.Diagnostics;
 using System.Threading;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
+using NPOI.HSSF.Util;
+using NPOI.XSSF.UserModel;
 
 namespace TKMQ
 {
@@ -900,6 +904,142 @@ namespace TKMQ
             }
         }
 
+
+        public void SETFILEPURTA2()
+        {
+            DateTime SEARCHDATE2 = DateTime.Now;
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
+                sbSql.AppendFormat(@"  FROM (");
+                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
+                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
+                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
+                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
+                sbSql.AppendFormat(@"  AND MB001=TB003");
+                sbSql.AppendFormat(@"  AND TB018='Y'");
+                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
+                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
+                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
+                sbSql.AppendFormat(@"  WHERE  需求差異量<0 ");
+                sbSql.AppendFormat(@"  UNION ALL");
+                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
+                sbSql.AppendFormat(@"  FROM (");
+                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
+                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
+                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
+                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
+                sbSql.AppendFormat(@"  AND MB001=TB003");
+                sbSql.AppendFormat(@"  AND TB018='Y'");
+                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
+                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
+                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
+                sbSql.AppendFormat(@"  WHERE  需求差異量>0 ");
+                sbSql.AppendFormat(@"  ");
+
+
+                adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderPURTA = new SqlCommandBuilder(adapterPURTA);
+                sqlConn.Open();
+
+                dsPURTA.Clear();
+                adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
+                sqlConn.Close();
+
+
+                if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count >= 1)
+                    {
+                        ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1");
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+        }
+
+        public void ExportToExcel(DataTable data, string sheetName)
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFileCOPTE
+                if (File.Exists(pathFilePURTA + ".xlsx"))
+                {
+                    File.Delete(pathFilePURTA + ".xlsx");
+                }
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            IWorkbook workbook = new XSSFWorkbook();
+            ISheet sheet = workbook.CreateSheet(sheetName);
+            IRow rowHead = sheet.CreateRow(0);
+
+
+            //填寫表頭
+            for (int i = 0; i < data.Columns.Count; i++)
+            {
+                rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
+            }
+            //填寫內容
+            for (int i = 0; i < data.Rows.Count; i++)
+            {
+                IRow row = sheet.CreateRow(i + 1);
+                for (int j = 0; j < data.Columns.Count; j++)
+                {
+                    row.CreateCell(j, CellType.String).SetCellValue(data.Rows[i][j].ToString());
+                }
+            }
+
+            for (int i = 0; i < data.Columns.Count; i++)
+            {
+                sheet.AutoSizeColumn(i);
+            }
+
+            using (FileStream stream = File.OpenWrite(pathFilePURTA + ".xlsx"))
+            {
+                workbook.Write(stream);
+                stream.Close();
+            }
+
+            GC.Collect();
+        }
+
         public void SEARCHPURTA()
         {
             DateTime SEARCHDATE = DateTime.Now;
@@ -1201,7 +1341,9 @@ namespace TKMQ
         private void button4_Click(object sender, EventArgs e)
         {
             SETPATH();
-            SETFILEPURTA();
+            //SETFILEPURTA();
+            SETFILEPURTA2();
+
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
