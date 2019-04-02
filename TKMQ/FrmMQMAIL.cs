@@ -289,7 +289,16 @@ namespace TKMQ
 
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
-                   
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = ds1.Tables["TEMPds1"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    ds1.Tables["TEMPds1"].Rows.Add(row);
+
+                    ExportDataSetToExcel(ds1, pathFile);
                 }
                 else
                 {
@@ -537,7 +546,16 @@ namespace TKMQ
 
                 if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count == 0)
                 {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsCOPTE.Tables["TEMPdsCOPTE"].NewRow();
 
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Add(row);
+                    
+                    ExportDataSetToExcel(dsCOPTE, pathFileCOPTE);
                 }
                 else
                 {
@@ -968,7 +986,16 @@ namespace TKMQ
 
                 if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count == 0)
                 {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsPURTA.Tables["TEMPdsPURTA"].NewRow();
 
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsPURTA.Tables["TEMPdsPURTA"].Rows.Add(row);
+
+                    ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1");
                 }
                 else
                 {
@@ -1009,12 +1036,29 @@ namespace TKMQ
             IWorkbook workbook = new XSSFWorkbook();
             ISheet sheet = workbook.CreateSheet(sheetName);
             IRow rowHead = sheet.CreateRow(0);
+            ICell icell;
+
+            XSSFCellStyle oStyle = (XSSFCellStyle)workbook.CreateCellStyle();
 
 
             //填寫表頭
             for (int i = 0; i < data.Columns.Count; i++)
             {
-                rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
+                icell = rowHead.CreateCell(i);
+                icell.SetCellValue(data.Columns[i].ColumnName.ToString());
+
+                ////文字水平居中
+                //icell.CellStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
+
+                ////設定上下左右的框線
+                oStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thick;
+                oStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thick;
+                oStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thick;
+                oStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thick;
+
+                
+                //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
+
             }
             //填寫內容
             for (int i = 0; i < data.Rows.Count; i++)
@@ -1022,7 +1066,8 @@ namespace TKMQ
                 IRow row = sheet.CreateRow(i + 1);
                 for (int j = 0; j < data.Columns.Count; j++)
                 {
-                    row.CreateCell(j, CellType.String).SetCellValue(data.Rows[i][j].ToString());
+                    //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
+                    
                 }
             }
 
@@ -1250,7 +1295,16 @@ namespace TKMQ
 
                 if (dsMOCTA.Tables["dsMOCTA"].Rows.Count == 0)
                 {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsMOCTA.Tables["dsMOCTA"].NewRow();
 
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsMOCTA.Tables["dsMOCTA"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsMOCTA, pathFileMOCTA);
                 }
                 else
                 {
