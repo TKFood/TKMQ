@@ -701,7 +701,7 @@ namespace TKMQ
 
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
-            string hhmm = "07:11";
+            string hhmm = "11:30";
 
             if (RUNTIME.Equals(hhmm))
             {
@@ -717,7 +717,8 @@ namespace TKMQ
                 CLEAREXCEL();
                 Thread.Sleep(5000);
 
-                SETFILEPURTA();
+                //SETFILEPURTA();
+                SETFILEPURTA2();
                 CLEAREXCEL();
                 Thread.Sleep(5000);
 
@@ -995,13 +996,13 @@ namespace TKMQ
                     //新增資料至DataTable的dt內
                     dsPURTA.Tables["TEMPdsPURTA"].Rows.Add(row);
 
-                    ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1");
+                    ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1", pathFilePURTA);
                 }
                 else
                 {
                     if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count >= 1)
                     {
-                        ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1");
+                        ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1", pathFilePURTA);
                     }
                 }
 
@@ -1017,14 +1018,14 @@ namespace TKMQ
 
         }
 
-        public void ExportToExcel(DataTable data, string sheetName)
+        public void ExportToExcel(DataTable data, string sheetName,string PATH)
         {
             if (Directory.Exists(DirectoryNAME))
             {
                 //資料夾存在，pathFileCOPTE
-                if (File.Exists(pathFilePURTA + ".xlsx"))
+                if (File.Exists(PATH + ".xlsx"))
                 {
-                    File.Delete(pathFilePURTA + ".xlsx");
+                    File.Delete(PATH + ".xlsx");
                 }
             }
             else
@@ -1091,7 +1092,7 @@ namespace TKMQ
                     //設定文字大小
                     StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
                     //字的顏色
-                    if (j== 5  && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
+                    if (PATH.Equals(pathFilePURTA) && j== 5  && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
                     {
                        
                         StyleFont.Color = IndexedColors.Red.Index;  
@@ -1118,7 +1119,7 @@ namespace TKMQ
                 sheet.AutoSizeColumn(i);
             }
 
-            using (FileStream stream = File.OpenWrite(pathFilePURTA + ".xlsx"))
+            using (FileStream stream = File.OpenWrite(PATH + ".xlsx"))
             {
                 workbook.Write(stream);
                 stream.Close();
