@@ -62,8 +62,8 @@ namespace TKMQ
         DataSet dsMOCTA = new DataSet();
         DataSet dsMAILMOCTA = new DataSet();
 
-        string DATES =null;
-        string DirectoryNAME=null;
+        string DATES = null;
+        string DirectoryNAME = null;
         string pathFile = null;
         string pathFileCOPTE = null;
         string pathFilePURTA = null;
@@ -79,7 +79,7 @@ namespace TKMQ
             InitializeComponent();
 
             timer1.Enabled = true;
-            timer1.Interval = 1000 *60;
+            timer1.Interval = 1000 * 60;
             //timer1.Interval = 1000 ;
             timer1.Start();
 
@@ -111,8 +111,8 @@ namespace TKMQ
                     p[i].Kill();
             }
         }
-        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND,string Attachments)
-        {            
+        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
+        {
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -130,7 +130,7 @@ namespace TKMQ
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
             MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
-            Attachment attch = new Attachment( Attachments+".xlsx");
+            Attachment attch = new Attachment(Attachments + ".xlsx");
             MyMail.Attachments.Add(attch);
 
             //if (Directory.Exists(DirectoryNAME))
@@ -148,12 +148,12 @@ namespace TKMQ
 
             //}
 
-            
+
             try
             {
                 foreach (DataRow od in SEND.Tables[0].Rows)
-                {                    
-                   
+                {
+
                     MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
 
@@ -163,14 +163,14 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-               
+
             }
             catch (Exception ex)
             {
                 ex.ToString();
             }
         }
-    
+
         public void SETFILE()
         {
             if (Directory.Exists(DirectoryNAME))
@@ -180,7 +180,7 @@ namespace TKMQ
                 {
                     File.Delete(pathFile + ".xlsx");
                 }
-                  
+
             }
             else
             {
@@ -207,12 +207,12 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-            if(!File.Exists(pathFile+".xlsx"))
+            if (!File.Exists(pathFile + ".xlsx"))
             {
                 wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
-            
-                       
+
+
 
             //關閉Excel
             excelApp.Quit();
@@ -233,9 +233,9 @@ namespace TKMQ
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
             //    //SEARCH()
-                
+
             //}
-                
+
         }
 
         public void SEARCH()
@@ -265,7 +265,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003");
                 sbSql.AppendFormat(@"  LEFT JOIN [TKMOC].dbo.MOCCOPCHECK ON COPTA001=TD001 AND COPTA002=TD002 AND COPTA003=TD003 ");
                 sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
-                sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM")+"01");
+                sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM") + "01");
                 sbSql.AppendFormat(@"  AND TD004 LIKE '4%'");
                 sbSql.AppendFormat(@"  AND (TD008-TD009+TD024-TD025)>0");
                 sbSql.AppendFormat(@"  AND TD021='Y' ");
@@ -273,7 +273,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND TC001 IN ('A221', 'A222','A223','A227','A228')");
                 //sbSql.AppendFormat(@"  AND TD002 IN ('20190318001','20190218009')");
                 sbSql.AppendFormat(@"  ORDER BY TC053,TD013,TD004");
-           
+
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
@@ -319,7 +319,7 @@ namespace TKMQ
             }
         }
 
-        public void ExportDataSetToExcel(DataSet ds,string TopathFile)
+        public void ExportDataSetToExcel(DataSet ds, string TopathFile)
         {
             //Creae an Excel application instance
             Excel.Application excelApp = new Excel.Application();
@@ -362,22 +362,22 @@ namespace TKMQ
 
                         if (TopathFile.Equals(pathFile.ToString()) && k == 15 && string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()))
                         {
-                            string STARTCELL = "A"+(j+2).ToString();
-                            string ENDCELL = "AH" +(j+2).ToString();
-                            Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);                           
+                            string STARTCELL = "A" + (j + 2).ToString();
+                            string ENDCELL = "AH" + (j + 2).ToString();
+                            Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);
                             newRng.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                 
+
                         }
 
                         //pathFilePURTA檢查需求差異量是否為負，為負就紅字
                         //string tt = table.Rows[j].ItemArray[k].ToString();
 
-                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k==5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString())<0)
+                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
                         }
-                       
+
                         //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
                         // Set the range to fill.
 
@@ -388,7 +388,7 @@ namespace TKMQ
                 excelWorkSheet.Columns.AutoFit();
             }
 
-            
+
 
             excelWorkBook.Save();
             excelWorkBook.Close();
@@ -397,7 +397,7 @@ namespace TKMQ
         }
 
         public void SERACHMAIL()
-        {          
+        {
             try
             {
                 connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
@@ -406,7 +406,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-              
+
                 sbSql.AppendFormat(@" SELECT [SENDTO],[MAIL] ");
                 sbSql.AppendFormat(@" FROM [TKMQ].[dbo].[MQSENDMAIL] ");
                 sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'");
@@ -429,7 +429,7 @@ namespace TKMQ
                 {
                     if (dsMAIL.Tables["TEMPdsMAIL"].Rows.Count >= 1)
                     {
-                        
+
                     }
                 }
 
@@ -484,7 +484,7 @@ namespace TKMQ
             {
                 wBook.SaveAs(pathFileCOPTE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
-                
+
 
 
             //關閉Excel
@@ -506,9 +506,9 @@ namespace TKMQ
             //if (!File.Exists(pathFileCOPTE + ".xlsx"))
             //{
             //    //SEARCH()
-                
+
             //}
-                
+
         }
 
         public void SEARCHCOPTE()
@@ -528,7 +528,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日'");
                 sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTE");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.COPTF ON TE001=TF001 AND TE002=TF002 AND TE003=TF003");
-                sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");      
+                sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");
                 sbSql.AppendFormat(@"  AND MAILYN='N'");
                 sbSql.AppendFormat(@"  ORDER BY TE006,TE001,TE002,TF005");
                 sbSql.AppendFormat(@"  ");
@@ -554,7 +554,7 @@ namespace TKMQ
 
                     //新增資料至DataTable的dt內
                     dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Add(row);
-                    
+
                     ExportDataSetToExcel(dsCOPTE, pathFileCOPTE);
                 }
                 else
@@ -582,7 +582,7 @@ namespace TKMQ
         {
             try
             {
-                if(dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
+                if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
                 {
                     connectionString = ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString;
                     sqlConn = new SqlConnection(connectionString);
@@ -622,10 +622,10 @@ namespace TKMQ
                     else
                     {
                         tran.Commit();      //執行交易  
-                        
+
                     }
                 }
-                
+
 
             }
             catch
@@ -651,7 +651,7 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");                
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
                 sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'  ");
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
@@ -762,7 +762,7 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
                 SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-                
+
 
 
                 //MessageBox.Show("OK");
@@ -886,7 +886,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
                 sbSql.AppendFormat(@"  WHERE  需求差異量>0 ");
                 sbSql.AppendFormat(@"  ");
-              
+
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1007,9 +1007,9 @@ namespace TKMQ
                 }
 
             }
-            catch
-            {
-
+            catch (Exception ex)
+            {                
+                INSERTLOG(pathFilePURTA,ex.ToString());
             }
             finally
             {
@@ -1018,70 +1018,35 @@ namespace TKMQ
 
         }
 
-        public void ExportToExcel(DataTable data, string sheetName,string PATH)
+        public void ExportToExcel(DataTable data, string sheetName, string PATH)
         {
-            if (Directory.Exists(DirectoryNAME))
+            try
             {
-                //資料夾存在，pathFileCOPTE
-                if (File.Exists(PATH + ".xlsx"))
+                if (Directory.Exists(DirectoryNAME))
                 {
-                    File.Delete(PATH + ".xlsx");
+                    //資料夾存在，pathFileCOPTE
+                    if (File.Exists(PATH + ".xlsx"))
+                    {
+                        File.Delete(PATH + ".xlsx");
+                    }
                 }
-            }
-            else
-            {
-                //新增資料夾
-                Directory.CreateDirectory(DirectoryNAME);
-            }
-
-            XSSFWorkbook workbook = new XSSFWorkbook();
-            XSSFSheet sheet = (XSSFSheet)workbook.CreateSheet(sheetName);
-            XSSFRow rowHeader = (XSSFRow)sheet.CreateRow(0);
-            ICell icell;
-            
-            //填寫表頭
-            for (int i = 0; i < data.Columns.Count; i++)
-            {
-                //string strValue = data.Columns[i].ColumnName.ToString();
-                XSSFCell cell = (XSSFCell)rowHeader.CreateCell(i);
-                cell.SetCellValue(data.Columns[i].ColumnName.ToString());
-
-                //建立新的CellStyle
-                ICellStyle CellsStyle = workbook.CreateCellStyle();
-                //建立字型
-                IFont StyleFont = workbook.CreateFont();
-                //設定文字字型
-                StyleFont.FontName = "微軟正黑體";
-                //設定文字大小
-                StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
-                //字的顏色
-                //StyleFont.Color = IndexedColors.Red.Index;  
-                CellsStyle.SetFont(StyleFont);
-                // 水平置中
-                CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
-                // 設定框線 
-                //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
-                //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
-                //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
-                //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
-
-                cell.CellStyle = CellsStyle;
-
-
-               
-                //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
-
-            }
-
-            //填寫內容
-            for (int i = 0; i < data.Rows.Count; i++)
-            {
-                XSSFRow rowItem = (XSSFRow)sheet.CreateRow(i + 1);
-
-                for (int j = 0; j < data.Columns.Count; j++)
+                else
                 {
-                    XSSFCell cell = (XSSFCell)rowItem.CreateCell(j);
-                    cell.SetCellValue(data.Rows[i][j].ToString());
+                    //新增資料夾
+                    Directory.CreateDirectory(DirectoryNAME);
+                }
+
+                XSSFWorkbook workbook = new XSSFWorkbook();
+                XSSFSheet sheet = (XSSFSheet)workbook.CreateSheet(sheetName);
+                XSSFRow rowHeader = (XSSFRow)sheet.CreateRow(0);
+                ICell icell;
+
+                //填寫表頭
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    //string strValue = data.Columns[i].ColumnName.ToString();
+                    XSSFCell cell = (XSSFCell)rowHeader.CreateCell(i);
+                    cell.SetCellValue(data.Columns[i].ColumnName.ToString());
 
                     //建立新的CellStyle
                     ICellStyle CellsStyle = workbook.CreateCellStyle();
@@ -1091,16 +1056,11 @@ namespace TKMQ
                     StyleFont.FontName = "微軟正黑體";
                     //設定文字大小
                     StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
-                    //字的顏色
-                    if (PATH.Equals(pathFilePURTA) && j== 5  && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
-                    {
-                       
-                        StyleFont.Color = IndexedColors.Red.Index;  
-
-                    }
-
+                                                       //字的顏色
+                                                       //StyleFont.Color = IndexedColors.Red.Index;  
                     CellsStyle.SetFont(StyleFont);
-
+                    // 水平置中
+                    CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
                     // 設定框線 
                     //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
                     //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
@@ -1109,31 +1069,85 @@ namespace TKMQ
 
                     cell.CellStyle = CellsStyle;
 
-                    //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
+
+
+                    //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
 
                 }
+
+                //填寫內容
+                for (int i = 0; i < data.Rows.Count; i++)
+                {
+                    XSSFRow rowItem = (XSSFRow)sheet.CreateRow(i + 1);
+
+                    for (int j = 0; j < data.Columns.Count; j++)
+                    {
+                        XSSFCell cell = (XSSFCell)rowItem.CreateCell(j);
+                        cell.SetCellValue(data.Rows[i][j].ToString());
+
+                        //建立新的CellStyle
+                        ICellStyle CellsStyle = workbook.CreateCellStyle();
+                        //建立字型
+                        IFont StyleFont = workbook.CreateFont();
+                        //設定文字字型
+                        StyleFont.FontName = "微軟正黑體";
+                        //設定文字大小
+                        StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
+                                                           //字的顏色
+                        if (PATH.Equals(pathFilePURTA) && j == 5 && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
+                        {
+
+                            StyleFont.Color = IndexedColors.Red.Index;
+
+                        }
+
+                        CellsStyle.SetFont(StyleFont);
+
+                        // 設定框線 
+                        //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
+                        //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
+                        //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
+                        //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
+
+                        cell.CellStyle = CellsStyle;
+
+                        //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
+
+                    }
+                }
+
+                for (int i = 0; i < data.Columns.Count; i++)
+                {
+                    sheet.AutoSizeColumn(i);
+                }
+
+                using (FileStream stream = File.OpenWrite(PATH + ".xlsx"))
+                {
+                    workbook.Write(stream);
+                    stream.Close();
+                }
+
+                GC.Collect();
             }
 
-            for (int i = 0; i < data.Columns.Count; i++)
+            catch (Exception ex)
             {
-                sheet.AutoSizeColumn(i);
+                INSERTLOG(pathFilePURTA, ex.ToString());
             }
 
-            using (FileStream stream = File.OpenWrite(PATH + ".xlsx"))
+            finally
             {
-                workbook.Write(stream);
-                stream.Close();
+
             }
 
-            GC.Collect();
         }
 
-       
+
 
         public void SEARCHPURTA()
         {
             DateTime SEARCHDATE = DateTime.Now;
-            
+
 
             try
             {
@@ -1172,7 +1186,7 @@ namespace TKMQ
                     {
                         ExportDataSetToExcel(dsPURTA, pathFilePURTA);
 
-                       
+
                     }
                 }
 
@@ -1317,7 +1331,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-               
+
 
                 sbSql.AppendFormat(@"  SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA003 AS '開單日期',TA006 AS '產品品號',TA034 AS '產品品名',CONVERT(INT,TA015,0) AS'預計產量',TA007 AS '單位','未確認' AS '確認碼',TA026 AS '訂單單別',TA027 AS '訂單單號',TA028 AS '訂單序號'");
                 sbSql.AppendFormat(@"  ,CONVERT(INT,ISNULL([NUM],0)) AS '訂單需求量',TD010 AS '訂單單位',CONVERT(INT,(TA015-ISNULL([NUM],0)),0) AS '生產需求的差異數'");
@@ -1418,6 +1432,51 @@ namespace TKMQ
             {
 
             }
+        }
+
+        public void INSERTLOG(string SOURCE, string EX)
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+                sbSql.Clear();
+
+
+                sbSql.AppendFormat(" INSERT INTO [TKMQ].[dbo].[LOG] ([SOURCE],[EX]) VALUES ('{0}','{1}')", SOURCE, EX);
+                sbSql.AppendFormat(" ");
+                sbSql.AppendFormat(" ");
+
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = 60;
+                cmd.CommandText = sbSql.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+
+
+                }
+            }
+
+            catch
+            {
+
+            }
+            finally
+            { }
         }
         #endregion
 
