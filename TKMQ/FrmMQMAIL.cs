@@ -1053,7 +1053,8 @@ namespace TKMQ
                 StyleFont.FontName = "微軟正黑體";
                 //設定文字大小
                 StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
-                //StyleFont.Color = IndexedColors.Red.Index; ;    //字的顏色
+                //字的顏色
+                //StyleFont.Color = IndexedColors.Red.Index;  
                 CellsStyle.SetFont(StyleFont);
                 // 水平置中
                 CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
@@ -1089,7 +1090,16 @@ namespace TKMQ
                     StyleFont.FontName = "微軟正黑體";
                     //設定文字大小
                     StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
+                    //字的顏色
+                    if (j== 5  && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
+                    {
+                       
+                        StyleFont.Color = IndexedColors.Red.Index;  
+
+                    }
+
                     CellsStyle.SetFont(StyleFont);
+
                     // 設定框線 
                     //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
                     //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
