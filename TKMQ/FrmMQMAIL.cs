@@ -1033,41 +1033,56 @@ namespace TKMQ
                 Directory.CreateDirectory(DirectoryNAME);
             }
 
-            IWorkbook workbook = new XSSFWorkbook();
-            ISheet sheet = workbook.CreateSheet(sheetName);
-            IRow rowHead = sheet.CreateRow(0);
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = (XSSFSheet)workbook.CreateSheet(sheetName);
+            XSSFRow rowHeader = (XSSFRow)sheet.CreateRow(0);
             ICell icell;
-
-            XSSFCellStyle oStyle = (XSSFCellStyle)workbook.CreateCellStyle();
-
-
+            
             //填寫表頭
             for (int i = 0; i < data.Columns.Count; i++)
             {
-                icell = rowHead.CreateCell(i);
-                icell.SetCellValue(data.Columns[i].ColumnName.ToString());
+                //string strValue = data.Columns[i].ColumnName.ToString();
+                XSSFCell cell = (XSSFCell)rowHeader.CreateCell(i);
+                cell.SetCellValue(data.Columns[i].ColumnName.ToString());
 
-                ////文字水平居中
-                //icell.CellStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
+                //建立新的CellStyle
+                ICellStyle CellsStyle = workbook.CreateCellStyle();
+                //建立字型
+                IFont StyleFont = workbook.CreateFont();
+                //設定文字字型
+                StyleFont.FontName = "微軟正黑體";
+                //設定文字大小
+                StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
+                CellsStyle.SetFont(StyleFont);
+                cell.CellStyle = CellsStyle;
 
-                ////設定上下左右的框線
-                oStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thick;
-                oStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thick;
-                oStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thick;
-                oStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thick;
-
-                
                 //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
 
             }
+
             //填寫內容
             for (int i = 0; i < data.Rows.Count; i++)
             {
-                IRow row = sheet.CreateRow(i + 1);
+                XSSFRow rowItem = (XSSFRow)sheet.CreateRow(i + 1);
+
                 for (int j = 0; j < data.Columns.Count; j++)
                 {
+                    XSSFCell cell = (XSSFCell)rowItem.CreateCell(j);
+                    cell.SetCellValue(data.Rows[i][j].ToString());
+
+                    //建立新的CellStyle
+                    ICellStyle CellsStyle = workbook.CreateCellStyle();
+                    //建立字型
+                    IFont StyleFont = workbook.CreateFont();
+                    //設定文字字型
+                    StyleFont.FontName = "微軟正黑體";
+                    //設定文字大小
+                    StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
+                    CellsStyle.SetFont(StyleFont);
+                    cell.CellStyle = CellsStyle;
+
                     //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
-                    
+
                 }
             }
 
@@ -1083,6 +1098,17 @@ namespace TKMQ
             }
 
             GC.Collect();
+        }
+
+        private XSSFCellStyle GetTitleStyle(IWorkbook wb)
+        {
+            XSSFCellStyle oStyle = (XSSFCellStyle)wb.CreateCellStyle();
+
+            //設定背景顏色
+            oStyle.FillForegroundColor = NPOI.HSSF.Util.HSSFColor.Grey40Percent.Index;
+            oStyle.FillPattern = NPOI.SS.UserModel.FillPattern.SolidForeground;//灰色，顏色參考資料http://www.dotblogs.com.tw/lastsecret/archive/2010/12/20/20250.aspx
+
+            return oStyle;
         }
 
         public void SEARCHPURTA()
