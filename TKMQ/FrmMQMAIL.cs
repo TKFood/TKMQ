@@ -1053,9 +1053,16 @@ namespace TKMQ
                 StyleFont.FontName = "微軟正黑體";
                 //設定文字大小
                 StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
+                //StyleFont.Color = IndexedColors.Red.Index; ;    //字的顏色
                 CellsStyle.SetFont(StyleFont);
                 // 水平置中
                 CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
+                // 設定框線 
+                //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
+                //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
+                //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
+                //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
+
                 cell.CellStyle = CellsStyle;
 
 
@@ -1083,6 +1090,12 @@ namespace TKMQ
                     //設定文字大小
                     StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
                     CellsStyle.SetFont(StyleFont);
+                    // 設定框線 
+                    //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
+                    //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
+                    //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
+                    //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
+
                     cell.CellStyle = CellsStyle;
 
                     //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
@@ -1104,16 +1117,7 @@ namespace TKMQ
             GC.Collect();
         }
 
-        private XSSFCellStyle GetTitleStyle(IWorkbook wb)
-        {
-            XSSFCellStyle oStyle = (XSSFCellStyle)wb.CreateCellStyle();
-
-            //設定背景顏色
-            oStyle.FillForegroundColor = NPOI.HSSF.Util.HSSFColor.Grey40Percent.Index;
-            oStyle.FillPattern = NPOI.SS.UserModel.FillPattern.SolidForeground;//灰色，顏色參考資料http://www.dotblogs.com.tw/lastsecret/archive/2010/12/20/20250.aspx
-
-            return oStyle;
-        }
+       
 
         public void SEARCHPURTA()
         {
