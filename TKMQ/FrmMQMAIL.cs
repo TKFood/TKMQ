@@ -1054,8 +1054,12 @@ namespace TKMQ
                 //設定文字大小
                 StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
                 CellsStyle.SetFont(StyleFont);
+                // 水平置中
+                CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
                 cell.CellStyle = CellsStyle;
 
+
+               
                 //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
 
             }
