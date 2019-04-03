@@ -692,7 +692,14 @@ namespace TKMQ
         private void timer1_Tick(object sender, EventArgs e)
         {
             label2.Text = DateTime.Now.ToString();
-            HRAUTORUN();
+
+            string RUNTIME = DateTime.Now.ToString("HH:mm");
+            string hhmm = "08:50";
+
+            if (RUNTIME.Equals(hhmm))
+            {
+                HRAUTORUN();
+            }
         }
 
         public void HRAUTORUN()
@@ -700,73 +707,69 @@ namespace TKMQ
             SETPATH();
 
 
-            string RUNTIME = DateTime.Now.ToString("HH:mm");
-            string hhmm = "06:30";
-
-            if (RUNTIME.Equals(hhmm))
-            {
-                StringBuilder SUBJEST = new StringBuilder();
-                StringBuilder BODY = new StringBuilder();
+          
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
 
 
-                SETFILEMOCTA();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
+            SETFILEMOCTA();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
-                SETFILECOPTE();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
+            SETFILECOPTE();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
-                //SETFILEPURTA();
-                SETFILEPURTA2();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
+            //SETFILEPURTA();
+            SETFILEPURTA2();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
-                SETFILE();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
-
-
-                SERACHMAILMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"每日製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
-
-                Thread.Sleep(5000);
-
-                SERACHMAILCOPTE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
-                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+            SETFILE();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
 
-                Thread.Sleep(5000);
+            SERACHMAILMOCTA();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
 
-                SERACHMAILPURTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+            Thread.Sleep(5000);
+
+            SERACHMAILCOPTE();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+            SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
 
-                Thread.Sleep(5000);
+            Thread.Sleep(5000);
 
-                SERACHMAIL();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+            SERACHMAILPURTA();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+
+
+            Thread.Sleep(5000);
+
+            SERACHMAIL();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+            SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
 
 
 
-                //MessageBox.Show("OK");
-            }
+            //MessageBox.Show("OK");
+            
         }
 
         public void SETFILEPURTA()
@@ -1507,56 +1510,7 @@ namespace TKMQ
         }
         private void button3_Click(object sender, EventArgs e)
         {
-            StringBuilder SUBJEST = new StringBuilder();
-            StringBuilder BODY = new StringBuilder();
-
-
-            //SETFILE();
-            //CLEAREXCEL();
-            //SETFILECOPTE();
-            //CLEAREXCEL();
-            SETFILEPURTA();
-            CLEAREXCEL();
-
-            SETFILEMOCTA();
-            CLEAREXCEL();
-
-
-            //SERACHMAIL();
-            //SUBJEST.Clear();
-            //BODY.Clear();
-            //SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-            //SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-
-            //Thread.Sleep(10000);
-
-            //SERACHMAILCOPTE();
-            //SUBJEST.Clear();
-            //BODY.Clear();
-            //SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
-            //SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
-
-
-            Thread.Sleep(10000);
-
-            SERACHMAILPURTA();
-            SUBJEST.Clear();
-            BODY.Clear();
-            SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
-            SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
-
-
-            Thread.Sleep(10000);
-
-            SERACHMAILMOCTA();
-            SUBJEST.Clear();
-            BODY.Clear();
-            SUBJEST.AppendFormat(@"每日製令-訂單表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-訂單表，請查收" + Environment.NewLine + " ");
-            SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
+            HRAUTORUN();
 
             MessageBox.Show("OK");
         }

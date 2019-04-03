@@ -116,7 +116,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(234, 16);
             this.label1.TabIndex = 4;
-            this.label1.Text = "每日執行時間為06:30";
+            this.label1.Text = "每日執行時間為08:50";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // button2
