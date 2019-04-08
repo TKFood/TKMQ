@@ -389,6 +389,12 @@ namespace TKMQ
                         //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
                         // Set the range to fill.
 
+                        if(TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) >0)
+                        {
+                            wRange.Select();
+                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                        }
+
                     }
                 }
 
@@ -720,6 +726,10 @@ namespace TKMQ
             StringBuilder BODY = new StringBuilder();
 
 
+            SETFILEINVMOCTA();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
+
             SETFILEMOCTA();
             CLEAREXCEL();
             Thread.Sleep(5000);
@@ -735,6 +745,15 @@ namespace TKMQ
 
             SETFILE();
             CLEAREXCEL();
+            Thread.Sleep(5000);
+
+            SERACHMAILINVMOCTA();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日半成品-製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
+
             Thread.Sleep(5000);
 
 
@@ -1573,7 +1592,7 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  SELECT  LA001 AS '品號' ,MB002 AS '品名',MB003 AS '規格',LA016 AS '批號'  ");
                 sbSql.AppendFormat(@"  ,CAST(SUM(LA005*LA011) AS DECIMAL(18,4)) AS '庫存量' ");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003>=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112)) AS '製令量'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003>=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112)) AS '製令量(批號1個月內)'");
                 sbSql.AppendFormat(@"  ,(CAST(SUM(LA005*LA011) AS DECIMAL(18,4))-(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003>=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112))) AS '庫存差異量'");
                 sbSql.AppendFormat(@"  ,CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AS '批號製令期限日'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.INVLA WITH (NOLOCK) ");
@@ -1611,6 +1630,56 @@ namespace TKMQ
                     if (dsINVMOCTA.Tables["dsINVMOCTA"].Rows.Count >= 1)
                     {
                         ExportDataSetToExcel(dsINVMOCTA, pathFileINVMOCTA);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILINVMOCTA()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='INVCHECK'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILINVMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILINVMOCTA = new SqlCommandBuilder(adapterMAILINVMOCTA);
+                sqlConn.Open();
+                dsMAILINVMOCTA.Clear();
+                adapterMAILINVMOCTA.Fill(dsMAILINVMOCTA, "dsMAILINVMOCTA");
+                sqlConn.Close();
+
+
+                if (dsMAILINVMOCTA.Tables["dsMAILINVMOCTA"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILINVMOCTA.Tables["dsMAILINVMOCTA"].Rows.Count >= 1)
+                    {
+
                     }
                 }
 
