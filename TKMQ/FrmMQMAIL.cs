@@ -380,7 +380,7 @@ namespace TKMQ
                         //pathFilePURTA檢查需求差異量是否為負，為負就紅字
                         //string tt = table.Rows[j].ItemArray[k].ToString();
 
-                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 5 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 5 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
@@ -389,7 +389,7 @@ namespace TKMQ
                         //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
                         // Set the range to fill.
 
-                        if(TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) >0)
+                        if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) >0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
@@ -878,8 +878,7 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
-                sbSql.AppendFormat(@"  FROM (");
+                
                 sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
                 sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
                 sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
@@ -891,32 +890,13 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND MB001=TB003");
                 sbSql.AppendFormat(@"  AND TB018='Y'");
                 sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
-                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  AND TA003>='{0}'",SEARCHDATE2.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
                 sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
-                sbSql.AppendFormat(@"  WHERE  需求差異量<0 ");
-                sbSql.AppendFormat(@"  UNION ALL");
-                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
-                sbSql.AppendFormat(@"  FROM (");
-                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
-                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
-                sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
-                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
-                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
-                sbSql.AppendFormat(@"  WHERE  需求差異量>0 ");
+                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002");
                 sbSql.AppendFormat(@"  ");
-
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1714,8 +1694,9 @@ namespace TKMQ
         private void button4_Click(object sender, EventArgs e)
         {
             SETPATH();
-            //SETFILEPURTA();
-            SETFILEPURTA2();
+            //CAN"T USE SQL-CTE QUERY
+            SETFILEPURTA();
+            //SETFILEPURTA2();
 
             CLEAREXCEL();
             MessageBox.Show("OK");
