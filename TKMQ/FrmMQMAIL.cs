@@ -750,7 +750,7 @@ namespace TKMQ
             SERACHMAILINVMOCTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日半成品-製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
 
@@ -760,7 +760,7 @@ namespace TKMQ
             SERACHMAILMOCTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
 
@@ -769,7 +769,7 @@ namespace TKMQ
             SERACHMAILCOPTE();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
             SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
@@ -779,7 +779,7 @@ namespace TKMQ
             SERACHMAILPURTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日製令-請購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
 
@@ -789,7 +789,7 @@ namespace TKMQ
             SERACHMAIL();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日訂單-製令追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
             SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
 
