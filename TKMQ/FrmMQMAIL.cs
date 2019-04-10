@@ -44,6 +44,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMOCTA = new SqlCommandBuilder();
         SqlDataAdapter adapterINVMOCTA = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderINVMOCTA = new SqlCommandBuilder();
+        SqlDataAdapter adapterPURTB = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderPURTB = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -53,6 +55,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILMOCTA = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILINVMOCTA = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILINVMOCTA = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILPURTB = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILPURTB = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -67,6 +71,8 @@ namespace TKMQ
         DataSet dsMAILMOCTA = new DataSet();
         DataSet dsINVMOCTA = new DataSet();
         DataSet dsMAILINVMOCTA = new DataSet();
+        DataSet dsPURTB = new DataSet();
+        DataSet dsMAILPURTB = new DataSet();
 
         string DATES = null;
         string DirectoryNAME = null;
@@ -75,6 +81,7 @@ namespace TKMQ
         string pathFilePURTA = null;
         string pathFileMOCTA = null;
         string pathFileINVMOCTA = null;
+        string pathFilePURTB = null;
 
 
         FileInfo info;
@@ -107,6 +114,7 @@ namespace TKMQ
             pathFilePURTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
             pathFileMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-訂單表" + DATES.ToString();
             pathFileINVMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日半成品-製令表" + DATES.ToString();
+            pathFilePURTB = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日已請購未採購表" + DATES.ToString();
 
         }
 
@@ -725,6 +733,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            SETFILEPURTB();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
             SETFILEINVMOCTA();
             CLEAREXCEL();
@@ -745,6 +756,15 @@ namespace TKMQ
 
             SETFILE();
             CLEAREXCEL();
+            Thread.Sleep(5000);
+
+            SERACHMAILPURTB();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
+
             Thread.Sleep(5000);
 
             SERACHMAILINVMOCTA();
@@ -1673,6 +1693,186 @@ namespace TKMQ
 
             }
         }
+
+        public void SETFILEPURTB()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFilePURTB + ".xlsx"))
+                {
+                    File.Delete(pathFilePURTB + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFilePURTB + ".xlsx"))
+            {
+                wBook.SaveAs(pathFilePURTB, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHPURTB();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHPURTB()
+        {
+            //DateTime SEARCHDATE = DateTime.Now;
+            //SEARCHDATE = SEARCHDATE.AddMonths(-1);
+
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+               
+                sbSql.AppendFormat(@"  SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTB");
+                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.PURMA ON MA001=TB010");
+                sbSql.AppendFormat(@"  WHERE TB039='N'");
+                sbSql.AppendFormat(@"  ORDER BY MA002,TB011");
+                sbSql.AppendFormat(@"  ");
+
+                adapterPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderPURTB = new SqlCommandBuilder(adapterPURTB);
+                sqlConn.Open();
+                dsPURTB.Clear();
+                adapterPURTB.Fill(dsPURTB, "dsPURTB");
+                sqlConn.Close();
+
+
+                if (dsPURTB.Tables["dsPURTB"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsPURTB.Tables["dsPURTB"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsPURTB.Tables["dsPURTB"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsPURTB, pathFilePURTB);
+                }
+                else
+                {
+                    if (dsPURTB.Tables["dsPURTB"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsPURTB, pathFilePURTB);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILPURTB()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='PUR'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILPURTB = new SqlCommandBuilder(adapterMAILPURTB);
+                sqlConn.Open();
+                dsMAILPURTB.Clear();
+                adapterMAILPURTB.Fill(dsMAILPURTB, "dsMAILPURTB");
+                sqlConn.Close();
+
+
+                if (dsMAILPURTB.Tables["dsMAILPURTB"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILPURTB.Tables["dsMAILPURTB"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -1720,6 +1920,13 @@ namespace TKMQ
         {
             SETPATH();
             SETFILEINVMOCTA();
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
+        private void button7_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEPURTB();
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
