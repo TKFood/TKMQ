@@ -1780,8 +1780,9 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  FROM [TK].dbo.PURTB");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.PURMA ON MA001=TB010");
                 sbSql.AppendFormat(@"  WHERE TB039='N'");
+                sbSql.AppendFormat(@"  AND TB025 NOT IN ('V')");
                 sbSql.AppendFormat(@"  ORDER BY MA002,TB011");
-                sbSql.AppendFormat(@"  ");
+
 
                 adapterPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
