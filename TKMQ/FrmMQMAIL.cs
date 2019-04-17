@@ -1762,8 +1762,8 @@ namespace TKMQ
 
         public void SEARCHPURTB()
         {
-            //DateTime SEARCHDATE = DateTime.Now;
-            //SEARCHDATE = SEARCHDATE.AddMonths(-1);
+            DateTime SEARCHDATE = DateTime.Now;
+            SEARCHDATE = SEARCHDATE.AddDays(-2);
 
 
             try
@@ -1777,12 +1777,14 @@ namespace TKMQ
 
                
                 sbSql.AppendFormat(@"  SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTB");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTA,[TK].dbo.PURTB");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.PURMA ON MA001=TB010");
-                sbSql.AppendFormat(@"  WHERE TB039='N'");
-                sbSql.AppendFormat(@"  AND TB025 NOT IN ('V')");
+                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002 ");
+                sbSql.AppendFormat(@"  AND  TB039='N'");
+                sbSql.AppendFormat(@"  AND  TB025 NOT IN ('V')");
+                sbSql.AppendFormat(@"  AND  TA003<='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  ORDER BY MA002,TB011");
-
+                sbSql.AppendFormat(@"  ");
 
                 adapterPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
