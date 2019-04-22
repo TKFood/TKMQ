@@ -1972,6 +1972,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
+                //[TK].dbo.INVMC
                 sbSql.AppendFormat(@"  SELECT [MB001] AS '品號',[MB002] AS '品名',[NUM] AS '數量'");
                 sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' ");
                 sbSql.AppendFormat(@"  ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'");
