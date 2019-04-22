@@ -46,6 +46,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderINVMOCTA = new SqlCommandBuilder();
         SqlDataAdapter adapterPURTB = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderPURTB = new SqlCommandBuilder();
+        SqlDataAdapter adapterMOCINVCHECK = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMOCINVCHECK = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -57,6 +59,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILINVMOCTA = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILPURTB = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILPURTB = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILMOCINVCHECK = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILMOCINVCHECK = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -73,6 +77,8 @@ namespace TKMQ
         DataSet dsMAILINVMOCTA = new DataSet();
         DataSet dsPURTB = new DataSet();
         DataSet dsMAILPURTB = new DataSet();
+        DataSet dsMOCINVCHECK = new DataSet();
+        DataSet dsMAILPMOCINVCHECK = new DataSet();
 
         string DATES = null;
         string DirectoryNAME = null;
@@ -82,6 +88,7 @@ namespace TKMQ
         string pathFileMOCTA = null;
         string pathFileINVMOCTA = null;
         string pathFilePURTB = null;
+        string pathFileMOCINVCHECK = null;
 
 
         FileInfo info;
@@ -115,6 +122,7 @@ namespace TKMQ
             pathFileMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-訂單表" + DATES.ToString();
             pathFileINVMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日半成品-製令表" + DATES.ToString();
             pathFilePURTB = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日已請購未採購表" + DATES.ToString();
+            pathFileMOCINVCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位檢查表" + DATES.ToString();
 
         }
 
@@ -395,13 +403,20 @@ namespace TKMQ
                         }
 
                         //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
-                        // Set the range to fill.
+                        // Set the range to fill. pathFileMOCINVCHECK
 
                         if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) >0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
                         }
+
+                        if (TopathFile.Equals(pathFileMOCINVCHECK) && k == 4 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+                        {
+                            wRange.Select();
+                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                        }
+
 
                     }
                 }
@@ -1876,6 +1891,134 @@ namespace TKMQ
 
             }
         }
+
+        public void SETFILEMOCINVCHECK()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFileMOCINVCHECK + ".xlsx"))
+                {
+                    File.Delete(pathFileMOCINVCHECK + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFileMOCINVCHECK + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileMOCINVCHECK, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHMOCINVCHECK();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHMOCINVCHECK()
+        {
+            //DateTime SEARCHDATE = DateTime.Now;
+            //SEARCHDATE = SEARCHDATE.AddDays(-2);
+
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"  SELECT [MB001] AS '品號',[MB002] AS '品名',[NUM] AS '數量'");
+                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' ");
+                sbSql.AppendFormat(@"  ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MOCINVCHECK]");
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
+
+                adapterMOCINVCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMOCINVCHECK = new SqlCommandBuilder(adapterMOCINVCHECK);
+                sqlConn.Open();
+                dsMOCINVCHECK.Clear();
+                adapterMOCINVCHECK.Fill(dsMOCINVCHECK, "dsMOCINVCHECK");
+                sqlConn.Close();
+
+
+                if (dsMOCINVCHECK.Tables["dsMOCINVCHECK"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsMOCINVCHECK.Tables["dsMOCINVCHECK"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsMOCINVCHECK.Tables["dsMOCINVCHECK"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsMOCINVCHECK, pathFileMOCINVCHECK);
+                }
+                else
+                {
+                    if (dsMOCINVCHECK.Tables["dsMOCINVCHECK"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsMOCINVCHECK, pathFileMOCINVCHECK);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -1930,6 +2073,13 @@ namespace TKMQ
         {
             SETPATH();
             SETFILEPURTB();
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
+        private void button8_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEMOCINVCHECK();
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
