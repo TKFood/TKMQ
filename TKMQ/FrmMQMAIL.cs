@@ -48,6 +48,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderPURTB = new SqlCommandBuilder();
         SqlDataAdapter adapterMOCINVCHECK = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMOCINVCHECK = new SqlCommandBuilder();
+        SqlDataAdapter adapterMOCCOP = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMOCCOP = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -61,6 +63,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILPURTB = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILMOCINVCHECK = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILMOCINVCHECK = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILMOCCOP = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILMOCCOP = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -79,6 +83,8 @@ namespace TKMQ
         DataSet dsMAILPURTB = new DataSet();
         DataSet dsMOCINVCHECK = new DataSet();
         DataSet dsMAILPMOCINVCHECK = new DataSet();
+        DataSet dsMOCCOP = new DataSet();
+        DataSet dsMAILMOCCOP = new DataSet();
 
         string DATES = null;
         string DirectoryNAME = null;
@@ -89,6 +95,7 @@ namespace TKMQ
         string pathFileINVMOCTA = null;
         string pathFilePURTB = null;
         string pathFileMOCINVCHECK = null;
+        string pathFileMOCCOP = null;
 
 
         FileInfo info;
@@ -123,6 +130,7 @@ namespace TKMQ
             pathFileINVMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日半成品-製令表" + DATES.ToString();
             pathFilePURTB = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日已請購未採購表" + DATES.ToString();
             pathFileMOCINVCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位檢查表" + DATES.ToString();
+            pathFileMOCCOP = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令準時完工率數量達交率表" + DATES.ToString();
 
         }
 
@@ -2020,6 +2028,151 @@ namespace TKMQ
 
             }
         }
+
+        public void SETFILEMOCCOP()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFileMOCCOP + ".xlsx"))
+                {
+                    File.Delete(pathFileMOCCOP + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFileMOCCOP + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileMOCCOP, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHMOCCOP();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHMOCCOP()
+        {
+            DateTime SEARCHDATES = DateTime.Now;
+            SEARCHDATES = SEARCHDATES.AddDays(-8);
+            DateTime SEARCHDATEE = DateTime.Now;
+            SEARCHDATEE = SEARCHDATEE.AddDays(-1);
+
+
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+               
+              
+                sbSql.AppendFormat(@"  SELECT TC053 AS '客戶',TA001 AS '製令單',TA002 AS '製令編號',TA006 AS '品號',TA034 AS '品名',TA007 AS '生產單位',TA009 AS '預計開工日',TA010 AS '預計完工日',TA014 AS '實際完工日',TA015 AS '預計產量',TA017 AS '已生產量',TA026 AS '訂單別',TA027 AS '訂單號',TA028 AS '訂單序',[OLDNUM] AS '訂單量'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) AS '訂單總生產量'");
+                sbSql.AppendFormat(@"  ,ISNULL(((SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) -[OLDNUM]),0) AS '生產數量是否滿足訂單'");
+                sbSql.AppendFormat(@"  ,[COPTD].TD013 AS '訂單預交日'");
+                sbSql.AppendFormat(@"  ,CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END AS '是否延遲訂單預交'");
+                sbSql.AppendFormat(@"  ,CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END  AS '是否延遲製令完工'");
+                sbSql.AppendFormat(@"  ,ISNULL((TA017-TA015),0) AS '製令生產數量生否>預計生產'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
+                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028");
+                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[COPTD] ON [COPTD].TD001=TA026 AND [COPTD].TD002=TA027 AND [COPTD].TD003=TA028");
+                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[COPTC] ON [COPTC].TC001=TA026 AND [COPTC].TC002=TA027 ");
+                sbSql.AppendFormat(@"  WHERE TA001 IN ('A510','A511')");
+                sbSql.AppendFormat(@"  AND TA006 LIKE '4%'");
+                sbSql.AppendFormat(@"  AND TA009>='{0}' AND TA009<='{1}'",SEARCHDATES.ToString("yyyyMMdd"), SEARCHDATEE.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ORDER BY TC053,TA006 ");
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
+
+                adapterMOCCOP = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMOCCOP = new SqlCommandBuilder(adapterMOCCOP);
+                
+                sqlConn.Open();
+                dsMOCCOP.Clear();
+                adapterMOCCOP.Fill(dsMOCCOP, "dsMOCCOP");
+                sqlConn.Close();
+
+
+                if (dsMOCCOP.Tables["dsMOCCOP"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsMOCCOP.Tables["dsMOCCOP"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsMOCCOP.Tables["dsMOCCOP"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsMOCCOP, pathFileMOCCOP);
+                }
+                else
+                {
+                    if (dsMOCCOP.Tables["dsMOCCOP"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsMOCCOP, pathFileMOCCOP);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -2081,6 +2234,13 @@ namespace TKMQ
         {
             SETPATH();
             SETFILEMOCINVCHECK();
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
+        private void button9_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEMOCCOP();
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
