@@ -741,10 +741,21 @@ namespace TKMQ
             string RUNTIME = DateTime.Now.ToString("HH:mm");
             string hhmm = "08:50";
 
+            // DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
+            string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
+            string date = "5";
+
+
             if (RUNTIME.Equals(hhmm))
             {
                 HRAUTORUN();
+
+                if(RUNDATE.Equals(date))
+                {
+                    HRAUTORUN2();
+                }
             }
+
         }
 
         public void HRAUTORUN()
@@ -840,6 +851,30 @@ namespace TKMQ
 
             //MessageBox.Show("OK");
             
+        }
+
+        public void HRAUTORUN2()
+        {
+            SETPATH();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETFILEMOCCOP();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
+
+            SERACHMAILMOCCOP();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
+
+           
+
+            //MessageBox.Show("OK");
+
         }
 
         public void SETFILEPURTA()
@@ -2160,6 +2195,54 @@ namespace TKMQ
                     if (dsMOCCOP.Tables["dsMOCCOP"].Rows.Count >= 1)
                     {
                         ExportDataSetToExcel(dsMOCCOP, pathFileMOCCOP);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILMOCCOP()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOC' AND [MAIL]='tk290@tkfood.com.tw' ");
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILMOCCOP = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILMOCCOP = new SqlCommandBuilder(adapterMAILMOCCOP);
+                sqlConn.Open();
+                dsMAILMOCCOP.Clear();
+                adapterMAILMOCCOP.Fill(dsMAILMOCCOP, "dsMAILMOCCOP");
+                sqlConn.Close();
+
+
+                if (dsMAILMOCCOP.Tables["dsMAILMOCCOP"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILMOCCOP.Tables["dsMAILMOCCOP"].Rows.Count >= 1)
+                    {
+
                     }
                 }
 
