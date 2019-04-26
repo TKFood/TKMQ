@@ -424,6 +424,17 @@ namespace TKMQ
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
                         }
+                        //pathFileMOCCOP
+                        if(TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+                        {
+                            wRange.Select();
+                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                        }
+                        if (TopathFile.Equals(pathFileMOCCOP) && k == 18 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
+                        {
+                            wRange.Select();
+                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+                        }
 
 
                     }
@@ -743,7 +754,7 @@ namespace TKMQ
 
             // DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
             string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
-            string date = "5";
+            string date = "1";
 
 
             if (RUNTIME.Equals(hhmm))
@@ -2153,8 +2164,8 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) AS '訂單總生產量'");
                 sbSql.AppendFormat(@"  ,ISNULL(((SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) -[OLDNUM]),0) AS '生產數量是否滿足訂單'");
                 sbSql.AppendFormat(@"  ,[COPTD].TD013 AS '訂單預交日'");
-                sbSql.AppendFormat(@"  ,CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END AS '是否延遲訂單預交'");
-                sbSql.AppendFormat(@"  ,CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END  AS '是否延遲製令完工'");
+                sbSql.AppendFormat(@"  ,ISNULL((CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END),0) AS '是否延遲訂單預交'");
+                sbSql.AppendFormat(@"  ,ISNULL(CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END,0)  AS '是否延遲製令完工'");
                 sbSql.AppendFormat(@"  ,ISNULL((TA017-TA015),0) AS '製令生產數量生否>預計生產'");
                 sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028");
