@@ -791,6 +791,11 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+
+            SETFILEINVMC();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
+
             SETFILEPURTB();
             CLEAREXCEL();
             Thread.Sleep(5000);
@@ -814,6 +819,15 @@ namespace TKMQ
 
             SETFILE();
             CLEAREXCEL();
+            Thread.Sleep(5000);
+
+            SERACHMAILINVMC();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
+
             Thread.Sleep(5000);
 
             SERACHMAILPURTB();
@@ -2412,6 +2426,56 @@ namespace TKMQ
 
             }
         }
+        public void SERACHMAILINVMC()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOC'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILINVMC = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILINVMC = new SqlCommandBuilder(adapterMAILINVMC);
+                sqlConn.Open();
+                dsINVMC.Clear();
+                adapterMAILINVMC.Fill(dsINVMC, "dsINVMC");
+                sqlConn.Close();
+
+
+                if (dsINVMC.Tables["dsINVMC"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsINVMC.Tables["dsINVMC"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
