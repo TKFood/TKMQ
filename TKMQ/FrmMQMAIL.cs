@@ -2448,18 +2448,18 @@ namespace TKMQ
 
                 sqlCmdBuilderMAILINVMC = new SqlCommandBuilder(adapterMAILINVMC);
                 sqlConn.Open();
-                dsINVMC.Clear();
-                adapterMAILINVMC.Fill(dsINVMC, "dsINVMC");
+                dsMAILINVMC.Clear();
+                adapterMAILINVMC.Fill(dsMAILINVMC, "dsMAILINVMC");
                 sqlConn.Close();
 
 
-                if (dsINVMC.Tables["dsINVMC"].Rows.Count == 0)
+                if (dsMAILINVMC.Tables["dsMAILINVMC"].Rows.Count == 0)
                 {
 
                 }
                 else
                 {
-                    if (dsINVMC.Tables["dsINVMC"].Rows.Count >= 1)
+                    if (dsMAILINVMC.Tables["dsMAILINVMC"].Rows.Count >= 1)
                     {
 
                     }
