@@ -2363,8 +2363,7 @@ namespace TKMQ
 
         public void SEARCHINVMC()
         {
-            //DateTime SEARCHDATES = DateTime.Now;
-            //SEARCHDATES = SEARCHDATES.AddDays(-8);
+            DateTime SEARCHDATE2 = DateTime.Now;
 
             try
             {
@@ -2377,6 +2376,8 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'");
                 sbSql.AppendFormat(@"  ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'");
                 sbSql.AppendFormat(@"  ,ISNULL(((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),0) AS '庫存差異量'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  FROM [TK].dbo.INVMC,[TK].dbo.INVMB");
                 sbSql.AppendFormat(@"  WHERE MC001=MB001");
                 sbSql.AppendFormat(@"  AND MC002=@MC002 AND MC003='201904制定'");
