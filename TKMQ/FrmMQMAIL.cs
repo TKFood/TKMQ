@@ -594,7 +594,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日'");
+                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日',TF109 AS '原訂單數量'");
                 sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTE");
                 sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.COPTF ON TE001=TF001 AND TE002=TF002 AND TE003=TF003");
                 sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");
