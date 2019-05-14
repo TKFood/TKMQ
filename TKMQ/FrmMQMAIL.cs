@@ -52,6 +52,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMOCCOP = new SqlCommandBuilder();
         SqlDataAdapter adapterINVMC = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderINVMC = new SqlCommandBuilder();
+        SqlDataAdapter adapterPURTD = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderPURTD = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -69,6 +71,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILMOCCOP = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILINVMC = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILINVMC = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILPURTD = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILPURTD = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -91,6 +95,8 @@ namespace TKMQ
         DataSet dsMAILMOCCOP = new DataSet();
         DataSet dsINVMC = new DataSet();
         DataSet dsMAILINVMC = new DataSet();
+        DataSet dsPURTD = new DataSet();
+        DataSet dsMAILPURTD = new DataSet();
 
         string DATES = null;
         string DirectoryNAME = null;
@@ -103,6 +109,7 @@ namespace TKMQ
         string pathFileMOCINVCHECK = null;
         string pathFileMOCCOP = null;
         string pathFileINVMC = null;
+        string pathFilePURTD = null;
 
         FileInfo info;
         string[] tempFile;
@@ -138,6 +145,7 @@ namespace TKMQ
             pathFileMOCINVCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位檢查表" + DATES.ToString();
             pathFileMOCCOP = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令準時完工率數量達交率表" + DATES.ToString();
             pathFileINVMC = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位表" + DATES.ToString();
+            pathFilePURTD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日採購單未結案表" + DATES.ToString();
 
         }
 
@@ -2477,6 +2485,136 @@ namespace TKMQ
             }
         }
 
+        public void SETFILEPURTD()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFilePURTD + ".xlsx"))
+                {
+                    File.Delete(pathFilePURTD + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFilePURTD + ".xlsx"))
+            {
+                wBook.SaveAs(pathFilePURTD, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHPURTD();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHPURTD()
+        {
+            //DateTime SEARCHDATE2 = DateTime.Now;
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"  SELECT MA002 AS '廠商',TD004 AS '品號',TD005 AS '品名',TD006 AS '規格',TD008 AS '採購量',TD015 AS '已進貨',TD009 AS '單位',TD012 AS '預交日',TD001 AS '採購單別',TD002 AS '採購單號',TD003 AS '序號'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA");
+                sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
+                sbSql.AppendFormat(@"  AND TC004=MA001");
+                sbSql.AppendFormat(@"  AND TD016='N'");
+                sbSql.AppendFormat(@"  ORDER BY MA001,TD004,TD012");
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
+
+                adapterPURTD = new SqlDataAdapter(@"" + sbSql, sqlConn);
+                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
+
+                sqlCmdBuilderPURTD = new SqlCommandBuilder(adapterPURTD);
+
+
+                sqlConn.Open();
+                dsPURTD.Clear();
+                adapterPURTD.Fill(dsPURTD, "dsPURTD");
+                sqlConn.Close();
+
+
+                if (dsPURTD.Tables["dsPURTD"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsPURTD.Tables["dsPURTD"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsPURTD.Tables["dsPURTD"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsPURTD, pathFilePURTD);
+                }
+                else
+                {
+                    if (dsPURTD.Tables["dsPURTD"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsPURTD, pathFilePURTD);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -2552,6 +2690,13 @@ namespace TKMQ
         {
             SETPATH();
             SETFILEINVMC();
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
+        private void button11_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEPURTD();
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
