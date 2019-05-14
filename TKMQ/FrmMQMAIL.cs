@@ -799,6 +799,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            SETFILEPURTD();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
             SETFILEINVMC();
             CLEAREXCEL();
@@ -828,6 +831,14 @@ namespace TKMQ
             SETFILE();
             CLEAREXCEL();
             Thread.Sleep(5000);
+
+            //PURTD
+            SERACHMAILPURTD();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
 
             SERACHMAILINVMC();
             SUBJEST.Clear();
@@ -896,7 +907,7 @@ namespace TKMQ
 
 
             //MessageBox.Show("OK");
-            
+
         }
 
         public void HRAUTORUN2()
@@ -2602,6 +2613,56 @@ namespace TKMQ
                     if (dsPURTD.Tables["dsPURTD"].Rows.Count >= 1)
                     {
                         ExportDataSetToExcel(dsPURTD, pathFilePURTD);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILPURTD()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='PUR'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILPURTD = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILPURTD = new SqlCommandBuilder(adapterMAILPURTD);
+                sqlConn.Open();
+                dsMAILPURTD.Clear();
+                adapterMAILPURTD.Fill(dsMAILPURTD, "dsMAILPURTD");
+                sqlConn.Close();
+
+
+                if (dsMAILPURTD.Tables["dsMAILPURTD"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILPURTD.Tables["dsMAILPURTD"].Rows.Count >= 1)
+                    {
+
                     }
                 }
 
