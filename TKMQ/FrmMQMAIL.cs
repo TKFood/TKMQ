@@ -419,7 +419,7 @@ namespace TKMQ
                         //pathFilePURTA檢查需求差異量是否為負，為負就紅字
                         //string tt = table.Rows[j].ItemArray[k].ToString();
 
-                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 5 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 9 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
@@ -1004,8 +1004,10 @@ namespace TKMQ
         public void SEARCHVPURTDINVMD()
         {
             DateTime SEARCHDATE2 = DateTime.Now;
-
-
+            DateTime SEARCHDATE3 = DateTime.Now.AddDays(7);
+            DateTime SEARCHDATE4 = DateTime.Now.AddDays(14);
+            DateTime SEARCHDATE5 = DateTime.Now.AddDays(21);
+            DateTime SEARCHDATE6 = DateTime.Now.AddDays(30);
             try
             {
                 connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
@@ -1014,8 +1016,13 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
                 
-                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
+                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'", SEARCHDATE3.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'", SEARCHDATE4.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'", SEARCHDATE5.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'", SEARCHDATE6.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
