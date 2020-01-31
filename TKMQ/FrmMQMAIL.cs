@@ -315,8 +315,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM") + "01");
                 sbSql.AppendFormat(@"  AND TD004 LIKE '4%'");
                 sbSql.AppendFormat(@"  AND (TD008-TD009+TD024-TD025)>0");
-                sbSql.AppendFormat(@"  AND TD021='Y' ");
-                sbSql.AppendFormat(@"  AND TD016='N'");
+                sbSql.AppendFormat(@"  AND TD021='Y' AND TD016='N' AND COPTD.UDF01='Y'  "); 
                 sbSql.AppendFormat(@"  AND TC001 IN ('A221', 'A222','A223','A227','A228')");
                 //sbSql.AppendFormat(@"  AND TD002 IN ('20190318001','20190218009')");
                 sbSql.AppendFormat(@"  ORDER BY TC053,TD013,TD004");
@@ -1018,10 +1017,10 @@ namespace TKMQ
                 
                 sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'", SEARCHDATE3.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'", SEARCHDATE4.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'", SEARCHDATE5.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='20190712'  AND A.TA003<='{0}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'", SEARCHDATE6.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'",  DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE3.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE4.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE5.ToString("yyyyMMdd"));
+                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE6.ToString("yyyyMMdd"));
                 sbSql.AppendFormat(@"  ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
                 sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
@@ -1036,7 +1035,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
                 sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
                 sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002");
-                sbSql.AppendFormat(@"  ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005)");
+                sbSql.AppendFormat(@"  ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009),TB003   ");
                 sbSql.AppendFormat(@"  ");
                 sbSql.AppendFormat(@"  ");
 
