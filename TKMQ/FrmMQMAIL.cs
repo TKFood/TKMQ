@@ -54,6 +54,10 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderINVMC = new SqlCommandBuilder();
         SqlDataAdapter adapterPURTD = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderPURTD = new SqlCommandBuilder();
+        SqlDataAdapter adapterMOCTARE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMOCTARE = new SqlCommandBuilder();
+        SqlDataAdapter adapterLOTCHECK = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderLOTCHECK = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -73,6 +77,10 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILINVMC = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILPURTD = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILPURTD = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILMOCTARE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILMOCTARE = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILLOTCHECK = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILLOTCHECK = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -97,6 +105,11 @@ namespace TKMQ
         DataSet dsMAILINVMC = new DataSet();
         DataSet dsPURTD = new DataSet();
         DataSet dsMAILPURTD = new DataSet();
+        DataSet dsMOCTARE = new DataSet();
+        DataSet dsMAILMOCTARE = new DataSet();
+        DataSet dsLOTCHECK = new DataSet();
+        DataSet dsMAILLOTCHECK = new DataSet();
+
 
         string DATES = null;
         string DirectoryNAME = null;
@@ -110,6 +123,8 @@ namespace TKMQ
         string pathFileMOCCOP = null;
         string pathFileINVMC = null;
         string pathFilePURTD = null;
+        string pathFileMOCTARE = null;
+        string pathFileLOTCHECK = null;
 
         FileInfo info;
         string[] tempFile;
@@ -146,7 +161,8 @@ namespace TKMQ
             pathFileMOCCOP = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令準時完工率數量達交率表" + DATES.ToString();
             pathFileINVMC = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位表" + DATES.ToString();
             pathFilePURTD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日採購單未結案表" + DATES.ToString();
-
+            pathFileMOCTARE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令重工表" + DATES.ToString();
+            pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -798,6 +814,11 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            SETFILEMOCTARE();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
+
+
             SETFILEPURTD();
             CLEAREXCEL();
             Thread.Sleep(5000);
@@ -830,6 +851,15 @@ namespace TKMQ
             SETFILE();
             CLEAREXCEL();
             Thread.Sleep(5000);
+
+            //MOCTARE
+            //PURTD
+            SERACHMAILMOCTARE();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
 
             //PURTD
             SERACHMAILPURTD();
@@ -2633,6 +2663,56 @@ namespace TKMQ
             }
         }
 
+        public void SERACHMAILMOCTARE()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOCTARE'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILMOCTARE = new SqlCommandBuilder(adapterMAILMOCTARE);
+                sqlConn.Open();
+                dsMAILMOCTARE.Clear();
+                adapterMAILMOCTARE.Fill(dsMAILMOCTARE, "dsMAILMOCTARE");
+                sqlConn.Close();
+
+
+                if (dsMAILMOCTARE.Tables["dsMAILMOCTARE"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILMOCTARE.Tables["dsMAILMOCTARE"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         public void SERACHMAILPURTD()
         {
             try
@@ -2682,6 +2762,338 @@ namespace TKMQ
 
             }
         }
+
+        public void SETFILEMOCTARE()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFileMOCTARE + ".xlsx"))
+                {
+                    File.Delete(pathFileMOCTARE + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFileMOCTARE + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileMOCTARE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHMOCTARE();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHMOCTARE()
+        {
+            //DateTime SEARCHDATE2 = DateTime.Now;
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"  SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA009 AS '開工日',TA006 AS '品號',TA034 AS '品名',TA015 AS '生產量',TA007 AS '單位'");
+                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
+                sbSql.AppendFormat(@"  WHERE TA013='Y' AND TA011 NOT IN ('Y','y')");
+                sbSql.AppendFormat(@"  AND TA001 IN ('A521')");
+                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  ");
+         
+
+                adapterMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
+
+                sqlCmdBuilderMOCTARE = new SqlCommandBuilder(adapterMOCTARE);
+
+
+                sqlConn.Open();
+                dsMOCTARE.Clear();
+                adapterMOCTARE.Fill(dsMOCTARE, "dsMOCTARE");
+                sqlConn.Close();
+
+
+                if (dsMOCTARE.Tables["dsMOCTARE"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsMOCTARE.Tables["dsMOCTARE"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsMOCTARE.Tables["dsMOCTARE"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsPURTD, pathFilePURTD);
+                }
+                else
+                {
+                    if (dsMOCTARE.Tables["dsMOCTARE"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsMOCTARE, pathFileMOCTARE);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SETFILELOTCHECK()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFileLOTCHECK + ".xlsx"))
+                {
+                    File.Delete(pathFileLOTCHECK + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFileLOTCHECK + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileLOTCHECK, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHLOTCHECK();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHLOTCHECK()
+        {
+            //DateTime SEARCHDATE2 = DateTime.Now;
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"SELECT TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' ");
+                sbSql.AppendFormat(@"FROM ");
+                sbSql.AppendFormat(@"( ");
+                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
+                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
+                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TH030='Y' ");
+                sbSql.AppendFormat(@"AND TH004 LIKE '1%' ");
+                sbSql.AppendFormat(@"AND TH010<>TH036 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
+                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
+                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TH030='Y' ");
+                sbSql.AppendFormat(@"AND TH004 LIKE '2%' ");
+                sbSql.AppendFormat(@"AND TH010<>TH117 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
+                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
+                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TH030='Y' ");
+                sbSql.AppendFormat(@"AND TH004 LIKE '3%' ");
+                sbSql.AppendFormat(@"AND TH010<>TH117 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
+                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
+                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TH030='Y' ");
+                sbSql.AppendFormat(@"AND TH004 LIKE '4%' ");
+                sbSql.AppendFormat(@"AND TH010<>TH036 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
+                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
+                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TH030='Y' ");
+                sbSql.AppendFormat(@"AND TH004 LIKE '5%' ");
+                sbSql.AppendFormat(@"AND TH010<>TH036 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>製造日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
+                sbSql.AppendFormat(@"WHERE TF001=TG001 AND TF002=TG002 ");
+                sbSql.AppendFormat(@"AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TG022='Y' ");
+                sbSql.AppendFormat(@"AND TG004 LIKE '3%'  ");
+                sbSql.AppendFormat(@"AND TG004 NOT LIKE '307%' ");
+                sbSql.AppendFormat(@"AND TG004 NOT LIKE '308%' ");
+                sbSql.AppendFormat(@"AND TG004 NOT LIKE '309%' ");
+                sbSql.AppendFormat(@"AND TG017<>TF003 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
+                sbSql.AppendFormat(@"WHERE TF001=TG001 AND TF002=TG002 ");
+                sbSql.AppendFormat(@"AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TG022='Y' ");
+                sbSql.AppendFormat(@"AND TG004 LIKE '4%' ");
+                sbSql.AppendFormat(@"AND TG004 NOT LIKE '408%' ");
+                sbSql.AppendFormat(@"AND TG004 NOT LIKE '409%' ");
+                sbSql.AppendFormat(@"AND TG017<>TG018 ");
+                sbSql.AppendFormat(@"UNION ALL ");
+                sbSql.AppendFormat(@"SELECT TH003,TI004,TI005,TI010,TI011,TH003,TI001,TI002,TI003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI ");
+                sbSql.AppendFormat(@"WHERE TH001=TI001 AND TH002=TI002 ");
+                sbSql.AppendFormat(@"AND TH003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
+                sbSql.AppendFormat(@"AND TI037='Y' ");
+                sbSql.AppendFormat(@"AND TI010<>TI011 ");
+                sbSql.AppendFormat(@") ");
+                sbSql.AppendFormat(@"AS TEMP ");
+                sbSql.AppendFormat(@"ORDER BY TH004  ");
+                sbSql.AppendFormat(@"  ");
+
+
+                adapterLOTCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
+                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
+
+                sqlCmdBuilderLOTCHECK = new SqlCommandBuilder(adapterLOTCHECK);
+
+
+                sqlConn.Open();
+                dsLOTCHECK.Clear();
+                adapterLOTCHECK.Fill(dsLOTCHECK, "dsLOTCHECK");
+                sqlConn.Close();
+
+
+                if (dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsLOTCHECK.Tables["dsLOTCHECK"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsLOTCHECK, pathFileLOTCHECK);
+                }
+                else
+                {
+                    if (dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsLOTCHECK, pathFileLOTCHECK);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+
+
         #endregion
 
         #region BUTTON
@@ -2768,6 +3180,21 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+        private void button12_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEMOCTARE();
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
+        private void button13_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILELOTCHECK();
+            
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
         #endregion
 
 
