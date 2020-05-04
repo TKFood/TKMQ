@@ -808,11 +808,13 @@ namespace TKMQ
         public void HRAUTORUN()
         {
             SETPATH();
-
-
           
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
+
+            SETFILELOTCHECK();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
 
             SETFILEMOCTARE();
             CLEAREXCEL();
@@ -852,8 +854,15 @@ namespace TKMQ
             CLEAREXCEL();
             Thread.Sleep(5000);
 
+            //LOTCHECK
+            SERACHMAILLOTCHECK();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
             //MOCTARE
-            //PURTD
             SERACHMAILMOCTARE();
             SUBJEST.Clear();
             BODY.Clear();
@@ -2697,6 +2706,56 @@ namespace TKMQ
                 else
                 {
                     if (dsMAILMOCTARE.Tables["dsMAILMOCTARE"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SERACHMAILLOTCHECK()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
+                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
+                sbSql.AppendFormat(@"  WHERE [SENDTO]='LOTCHECK'  ");
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  ");
+
+                adapterMAILLOTCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILLOTCHECK = new SqlCommandBuilder(adapterMAILLOTCHECK);
+                sqlConn.Open();
+                dsMAILLOTCHECK.Clear();
+                adapterMAILLOTCHECK.Fill(dsMAILLOTCHECK, "dsMAILLOTCHECK");
+                sqlConn.Close();
+
+
+                if (dsMAILLOTCHECK.Tables["dsMAILLOTCHECK"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILLOTCHECK.Tables["dsMAILLOTCHECK"].Rows.Count >= 1)
                     {
 
                     }
