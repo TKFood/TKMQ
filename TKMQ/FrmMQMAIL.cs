@@ -820,7 +820,7 @@ namespace TKMQ
             CLEAREXCEL();
             Thread.Sleep(5000);
 
-
+          
             SETFILEPURTD();
             CLEAREXCEL();
             Thread.Sleep(5000);
@@ -877,15 +877,18 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
-
-            SERACHMAILINVMC();
-            SUBJEST.Clear();
-            BODY.Clear();
-            SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
-            SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
-
             Thread.Sleep(5000);
+
+
+            //INVMC
+            //SERACHMAILINVMC();
+            //SUBJEST.Clear();
+            //BODY.Clear();
+            //SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
+            //SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
+
+
 
             SERACHMAILPURTB();
             SUBJEST.Clear();
