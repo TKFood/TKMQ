@@ -786,7 +786,7 @@ namespace TKMQ
             label2.Text = DateTime.Now.ToString();
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
-            string hhmm = "15:25";
+            string hhmm = "08:50";
 
             // DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
             string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
