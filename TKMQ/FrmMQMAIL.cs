@@ -783,10 +783,13 @@ namespace TKMQ
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            label2.Text = DateTime.Now.ToString();
+           
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
-            string hhmm = "08:50";
+            string hhmm = "09:05";
+
+            label1.Text = "每日執行時間為" + hhmm;
+            label2.Text = DateTime.Now.ToString();
 
             // DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
             string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
@@ -861,6 +864,7 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+            Thread.Sleep(5000);
 
             //MOCTARE
             SERACHMAILMOCTARE();
@@ -869,6 +873,7 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
+            Thread.Sleep(5000);
 
             //PURTD
             SERACHMAILPURTD();
@@ -945,7 +950,7 @@ namespace TKMQ
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
             SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
 
-
+            Thread.Sleep(5000);
 
             //MessageBox.Show("OK");
 
