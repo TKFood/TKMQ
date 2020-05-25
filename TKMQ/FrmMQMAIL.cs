@@ -3103,7 +3103,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"AND TG004 NOT LIKE '409%' ");
                 sbSql.AppendFormat(@"AND TG017<>TG018 ");
                 sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TH003,TI004,TI005,TI010,TI011,TH003,TI001,TI002,TI003,'批號<>有效日' AS COMMET ");
+                sbSql.AppendFormat(@"SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET ");
                 sbSql.AppendFormat(@"FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI ");
                 sbSql.AppendFormat(@"WHERE TH001=TI001 AND TH002=TI002 ");
                 sbSql.AppendFormat(@"AND TH003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
