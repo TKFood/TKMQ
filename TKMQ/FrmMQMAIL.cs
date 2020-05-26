@@ -3109,6 +3109,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
                 sbSql.AppendFormat(@"AND TI037='Y' ");
                 sbSql.AppendFormat(@"AND TI010<>TI061 ");
+                sbSql.AppendFormat(@"AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  ");
                 sbSql.AppendFormat(@") ");
                 sbSql.AppendFormat(@"AS TEMP ");
                 sbSql.AppendFormat(@"ORDER BY TH004  ");
