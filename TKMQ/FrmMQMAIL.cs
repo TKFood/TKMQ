@@ -3082,7 +3082,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"AND TH004 LIKE '5%' ");
                 sbSql.AppendFormat(@"AND TH010<>TH036 ");
                 sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>製造日' AS COMMET ");
+                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET ");
                 sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
                 sbSql.AppendFormat(@"WHERE TF001=TG001 AND TF002=TG002 ");
                 sbSql.AppendFormat(@"AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
@@ -3091,7 +3091,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"AND TG004 NOT LIKE '307%' ");
                 sbSql.AppendFormat(@"AND TG004 NOT LIKE '308%' ");
                 sbSql.AppendFormat(@"AND TG004 NOT LIKE '309%' ");
-                sbSql.AppendFormat(@"AND TG017<>TF003 ");
+                sbSql.AppendFormat(@"AND TG017<>TG040 ");
                 sbSql.AppendFormat(@"UNION ALL ");
                 sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET ");
                 sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
