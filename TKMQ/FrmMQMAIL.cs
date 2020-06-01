@@ -2939,7 +2939,7 @@ namespace TKMQ
                     //新增資料至DataTable的dt內
                     dsMOCTARE.Tables["dsMOCTARE"].Rows.Add(row);
 
-                    ExportDataSetToExcel(dsPURTD, pathFilePURTD);
+                    ExportDataSetToExcel(dsMOCTARE, pathFileMOCTARE);
                 }
                 else
                 {
