@@ -46,9 +46,10 @@
             this.button10 = new System.Windows.Forms.Button();
             this.button11 = new System.Windows.Forms.Button();
             this.button12 = new System.Windows.Forms.Button();
+            this.button13 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button13 = new System.Windows.Forms.Button();
+            this.button14 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -105,6 +106,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button11, 2, 11);
             this.tableLayoutPanel1.Controls.Add(this.button12, 2, 12);
             this.tableLayoutPanel1.Controls.Add(this.button13, 2, 13);
+            this.tableLayoutPanel1.Controls.Add(this.button14, 4, 4);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -285,6 +287,17 @@
             this.button12.UseVisualStyleBackColor = true;
             this.button12.Click += new System.EventHandler(this.button12_Click);
             // 
+            // button13
+            // 
+            this.button13.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button13.Location = new System.Drawing.Point(243, 523);
+            this.button13.Name = "button13";
+            this.button13.Size = new System.Drawing.Size(137, 34);
+            this.button13.TabIndex = 15;
+            this.button13.Text = "測試批號錯誤";
+            this.button13.UseVisualStyleBackColor = true;
+            this.button13.Click += new System.EventHandler(this.button13_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Location = new System.Drawing.Point(4, 26);
@@ -299,16 +312,15 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button13
+            // button14
             // 
-            this.button13.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button13.Location = new System.Drawing.Point(243, 523);
-            this.button13.Name = "button13";
-            this.button13.Size = new System.Drawing.Size(137, 34);
-            this.button13.TabIndex = 15;
-            this.button13.Text = "測試批號錯誤";
-            this.button13.UseVisualStyleBackColor = true;
-            this.button13.Click += new System.EventHandler(this.button13_Click);
+            this.button14.Location = new System.Drawing.Point(483, 163);
+            this.button14.Name = "button14";
+            this.button14.Size = new System.Drawing.Size(91, 34);
+            this.button14.TabIndex = 16;
+            this.button14.Text = "測試LOG";
+            this.button14.UseVisualStyleBackColor = true;
+            this.button14.Click += new System.EventHandler(this.button14_Click);
             // 
             // FrmMQMAIL
             // 
@@ -350,5 +362,6 @@
         private System.Windows.Forms.Button button11;
         private System.Windows.Forms.Button button12;
         private System.Windows.Forms.Button button13;
+        private System.Windows.Forms.Button button14;
     }
 }

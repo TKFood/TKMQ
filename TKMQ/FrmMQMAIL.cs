@@ -230,7 +230,8 @@ namespace TKMQ
             }
             catch (Exception ex)
             {
-                ex.ToString();
+                ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                //ex.ToString();
             }
         }
 
@@ -3171,7 +3172,60 @@ namespace TKMQ
         }
 
 
+        public void ADDLOG(DateTime DATES,string SOURCE,string EX)
+        {
+            Guid NEWGUID = new Guid();
+            NEWGUID = Guid.NewGuid();
 
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+                sbSql.Clear();
+
+
+                sbSql.AppendFormat(@" 
+                                    INSERT INTO [TKMQ].[dbo].[LOG]
+                                    ([ID],[DATES],[SOURCE],[EX])
+                                    VALUES 
+                                    ('{0}','{1}','{2}','{3}')
+                                   ", NEWGUID, DATES.ToString("yyyy/MM/dd HH:mm:ss"), SOURCE, EX);
+
+
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = 60;
+                cmd.CommandText = sbSql.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+
+
+                }
+
+            }
+            catch
+            {
+
+            }
+
+            finally
+            {
+                sqlConn.Close();
+            }
+        }
         #endregion
 
         #region BUTTON
@@ -3272,6 +3326,10 @@ namespace TKMQ
             
             CLEAREXCEL();
             MessageBox.Show("OK");
+        }
+        private void button14_Click(object sender, EventArgs e)
+        {
+            ADDLOG(DateTime.Now,"TEST","EX");
         }
         #endregion
 
