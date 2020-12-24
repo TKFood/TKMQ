@@ -316,30 +316,28 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TC053 AS '客戶',TD013 AS '預計交貨日',TD004 AS '訂單品號',TD005 AS '訂單品名',TD006 AS '規格',TD008 AS '訂單量',TD009 AS '出貨量',TD024 AS '贈品量',TD025 AS '贈品已交量',(TD008-TD009+TD024-TD025) AS '總未出貨量',TD010 AS '品號單位',TD001 AS '訂單單別',TD002 AS '訂單單號',TD003 AS '訂單序號',TD016 AS '訂單狀態',MOCTA.TA001 AS '批次轉製令單別',MOCTA.TA002 AS '批次轉製令單號',MOCTA.TA009 AS '製令預計開工日',MOCTA.TA012 AS '製令實際開工日',MOCTA.TA010 AS '製令預計完工日' ,MOCTA.TA014 AS '製令實際完工日',MOCTA.TA006 AS '生產品號',MOCTA.TA034 AS '生產品名',MOCTA.TA007 AS '生產單位',MOCTA.TA015 AS '製令預計產量',MOCTA.TA017 AS '實際入庫數量',COMMENT AS '備註'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN MOCTA.TA011='Y' THEN '已完工' ELSE CASE WHEN MOCTA.TA011='y' THEN '指定完工' ELSE  CASE WHEN MOCTA.TA011='1' THEN '未生產' ELSE CASE WHEN MOCTA.TA011='2' THEN '已發料' ELSE CASE WHEN MOCTA.TA011='3' THEN '生產中' ELSE '' END END END END END)AS '生產進度'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN CONVERT(datetime,MOCTA.TA009)<CONVERT(datetime,MOCTA.TA012) THEN '是' ELSE ''  END ) AS '製令開工異常警示'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN CONVERT(datetime,MOCTA.TA010)<CONVERT(datetime,MOCTA.TA014) THEN '是' ELSE ''  END ) AS '製令完工異常警示'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN MOCTA.TA017<MOCTA.TA015 THEN '是' ELSE ''  END) AS '產量不足'");
-                sbSql.AppendFormat(@"  ,LRPTA.TA001 AS '批次計畫單號'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN ISNULL(MOCTA.TA033,'')<>''  THEN '是' ELSE ''  END )  AS '製令發放'");
-                sbSql.AppendFormat(@"  ,(CASE WHEN CONVERT(datetime,TD013)<=CONVERT(datetime,MOCTA.TA009) THEN '是' ELSE ''  END )  AS '訂單是否延遲生產'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.COPTC,[TK].dbo.COPTD");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003 AND TD004=MOCTA.TA006");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003");
-                sbSql.AppendFormat(@"  LEFT JOIN [TKMOC].dbo.MOCCOPCHECK ON COPTA001=TD001 AND COPTA002=TD002 AND COPTA003=TD003 ");
-                sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
-                sbSql.AppendFormat(@"  AND TD013>='{0}' ", SEARCHDATE.ToString("yyyyMM") + "01");
-                sbSql.AppendFormat(@"  AND TD004 LIKE '4%'");
-                sbSql.AppendFormat(@"  AND (TD008-TD009+TD024-TD025)>0");
-                sbSql.AppendFormat(@"  AND TD021='Y' AND TD016='N' AND COPTD.UDF01='Y'  "); 
-                sbSql.AppendFormat(@"  AND TC001 IN ('A221', 'A222','A223','A227','A228')");
-                //sbSql.AppendFormat(@"  AND TD002 IN ('20190318001','20190218009')");
-                sbSql.AppendFormat(@"  ORDER BY TC053,TD013,TD004");
-
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+               
+                sbSql.AppendFormat(@"  
+                                    SELECT TC053 AS '客戶',TD013 AS '預計交貨日',TD004 AS '訂單品號',TD005 AS '訂單品名',TD006 AS '規格',TD008 AS '訂單量',TD009 AS '出貨量',TD024 AS '贈品量',TD025 AS '贈品已交量',(TD008-TD009+TD024-TD025) AS '總未出貨量',TD010 AS '品號單位',TD001 AS '訂單單別',TD002 AS '訂單單號',TD003 AS '訂單序號',TD016 AS '訂單狀態',MOCTA.TA001 AS '批次轉製令單別',MOCTA.TA002 AS '批次轉製令單號',MOCTA.TA009 AS '製令預計開工日',MOCTA.TA012 AS '製令實際開工日',MOCTA.TA010 AS '製令預計完工日' ,MOCTA.TA014 AS '製令實際完工日',MOCTA.TA006 AS '生產品號',MOCTA.TA034 AS '生產品名',MOCTA.TA007 AS '生產單位',MOCTA.TA015 AS '製令預計產量',MOCTA.TA017 AS '實際入庫數量',COMMENT AS '備註'
+                                    ,(CASE WHEN MOCTA.TA011='Y' THEN '已完工' ELSE CASE WHEN MOCTA.TA011='y' THEN '指定完工' ELSE  CASE WHEN MOCTA.TA011='1' THEN '未生產' ELSE CASE WHEN MOCTA.TA011='2' THEN '已發料' ELSE CASE WHEN MOCTA.TA011='3' THEN '生產中' ELSE '' END END END END END)AS '生產進度'
+                                    ,(CASE WHEN CONVERT(datetime,MOCTA.TA009)<CONVERT(datetime,MOCTA.TA012) THEN '是' ELSE ''  END ) AS '製令開工異常警示'
+                                    ,(CASE WHEN CONVERT(datetime,MOCTA.TA010)<CONVERT(datetime,MOCTA.TA014) THEN '是' ELSE ''  END ) AS '製令完工異常警示'
+                                    ,(CASE WHEN MOCTA.TA017<MOCTA.TA015 THEN '是' ELSE ''  END) AS '產量不足'
+                                    ,LRPTA.TA001 AS '批次計畫單號'
+                                    ,(CASE WHEN ISNULL(MOCTA.TA033,'')<>''  THEN '是' ELSE ''  END )  AS '製令發放'
+                                    ,(CASE WHEN CONVERT(datetime,TD013)<=CONVERT(datetime,MOCTA.TA009) THEN '是' ELSE ''  END )  AS '訂單是否延遲生產'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD
+                                    LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003 AND TD004=MOCTA.TA006
+                                    LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003
+                                    LEFT JOIN [TKMOC].dbo.MOCCOPCHECK ON COPTA001=TD001 AND COPTA002=TD002 AND COPTA003=TD003 
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TD013>='{0}'
+                                    AND TD004 LIKE '4%'
+                                    AND (TD008-TD009+TD024-TD025)>0
+                                    AND TD021='Y' AND TD016='N' AND COPTD.UDF01='Y'   
+                                    AND TC001 IN ('A221', 'A222','A223','A227','A228')
+                                    ORDER BY TC053,TD013,TD004
+                                    ", SEARCHDATE.ToString("yyyyMM") + "01");
 
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -500,10 +498,11 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@" SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@" FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='COP'");
 
                 adapterMAIL = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -618,14 +617,16 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日',TF109 AS '原訂單數量'");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTE");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.COPTF ON TE001=TF001 AND TE002=TF002 AND TE003=TF003");
-                sbSql.AppendFormat(@"  WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO");
-                sbSql.AppendFormat(@"  AND MAILYN='N'");
-                sbSql.AppendFormat(@"  ORDER BY TE006,TE001,TE002,TF005");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"
+                                    SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日',TF109 AS '原訂單數量'
+                                    FROM [TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTE
+                                    LEFT JOIN [TK].dbo.COPTF ON TE001=TF001 AND TE002=TF002 AND TE003=TF003
+                                    WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO
+                                    AND MAILYN='N'
+                                    ORDER BY TE006,TE001,TE002,TF005
+  
+                                    ");
 
                 adapterCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -743,12 +744,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='COP'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                     SELECT [SENDTO],[MAIL]
+                                     FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                     WHERE [SENDTO]='COP' 
+                                    ");
 
                 adapterMAILCOPTE = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1063,29 +1066,31 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
                 
-                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'",  DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE3.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE4.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE5.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{1}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE6.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
-                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
-                sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
-                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
-                sbSql.AppendFormat(@"  AND TA003>='{0}'",SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002");
-                sbSql.AppendFormat(@"  ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009),TB003   ");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+                
+                sbSql.AppendFormat(@"  
+                                    SELECT TB003 AS '品號',MB002 AS '品名' 
+                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{2}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{3}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{4}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{5}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'
+                                    ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
+                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '總採購量'
+                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '最快採購日'
+                                    ,TB009 AS '庫別'
+                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    WHERE TA001=TB001 AND TA002=TB002
+                                    AND MB001=TB003
+                                    AND TB018='Y'
+                                    AND (TB003 LIKE '1%' OR TB003 LIKE '2%')
+                                    AND TA003>='{1}'
+                                    AND (TB004-TB005)>0
+                                    AND TB001 NOT  IN ('A513')
+                                    GROUP BY TB003,TB007,TB009,MB002
+                                    ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009),TB003   
+  
+                                    ", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE2.ToString("yyyyMMdd"), SEARCHDATE3.ToString("yyyyMMdd"), SEARCHDATE4.ToString("yyyyMMdd"), SEARCHDATE5.ToString("yyyyMMdd"), SEARCHDATE6.ToString("yyyyMMdd"));
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1134,44 +1139,46 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
-                sbSql.AppendFormat(@"  FROM (");
-                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
-                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
-                sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
-                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
-                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
-                sbSql.AppendFormat(@"  WHERE  需求差異量<0 ");
-                sbSql.AppendFormat(@"  UNION ALL");
-                sbSql.AppendFormat(@"  SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日 ");
-                sbSql.AppendFormat(@"  FROM (");
-                sbSql.AppendFormat(@"  SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,TB009 AS '庫別'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB");
-                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002");
-                sbSql.AppendFormat(@"  AND MB001=TB003");
-                sbSql.AppendFormat(@"  AND TB018='Y'");
-                sbSql.AppendFormat(@"  AND (TB003 LIKE '1%' OR TB003 LIKE '2%')");
-                sbSql.AppendFormat(@"  AND TA003>='{0}'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  AND (TB004-TB005)>0");
-                sbSql.AppendFormat(@"  AND TB001 NOT  IN ('A513')");
-                sbSql.AppendFormat(@"  GROUP BY TB003,TB007,TB009,MB002) AS TEMP");
-                sbSql.AppendFormat(@"  WHERE  需求差異量>0 ");
-                sbSql.AppendFormat(@"  ");
+                
+                sbSql.AppendFormat(@"  
+                                    SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
+                                    FROM (
+                                    SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
+                                    ,TB009 AS '庫別'
+                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    WHERE TA001=TB001 AND TA002=TB002
+                                    AND MB001=TB003
+                                    AND TB018='Y'
+                                    AND (TB003 LIKE '1%' OR TB003 LIKE '2%')
+                                    AND TA003>='{0}'
+                                    AND (TB004-TB005)>0
+                                    AND TB001 NOT  IN ('A513')
+                                    GROUP BY TB003,TB007,TB009,MB002) AS TEMP
+                                    WHERE  需求差異量<0
+                                    UNION ALL
+                                    SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
+                                    FROM (
+                                    SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
+                                    ,TB009 AS '庫別'
+                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    WHERE TA001=TB001 AND TA002=TB002
+                                    AND MB001=TB003
+                                    AND TB018='Y'
+                                    AND (TB003 LIKE '1%' OR TB003 LIKE '2%')
+                                    AND TA003>='{0}'
+                                    AND (TB004-TB005)>0
+                                    AND TB001 NOT  IN ('A513')
+                                    GROUP BY TB003,TB007,TB009,MB002) AS TEMP
+                                    WHERE  需求差異量>0
+                                    ", SEARCHDATE2.ToString("yyyyMMdd"));
 
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
@@ -1356,14 +1363,16 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')<>'' THEN '已請購' ELSE (CASE WHEN  ISNULL([COMMENT],'')<>'' THEN ''  ELSE '未請購'END ) END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ,[COMMENT] AS '備註'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
-                sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB] ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]");
-                sbSql.AppendFormat(@"  LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK] ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]");
-                sbSql.AppendFormat(@"  WHERE TA003>='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  AND TA006 LIKE '4%'");
-                sbSql.AppendFormat(@"  AND TA001 NOT IN ('A513') ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')<>'' THEN '已請購' ELSE (CASE WHEN  ISNULL([COMMENT],'')<>'' THEN ''  ELSE '未請購'END ) END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ,[COMMENT] AS '備註'
+                                    FROM [TK].dbo.MOCTA
+                                    LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB] ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]
+                                    LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK] ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]
+                                    WHERE TA003>='{0}'
+                                    AND TA006 LIKE '4%'
+                                    AND TA001 NOT IN ('A513') 
+                                    ", SEARCHDATE.ToString("yyyyMMdd"));
 
                 adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1411,12 +1420,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='PUR'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='PUR' 
+                                    ");
 
                 adapterMAILPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1530,17 +1541,15 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-
-
-                sbSql.AppendFormat(@"  SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA003 AS '開單日期',TA006 AS '產品品號',TA034 AS '產品品名',CONVERT(INT,TA015,0) AS'預計產量',TA007 AS '單位','未確認' AS '確認碼',TA026 AS '訂單單別',TA027 AS '訂單單號',TA028 AS '訂單序號'");
-                sbSql.AppendFormat(@"  ,CONVERT(INT,ISNULL([NUM],0)) AS '訂單需求量',TD010 AS '訂單單位',CONVERT(INT,(TA015-ISNULL([NUM],0)),0) AS '生產需求的差異數'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON TA026=TD001 AND TA027=TD002 AND TA028=TD003 ");
-                sbSql.AppendFormat(@"  WHERE TA013='N'");
-                sbSql.AppendFormat(@"  ORDER BY TA001,TA002");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA003 AS '開單日期',TA006 AS '產品品號',TA034 AS '產品品名',CONVERT(INT,TA015,0) AS'預計產量',TA007 AS '單位','未確認' AS '確認碼',TA026 AS '訂單單別',TA027 AS '訂單單號',TA028 AS '訂單序號'
+                                    ,CONVERT(INT,ISNULL([NUM],0)) AS '訂單需求量',TD010 AS '訂單單位',CONVERT(INT,(TA015-ISNULL([NUM],0)),0) AS '生產需求的差異數'
+                                    FROM [TK].dbo.MOCTA
+                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON TA026=TD001 AND TA027=TD002 AND TA028=TD003 
+                                    WHERE TA013='N'
+                                    ORDER BY TA001,TA002
+                 
+                                    ");
 
                 adapterMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1594,12 +1603,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOC'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='MOC'  
+                                    ");
 
                 adapterMAILMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1759,18 +1770,20 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT  LA001 AS '品號' ,MB002 AS '品名',MB003 AS '規格',LA016 AS '批號'  ");
-                sbSql.AppendFormat(@"  ,CAST(SUM(LA005*LA011) AS DECIMAL(18,4)) AS '庫存量' ");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016) AS '製令量(批號1個月內)'");
-                sbSql.AppendFormat(@"  ,(CAST(SUM(LA005*LA011) AS DECIMAL(18,4))-(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016)) AS '庫存差異量'");
-                sbSql.AppendFormat(@"  ,CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AS '批號製令期限日'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.INVLA WITH (NOLOCK) ");
-                sbSql.AppendFormat(@"  LEFT JOIN  [TK].dbo.INVMB WITH (NOLOCK) ON MB001=LA001  WHERE  (LA009='20005     ')  ");
-                sbSql.AppendFormat(@"  GROUP BY  LA001,MB002,MB003,LA016 ");
-                sbSql.AppendFormat(@"  HAVING SUM(LA005*LA011)<>0 ");
-                sbSql.AppendFormat(@"  ORDER BY  LA001,MB002,MB003,LA016");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT  LA001 AS '品號' ,MB002 AS '品名',MB003 AS '規格',LA016 AS '批號'  
+                                    ,CAST(SUM(LA005*LA011) AS DECIMAL(18,4)) AS '庫存量' 
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016) AS '製令量(批號1個月內)'
+                                    ,(CAST(SUM(LA005*LA011) AS DECIMAL(18,4))-(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016)) AS '庫存差異量'
+                                    ,CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AS '批號製令期限日'
+                                    FROM [TK].dbo.INVLA WITH (NOLOCK) 
+                                    LEFT JOIN  [TK].dbo.INVMB WITH (NOLOCK) ON MB001=LA001  WHERE  (LA009='20005     ')  
+                                    GROUP BY  LA001,MB002,MB003,LA016 
+                                    HAVING SUM(LA005*LA011)<>0 
+                                    ORDER BY  LA001,MB002,MB003,LA016
+                  
+                                    ");
 
                 adapterINVMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1824,12 +1837,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='INVCHECK'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='INVCHECK'  
+                                    ");
 
                 adapterMAILINVMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -1945,15 +1960,17 @@ namespace TKMQ
 
 
                
-                sbSql.AppendFormat(@"  SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTA,[TK].dbo.PURTB");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].dbo.PURMA ON MA001=TB010");
-                sbSql.AppendFormat(@"  WHERE TA001=TB001 AND TA002=TB002 ");
-                sbSql.AppendFormat(@"  AND  TB039='N'");
-                sbSql.AppendFormat(@"  AND  TB025 NOT IN ('V')");
-                sbSql.AppendFormat(@"  AND  TA003<='{0}'", SEARCHDATE.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ORDER BY MA002,TB011");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
+                                    FROM [TK].dbo.PURTA,[TK].dbo.PURTB
+                                    LEFT JOIN [TK].dbo.PURMA ON MA001=TB010
+                                    WHERE TA001=TB001 AND TA002=TB002 
+                                    AND  TB039='N'
+                                    AND  TB025 NOT IN ('V')
+                                    AND  TA003<='{0}'
+                                    ORDER BY MA002,TB011
+                                    ", SEARCHDATE.ToString("yyyyMMdd"));
 
                 adapterPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2007,12 +2024,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='PUR'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='PUR' 
+                                    ");
 
                 adapterMAILPURTB = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2127,12 +2146,13 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
                 //[TK].dbo.INVMC
-                sbSql.AppendFormat(@"  SELECT [MB001] AS '品號',[MB002] AS '品名',[NUM] AS '數量'");
-                sbSql.AppendFormat(@"  ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' ");
-                sbSql.AppendFormat(@"  ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MOCINVCHECK]");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@" 
+                                    SELECT [MB001] AS '品號',[MB002] AS '品名',[NUM] AS '數量'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' 
+                                    ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'
+                                    FROM [TKMQ].[dbo].[MOCINVCHECK]
+                                    ");
 
                 adapterMOCINVCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2260,23 +2280,25 @@ namespace TKMQ
 
                
               
-                sbSql.AppendFormat(@"  SELECT TC053 AS '客戶',TA001 AS '製令單',TA002 AS '製令編號',TA006 AS '品號',TA034 AS '品名',TA007 AS '生產單位',TA009 AS '預計開工日',TA010 AS '預計完工日',TA014 AS '實際完工日',TA015 AS '預計產量',TA017 AS '已生產量',TA026 AS '訂單別',TA027 AS '訂單號',TA028 AS '訂單序',[OLDNUM] AS '訂單量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) AS '訂單總生產量'");
-                sbSql.AppendFormat(@"  ,ISNULL(((SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) -[OLDNUM]),0) AS '生產數量是否滿足訂單'");
-                sbSql.AppendFormat(@"  ,[COPTD].TD013 AS '訂單預交日'");
-                sbSql.AppendFormat(@"  ,ISNULL((CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END),0) AS '是否延遲訂單預交'");
-                sbSql.AppendFormat(@"  ,ISNULL(CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END,0)  AS '是否延遲製令完工'");
-                sbSql.AppendFormat(@"  ,ISNULL((TA017-TA015),0) AS '製令生產數量生否>預計生產'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[COPTD] ON [COPTD].TD001=TA026 AND [COPTD].TD002=TA027 AND [COPTD].TD003=TA028");
-                sbSql.AppendFormat(@"  LEFT JOIN [TK].[dbo].[COPTC] ON [COPTC].TC001=TA026 AND [COPTC].TC002=TA027 ");
-                sbSql.AppendFormat(@"  WHERE TA001 IN ('A510','A511')");
-                sbSql.AppendFormat(@"  AND TA006 LIKE '4%'");
-                sbSql.AppendFormat(@"  AND TA009>='{0}' AND TA009<='{1}'",SEARCHDATES.ToString("yyyyMMdd"), SEARCHDATEE.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ORDER BY TC053,TA006 ");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT TC053 AS '客戶',TA001 AS '製令單',TA002 AS '製令編號',TA006 AS '品號',TA034 AS '品名',TA007 AS '生產單位',TA009 AS '預計開工日',TA010 AS '預計完工日',TA014 AS '實際完工日',TA015 AS '預計產量',TA017 AS '已生產量',TA026 AS '訂單別',TA027 AS '訂單號',TA028 AS '訂單序',[OLDNUM] AS '訂單量'
+                                    ,(SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) AS '訂單總生產量'
+                                    ,ISNULL(((SELECT ISNULL(SUM(TA017),0) FROM [TK].dbo.MOCTA A WHERE A.TA011 IN ('Y','y') AND A.TA026=[COPTD].TD001 AND A.TA027=[COPTD].TD002 AND A.TA028=[COPTD].TD003 AND A.TA006=[COPTD].TD004  ) -[OLDNUM]),0) AS '生產數量是否滿足訂單'
+                                    ,[COPTD].TD013 AS '訂單預交日'
+                                    ,ISNULL((CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END),0) AS '是否延遲訂單預交'
+                                    ,ISNULL(CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END,0)  AS '是否延遲製令完工'
+                                    ,ISNULL((TA017-TA015),0) AS '製令生產數量生否>預計生產'
+                                    FROM [TK].dbo.MOCTA
+                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028
+                                    LEFT JOIN [TK].[dbo].[COPTD] ON [COPTD].TD001=TA026 AND [COPTD].TD002=TA027 AND [COPTD].TD003=TA028
+                                    LEFT JOIN [TK].[dbo].[COPTC] ON [COPTC].TC001=TA026 AND [COPTC].TC002=TA027
+                                    WHERE TA001 IN ('A510','A511')
+                                    AND TA006 LIKE '4%'
+                                    AND TA009>='{0}' AND TA009<='{1}'
+                                    ORDER BY TC053,TA006
+        
+                                    ", SEARCHDATES.ToString("yyyyMMdd"), SEARCHDATEE.ToString("yyyyMMdd"));
 
                 adapterMOCCOP = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2331,10 +2353,12 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOC' AND [MAIL]='tk290@tkfood.com.tw' ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='MOC' AND [MAIL]='tk290@tkfood.com.tw' 
+                                    ");
 
                 adapterMAILMOCCOP = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2446,16 +2470,18 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'");
-                sbSql.AppendFormat(@"  ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'");
-                sbSql.AppendFormat(@"  ,ISNULL(((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),0) AS '庫存差異量'");
-                sbSql.AppendFormat(@"  ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'", SEARCHDATE2.ToString("yyyyMMdd"));
-                sbSql.AppendFormat(@"  FROM [TK].dbo.INVMC,[TK].dbo.INVMB");
-                sbSql.AppendFormat(@"  WHERE MC001=MB001");
-                sbSql.AppendFormat(@"  AND MC002=@MC002 AND MC003='201904制定'");
-                sbSql.AppendFormat(@"  ORDER BY ((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),MC001");
-                sbSql.AppendFormat(@"  ");
+               
+                sbSql.AppendFormat(@"  
+                                    SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'
+                                    ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'
+                                    ,ISNULL(((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),0) AS '庫存差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
+                                    FROM [TK].dbo.INVMC,[TK].dbo.INVMB
+                                    WHERE MC001=MB001
+                                    AND MC002=@MC002 AND MC003='201904制定'
+                                    ORDER BY ((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),MC001
+                                    ", SEARCHDATE2.ToString("yyyyMMdd"));
 
                 adapterINVMC = new SqlDataAdapter(@"" + sbSql, sqlConn);
                 adapterINVMC.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
@@ -2511,12 +2537,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOC'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='MOC'  
+                                    ");
 
                 adapterMAILINVMC = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2628,14 +2656,16 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT MA002 AS '廠商',TD004 AS '品號',TD005 AS '品名',TD006 AS '規格',TD008 AS '採購量',TD015 AS '已進貨',TD009 AS '單位',TD012 AS '預交日',TD001 AS '採購單別',TD002 AS '採購單號',TD003 AS '序號'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA");
-                sbSql.AppendFormat(@"  WHERE TC001=TD001 AND TC002=TD002");
-                sbSql.AppendFormat(@"  AND TC004=MA001");
-                sbSql.AppendFormat(@"  AND TD016='N'");
-                sbSql.AppendFormat(@"  ORDER BY MA001,TD004,TD012");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT MA002 AS '廠商',TD004 AS '品號',TD005 AS '品名',TD006 AS '規格',TD008 AS '採購量',TD015 AS '已進貨',TD009 AS '單位',TD012 AS '預交日',TD001 AS '採購單別',TD002 AS '採購單號',TD003 AS '序號'
+                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TD016='N'
+                                    ORDER BY MA001,TD004,TD012
+                  
+                                    ");
 
                 adapterPURTD = new SqlDataAdapter(@"" + sbSql, sqlConn);
                 //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
@@ -2692,12 +2722,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='MOCTARE'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='MOCTARE'  
+                                    ");
 
                 adapterMAILMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2741,13 +2773,13 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='LOTCHECK'  ");
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='LOTCHECK'  
+                                    ");
 
                 adapterMAILLOTCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2792,12 +2824,14 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"  SELECT [SENDTO],[MAIL] ");
-                sbSql.AppendFormat(@"  FROM [TKMQ].[dbo].[MQSENDMAIL] ");
-                sbSql.AppendFormat(@"  WHERE [SENDTO]='PUR'  ");
+
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
-                sbSql.AppendFormat(@"  ");
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='PUR'  
+                                    ");
 
                 adapterMAILPURTD = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
@@ -2909,12 +2943,13 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                sbSql.AppendFormat(@"  SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA009 AS '開工日',TA006 AS '品號',TA034 AS '品名',TA015 AS '生產量',TA007 AS '單位'");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTA");
-                sbSql.AppendFormat(@"  WHERE TA013='Y' AND TA011 NOT IN ('Y','y')");
-                sbSql.AppendFormat(@"  AND TA001 IN ('A521')");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@"  ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA009 AS '開工日',TA006 AS '品號',TA034 AS '品名',TA015 AS '生產量',TA007 AS '單位'
+                                    FROM [TK].dbo.MOCTA
+                                    WHERE TA013='Y' AND TA011 NOT IN ('Y','y')
+                                    AND TA001 IN ('A521')
+                                    ");
          
 
                 adapterMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
@@ -3040,91 +3075,112 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-                sbSql.AppendFormat(@"SELECT TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' ");
-                sbSql.AppendFormat(@"FROM ");
-                sbSql.AppendFormat(@"( ");
-                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
-                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
-                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TH030='Y' ");
-                sbSql.AppendFormat(@"AND TH004 LIKE '1%' ");
-                sbSql.AppendFormat(@"AND TH010<>TH036 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
-                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
-                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TH030='Y' ");
-                sbSql.AppendFormat(@"AND TH004 LIKE '2%' ");
-                sbSql.AppendFormat(@"AND TH010<>TH117 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
-                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
-                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TH030='Y' ");
-                sbSql.AppendFormat(@"AND TH004 LIKE '3%' ");
-                sbSql.AppendFormat(@"AND TH010<>TH117 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
-                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
-                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TH030='Y' ");
-                sbSql.AppendFormat(@"AND TH004 LIKE '4%' ");
-                sbSql.AppendFormat(@"AND TH010<>TH036 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.PURTG,[TK].dbo.PURTH ");
-                sbSql.AppendFormat(@"WHERE TG001=TH001 AND TG002=TH002 ");
-                sbSql.AppendFormat(@"AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TH030='Y' ");
-                sbSql.AppendFormat(@"AND TH004 LIKE '5%' ");
-                sbSql.AppendFormat(@"AND TH010<>TH036 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
-                sbSql.AppendFormat(@"WHERE TF001=TG001 AND TF002=TG002 ");
-                sbSql.AppendFormat(@"AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TG022='Y' ");
-                sbSql.AppendFormat(@"AND TG004 LIKE '3%'  ");
-                sbSql.AppendFormat(@"AND TG004 NOT LIKE '307%' ");
-                sbSql.AppendFormat(@"AND TG004 NOT LIKE '308%' ");
-                sbSql.AppendFormat(@"AND TG004 NOT LIKE '309%' ");
-                sbSql.AppendFormat(@"AND TG017<>TG040 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG ");
-                sbSql.AppendFormat(@"WHERE TF001=TG001 AND TF002=TG002 ");
-                sbSql.AppendFormat(@"AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TG022='Y' ");
-                sbSql.AppendFormat(@"AND TG004 LIKE '4%' ");
-                sbSql.AppendFormat(@"AND TG004 NOT LIKE '408%' ");
-                sbSql.AppendFormat(@"AND TG004 NOT LIKE '409%' ");
-                sbSql.AppendFormat(@"AND TG017<>TG018 ");
-                sbSql.AppendFormat(@"UNION ALL ");
-                sbSql.AppendFormat(@"SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET ");
-                sbSql.AppendFormat(@"FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI ");
-                sbSql.AppendFormat(@"WHERE TH001=TI001 AND TH002=TI002 ");
-                sbSql.AppendFormat(@"AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"AND TI004 LIKE '3%'   ");
-                sbSql.AppendFormat(@"AND TI037='Y' ");
-                sbSql.AppendFormat(@"AND TI010<>TI061 ");
-                sbSql.AppendFormat(@"AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  ");
-                sbSql.AppendFormat(@"  UNION ALL ");
-                sbSql.AppendFormat(@"  SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET ");
-                sbSql.AppendFormat(@"  FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI ");
-                sbSql.AppendFormat(@"  WHERE TH001=TI001 AND TH002=TI002 ");
-                sbSql.AppendFormat(@"  AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) ");
-                sbSql.AppendFormat(@"  AND TI004 LIKE '4%' ");
-                sbSql.AppendFormat(@"  AND TI037='Y' ");
-                sbSql.AppendFormat(@"  AND TI010<>TI011  ");
-                sbSql.AppendFormat(@"  ");
-                sbSql.AppendFormat(@") ");
-                sbSql.AppendFormat(@"AS TEMP ");
-                sbSql.AppendFormat(@"ORDER BY TH004  ");
-                sbSql.AppendFormat(@"  ");
+               
+                sbSql.AppendFormat(@"  
+                                    SELECT TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
+                                    FROM 
+                                    ( 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '1%' 
+                                    AND TH010<>TH036 
+                                    UNION ALL 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '2%' 
+                                    AND TH010<>TH117 
+                                    UNION ALL 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '3%' 
+                                    AND TH010<>TH117 
+                                    UNION ALL 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '4%' 
+                                    AND TH010<>TH036 
+                                    UNION ALL 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '5%' 
+                                    AND TH010<>TH036 
+                                    UNION ALL 
+                                    SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
+                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    WHERE TF001=TG001 AND TF002=TG002 
+                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TG022='Y' 
+                                    AND TG004 LIKE '3%'  
+                                    AND TG004 NOT LIKE '307%' 
+                                    AND TG004 NOT LIKE '308%' 
+                                    AND TG004 NOT LIKE '309%' 
+                                    AND TG017<>TG040 
+                                    UNION ALL 
+                                    SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    WHERE TF001=TG001 AND TF002=TG002 
+                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TG022='Y' 
+                                    AND TG004 LIKE '4%' 
+                                    AND TG004 NOT LIKE '408%' 
+                                    AND TG004 NOT LIKE '409%' 
+                                    AND TG017<>TG018 
+                                    UNION ALL 
+                                    SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '3%'   
+                                    AND TI037='Y' 
+                                    AND TI010<>TI061 
+                                    AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
+                                    UNION ALL 
+                                    SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '4%' 
+                                    AND TI037='Y' 
+                                    AND TI010<>TI011  
+                                    UNION ALL 
+                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '1%' 
+                                    AND ISDATE(TH010)<>1
+                                    AND TH009 NOT LIKE '21%'
+                                    UNION ALL 
+                                    SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
+                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    WHERE TF001=TG001 AND TF002=TG002 
+                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TG022='Y' 
+                                    AND TG004 LIKE '3%'  
+                                    AND TG004 NOT LIKE '307%' 
+                                    AND TG004 NOT LIKE '308%' 
+                                    AND TG004 NOT LIKE '309%' 
+                                    AND ISDATE(TG017)<>1
+                                    ) 
+                                    AS TEMP 
+                                    ORDER BY TH004  
+                                    ");
 
 
                 adapterLOTCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
