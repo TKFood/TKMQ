@@ -58,6 +58,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMOCTARE = new SqlCommandBuilder();
         SqlDataAdapter adapterLOTCHECK = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderLOTCHECK = new SqlCommandBuilder();
+        SqlDataAdapter adapterMOCMANULINE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMOCMANULINE = new SqlCommandBuilder();
 
         SqlDataAdapter adapterMAILCOPTE = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder();
@@ -81,6 +83,8 @@ namespace TKMQ
         SqlCommandBuilder sqlCmdBuilderMAILMOCTARE = new SqlCommandBuilder();
         SqlDataAdapter adapterMAILLOTCHECK = new SqlDataAdapter();
         SqlCommandBuilder sqlCmdBuilderMAILLOTCHECK = new SqlCommandBuilder();
+        SqlDataAdapter adapterMAILMOCMANULINE = new SqlDataAdapter();
+        SqlCommandBuilder sqlCmdBuilderMAILMOCMANULINE = new SqlCommandBuilder();
 
         SqlTransaction tran;
         SqlCommand cmd = new SqlCommand();
@@ -109,6 +113,8 @@ namespace TKMQ
         DataSet dsMAILMOCTARE = new DataSet();
         DataSet dsLOTCHECK = new DataSet();
         DataSet dsMAILLOTCHECK = new DataSet();
+        DataSet dsMOCMANULINE = new DataSet();
+        DataSet dsMAILMOCMANULINE = new DataSet();
 
 
         string DATES = null;
@@ -125,6 +131,7 @@ namespace TKMQ
         string pathFilePURTD = null;
         string pathFileMOCTARE = null;
         string pathFileLOTCHECK = null;
+        string pathFileMOCMANULINE = null;
 
         FileInfo info;
         string[] tempFile;
@@ -163,6 +170,7 @@ namespace TKMQ
             pathFilePURTD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日採購單未結案表" + DATES.ToString();
             pathFileMOCTARE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令重工表" + DATES.ToString();
             pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
+            pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -820,6 +828,11 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+
+            SETFILEMOCMANULINE();
+            CLEAREXCEL();
+            Thread.Sleep(5000);
+
             SETFILELOTCHECK();
             CLEAREXCEL();
             Thread.Sleep(5000);
@@ -861,6 +874,16 @@ namespace TKMQ
             SETFILE();
             CLEAREXCEL();
             Thread.Sleep(5000);
+
+            //MOCMANULINE
+            SERACHMAILMOCMANULINE();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+            Thread.Sleep(5000);
+
 
             //LOTCHECK
             SERACHMAILLOTCHECK();
@@ -2764,6 +2787,56 @@ namespace TKMQ
             }
         }
 
+        public void SERACHMAILMOCMANULINE()
+        {
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='COP'  
+                                    ");
+
+                adapterMAILMOCMANULINE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilderMAILMOCMANULINE = new SqlCommandBuilder(adapterMAILMOCMANULINE);
+                sqlConn.Open();
+                dsMAILMOCMANULINE.Clear();
+                adapterMAILMOCMANULINE.Fill(dsMAILMOCMANULINE, "dsMAILMOCMANULINE");
+                sqlConn.Close();
+
+
+                if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count == 0)
+                {
+
+                }
+                else
+                {
+                    if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count >= 1)
+                    {
+
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         public void SERACHMAILLOTCHECK()
         {
             try
@@ -3229,6 +3302,184 @@ namespace TKMQ
         }
 
 
+        public void SETFILEMOCMANULINE()
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFileMOCMANULINE + ".xlsx"))
+                {
+                    File.Delete(pathFileMOCMANULINE + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFileLOTCHECK + ".xlsx"))
+            {
+                wBook.SaveAs(pathFileMOCMANULINE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCHMOCMANULINE();
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+        }
+
+        public void SEARCHMOCMANULINE()
+        {
+            //DateTime SEARCHDATE2 = DateTime.Now;
+
+            try
+            {
+                connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                sqlConn = new SqlConnection(connectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+
+                sbSql.AppendFormat(@"  
+                                  SELECT MANU AS '線別' ,TC053 AS '客戶',MV002 AS '業務員',MANUDATE AS '生產日',[MB002] AS '品名',BAR AS '桶數',NUM AS '數量',PACKAGE AS '包裝數',TD001 AS '訂單',TD002 AS '訂單單號',TD003 AS '訂單序號',MOCTA001 AS '製令',MOCTA002 AS '製令號'
+                                    FROM (
+                                    SELECT  [MOCMANULINE].[MANU] ,CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112) MANUDATE,[MOCMANULINE].[MB002]
+                                    ,ISNULL([MOCMANULINE].[BAR],0) BAR,ISNULL([MOCMANULINE].[NUM],0) NUM,ISNULL([MOCMANULINE].[PACKAGE],0) PACKAGE
+                                    ,[MOCMANULINE].[COPTD001] AS TD001
+                                    ,[MOCMANULINE].[COPTD002] AS TD002
+                                    ,[MOCMANULINE].[COPTD003] AS TD003
+                                    ,[COPTC].TC053,[CMSMV].MV002
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
+                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
+                                    FROM [TKMOC].[dbo].[MOCMANULINE]
+                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINE].[COPTD001]=[COPTD].TD001 AND [MOCMANULINE].[COPTD002]=[COPTD].TD002 AND[MOCMANULINE].[COPTD003]=[COPTD].TD003 
+                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002
+                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
+                                    WHERE CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112)>='{0}' 
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    UNION ALL  
+                                    SELECT  [MOCMANULINETEMP].[MANU] ,CONVERT(nvarchar,dateadd(ms,-3,dateadd(yy, datediff(yy,0,getdate())+2, 0)) ,112) MANUDATE,[MOCMANULINETEMP].[MB002]
+                                    ,ISNULL([MOCMANULINETEMP].[BAR],0) BAR,ISNULL([MOCMANULINETEMP].[NUM],0) NUM,ISNULL([MOCMANULINETEMP].[PACKAGE],0) PACKAGE
+                                    ,[MOCMANULINETEMP].[COPTD001] AS TD001
+                                    ,[MOCMANULINETEMP].[COPTD002] AS TD002
+                                    ,[MOCMANULINETEMP].[COPTD003] AS TD003
+                                    ,[COPTC].TC053,[CMSMV].MV002
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
+                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
+                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]  
+                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINETEMP].[COPTD001]=[COPTD].TD001 AND [MOCMANULINETEMP].[COPTD002]=[COPTD].TD002 AND[MOCMANULINETEMP].[COPTD003]=[COPTD].TD003   
+                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002  
+                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINE] ON [MOCMANULINE].ID=[MOCMANULINETEMP].TID  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
+                                    WHERE CONVERT(nvarchar,[MOCMANULINETEMP].[MANUDATE],112)>='{0}' 
+                                    AND [MOCMANULINETEMP].TID IS NULL  
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    ) AS TEMP
+                                    ORDER BY  TEMP.[MANU],CONVERT(nvarchar, TEMP.[MANUDATE],112)    
+                                    ", DateTime.Now.ToString("yyyyMMdd"));
+
+
+                adapterMOCMANULINE = new SqlDataAdapter(@"" + sbSql, sqlConn);
+                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
+
+                sqlCmdBuilderMOCMANULINE = new SqlCommandBuilder(adapterMOCMANULINE);
+
+
+                sqlConn.Open();
+                dsMOCMANULINE.Clear();
+                adapterMOCMANULINE.Fill(dsMOCMANULINE, "dsMOCMANULINE");
+                sqlConn.Close();
+
+
+                if (dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = dsMOCMANULINE.Tables["dsMOCMANULINE"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Add(row);
+
+                    ExportDataSetToExcel(dsMOCMANULINE, pathFileMOCMANULINE);
+                }
+                else
+                {
+                    if (dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(dsMOCMANULINE, pathFileMOCMANULINE);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+
         public void ADDLOG(DateTime DATES,string SOURCE,string EX)
         {
             Guid NEWGUID = new Guid();
@@ -3384,12 +3635,22 @@ namespace TKMQ
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
+
+        private void button15_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILEMOCMANULINE();
+
+            CLEAREXCEL();
+            MessageBox.Show("OK");
+        }
         private void button14_Click(object sender, EventArgs e)
         {
             ADDLOG(DateTime.Now,"TEST","EX");
         }
+
         #endregion
 
-
+        
     }
 }
