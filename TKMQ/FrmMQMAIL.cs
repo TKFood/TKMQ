@@ -343,8 +343,8 @@ namespace TKMQ
                                     AND TD013>='{0}'
                                     AND TD004 LIKE '4%'
                                     AND (TD008-TD009+TD024-TD025)>0
-                                    AND TD021='Y' AND TD016='N' AND COPTD.UDF01='Y'   
-                                    AND TC001 IN ('A221', 'A222','A223','A227','A228')
+                                    AND TD021='Y' AND TD016='N'
+                                    AND ((COPTD.UDF01='Y'  AND TC001 IN ('A221', 'A222','A223','A227')) OR (TC001 IN ('A228') AND ISNULL(MD002,'')<>''))
                                     ORDER BY TC053,TD013,TD004
                                     ", SEARCHDATE.ToString("yyyyMM") + "01");
 
