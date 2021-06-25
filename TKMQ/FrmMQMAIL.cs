@@ -1990,6 +1990,7 @@ namespace TKMQ
                                     FROM [TK].dbo.PURTA,[TK].dbo.PURTB
                                     LEFT JOIN [TK].dbo.PURMA ON MA001=TB010
                                     WHERE TA001=TB001 AND TA002=TB002 
+                                    AND  TA007 IN ('Y','N')
                                     AND  TB039='N'
                                     AND  TB025 NOT IN ('V')
                                     AND  TA003<='{0}'
