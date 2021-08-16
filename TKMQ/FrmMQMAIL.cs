@@ -890,7 +890,7 @@ namespace TKMQ
             SUBJEST.Clear();
             BODY.Clear();
             SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收" + Environment.NewLine + " ");
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
             Thread.Sleep(5000);
 
