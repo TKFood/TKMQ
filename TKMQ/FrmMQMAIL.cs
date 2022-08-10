@@ -874,6 +874,8 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //給採購人員，ERP未核單的單別、單號
+            PREPARESENDEMAILERPPURCHECK();
 
             SETFILEMOCMANULINE();
             CLEAREXCEL();
@@ -3828,8 +3830,6 @@ namespace TKMQ
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "Dear SIR:"
-                    + "<br>"
                     + "<br>" + "ERP 採購相關單別、單號未核準的明細如下"
                     + "<br>" + "謝謝"
                     + "<br>" + "<br>" + "</span><br>");
