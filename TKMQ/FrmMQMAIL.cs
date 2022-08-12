@@ -3940,6 +3940,16 @@ namespace TKMQ
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TL001+TL002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     WHERE TL002>='20220101'
                                     AND TL006='N'
+                                    UNION ALL
+                                    SELECT '請購單' AS '單別',TA001,TA002,'',UDF01,UDF02,DOC_NBR
+                                    FROM [TK].dbo.PURTA
+                                    LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
+                                    WHERE TA007='N' 
+                                    UNION ALL
+                                    SELECT '請購變更單' AS '單別', [TA001],[TA002],[VERSIONS],'UOF','',DOC_NBR
+                                    FROM [TKPUR].[dbo].[PURTATBCHAGE]
+                                    LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+CONVERT(NVARCHAR,[VERSIONS])+'%' COLLATE Chinese_Taiwan_Stroke_BIN
+                                    WHERE ISNULL(DOC_NBR,'')<>''
     
                                    ");
 
