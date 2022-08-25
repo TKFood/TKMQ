@@ -3806,9 +3806,10 @@ namespace TKMQ
                 sqlConn.Close();
             }
         }
-      
+
         /// <summary>
-        /// 準備寄給採購人員，ERP未核單的單別、單號的mail內容
+        /// 準備寄給採購人員跟生管
+        /// ERP 採購相關單別、單號未核準的明細 及 昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量
         /// </summary>
         public void PREPARESENDEMAILERPPURCHECK()
         {
