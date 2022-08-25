@@ -3829,15 +3829,15 @@ namespace TKMQ
                 BODY.Clear();
 
              
-                SUBJEST.AppendFormat(@"老楊食品-ERP 採購相關單別、單號未核準的明細 及 昨日未到貨採購單明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"老楊食品-ERP 採購相關單別、單號未核準的明細 及 昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
                
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
                     + "<br>" + "ERP 採購相關單別、單號未核準的明細如下"
-                    + "<br>" + "謝謝"
-                    + "<br>" + "<br>" + "</span><br>");
+                   
+                    );
 
 
                 if (DSPURCHECK.Tables[0].Rows.Count > 0)
@@ -3888,8 +3888,8 @@ namespace TKMQ
                 //
                 BODY.AppendFormat(" "
                     + "<br>" + "昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量"
-                    + "<br>" + "謝謝"
-                    + "<br>" + "<br>" + "</span><br>");
+                   
+                    );
 
 
                 if (DSPURTDCHECK.Tables[0].Rows.Count > 0)
@@ -3941,9 +3941,10 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
                 }
 
-                BODY.AppendFormat(@"
+                BODY.AppendFormat(" "
+                             + "<br>" + "謝謝"
 
-                                    ");
+                             + "</span><br>");
 
 
 
