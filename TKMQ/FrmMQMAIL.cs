@@ -4087,6 +4087,7 @@ namespace TKMQ
                                     FROM [TK].dbo.PURMA,[TK].dbo.PURTC,[TK].dbo.PURTD
                                     LEFT JOIN (SELECT SUM(TH007) SUMTH007,TH011,TH012,TH013 FROM [TK].dbo.PURTH GROUP BY TH011,TH012,TH013) AS TEMP  ON TH011=TD001 AND TH012=TD002 AND TH013=TD003
                                     WHERE TC001=TD001 AND TC002=TD002
+                                    AND TD018='Y'
                                     AND MA001=TC004
                                     AND (TD008>ISNULL(SUMTH007,0))
                                     AND TD012>='{0}' AND TD012<='{0}'
