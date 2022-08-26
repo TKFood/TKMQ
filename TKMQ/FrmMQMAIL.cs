@@ -4080,7 +4080,8 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                DateTime LASTDAYS = DateTime.Now.AddDays(-1);
+                DateTime SDAYS = DateTime.Now.AddDays(-31);
+                DateTime EDAYS = DateTime.Now.AddDays(-1);
 
                 sbSql.AppendFormat(@"  
                                     SELECT TD012,TC004,MA002,TC001,TC002,TD003,TD004,TD005,TD008,TD009,ISNULL(SUMTH007,0) SUMTH007
@@ -4090,9 +4091,11 @@ namespace TKMQ
                                     AND TD018='Y'
                                     AND MA001=TC004
                                     AND (TD008>ISNULL(SUMTH007,0))
-                                    AND TD012>='{0}' AND TD012<='{0}'
+                                    AND TD012>='{0}' AND TD012<='{1}'
     
-                                   ", LASTDAYS.ToString("yyyyMMdd"), LASTDAYS.ToString("yyyyMMdd"));
+                                    ORDER BY TD012,TC004,TC001,TC002,TD003
+
+                                   ", SDAYS.ToString("yyyyMMdd"), EDAYS.ToString("yyyyMMdd"));
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
 
