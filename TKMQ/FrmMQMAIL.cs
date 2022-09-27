@@ -3888,7 +3888,7 @@ namespace TKMQ
 
                 //請購變更單不在採購變更單
                 //
-                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                BODY.AppendFormat(" "
                     + "<br>" + "請購變更單不在採購變更單的明細如下"
 
                     );
