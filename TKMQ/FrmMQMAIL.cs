@@ -3894,7 +3894,7 @@ namespace TKMQ
                     );
 
 
-                if (DSPURCHECK.Tables[0].Rows.Count > 0)
+                if (DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -3913,7 +3913,7 @@ namespace TKMQ
 
                     BODY.AppendFormat(@"</tr> ");
 
-                    foreach (DataRow DR in DSPURCHECK.Tables[0].Rows)
+                    foreach (DataRow DR in DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows)
                     {
 
                         BODY.AppendFormat(@"<tr >");
