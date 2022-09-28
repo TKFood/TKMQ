@@ -4234,7 +4234,7 @@ namespace TKMQ
                                 ,[CHANGEDATES] AS '變更日期'
                                 ,CONVERT(NVARCHAR,[VERSIONS])+[TA001]+[TA002]+[TB003]
                                 FROM [TKPUR].[dbo].[PURTATBCHAGE]
-                                WHERE [TB011]>='20220927'
+                                WHERE [TB011]>='{0}'
                                 AND CONVERT(NVARCHAR,[VERSIONS])+[TA001]+[TA002]+[TB003] NOT IN (SELECT UDF01 FROM [TK].dbo.PURTF WHERE ISNULL(UDF01,'')<>'')
                                 ORDER BY [TB011]
 
