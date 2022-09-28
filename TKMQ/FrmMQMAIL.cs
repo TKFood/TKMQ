@@ -4215,7 +4215,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                DateTime SDAYS = DateTime.Now.AddDays(0);
+                DateTime SDAYS = DateTime.Now.AddDays(-14);
            
 
                 sbSql.AppendFormat(@"  
