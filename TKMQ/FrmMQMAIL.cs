@@ -877,6 +877,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //IT檢查網站是否正常
+            PREPAREITCHECK();
+
             //給採購人員，ERP未核單的單別、單號
             PREPARESENDEMAILERPPURCHECK();
 
