@@ -22,6 +22,9 @@ using NPOI.SS.UserModel;
 using NPOI.HSSF.Util;
 using NPOI.XSSF.UserModel;
 using TKITDLL;
+using System.Net.Http;
+using System.Net;
+
 
 namespace TKMQ
 {
@@ -4412,8 +4415,246 @@ namespace TKMQ
            
 
         }
+        //測試來客記錄的網站是否正常
+        public void WEBTEST()
+        {
+            DataTable DTWEBLINKS = SEARCHLINKS();
+
+            foreach(DataRow DR in DTWEBLINKS.Rows)
+            {
+                if (CheckUrlVisit(DR["WEBLINKS"].ToString())!=true)
+                {
+                    
+                    //MessageBox.Show(DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString() + ":" + CheckUrlVisit(DR["WEBLINKS"].ToString()));
+                }
+
+                //MessageBox.Show(DR["COMMENTS"].ToString()+ " "+DR["WEBLINKS"].ToString() + ":" + CheckUrlVisit(DR["WEBLINKS"].ToString()));
+            }
+
+            //string[] links = { "http://192.168.1.101:8900/index.html", "http://192.168.1.101:8900/index1.html" };
+            //foreach (string link in links)
+            //{
+            //    MessageBox.Show(link.ToString()+":"+ CheckUrlVisit(link));
+            //}
+        }
+        public bool CheckUrlVisit(string url)
+        {
+            try
+            {
+                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
+                HttpWebResponse resp = (HttpWebResponse)req.GetResponse();
+                if (resp.StatusCode == HttpStatusCode.OK)
+                {
+                    resp.Close();
+                    return true;
+                }
+            }
+            catch (WebException webex)
+            {
+                return false;
+            }
+            return false;
+        }
+
+        public DataTable SEARCHLINKS()
+        {
+            DataSet DS = new DataSet();
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
 
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [WEBLINKS]
+                                    ,[COMMENTS]
+                                    FROM [TKIT].[dbo].[WEBLINKS]
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+                if (DS.Tables["DS"].Rows.Count >= 1)
+                {
+                    return DS.Tables[0];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+        /// <summary>
+        /// 資訊的每日檢查
+        /// </summary>
+        public void PREPAREITCHECK()
+        {
+            DataTable DTWEBLINKS = SEARCHLINKS();
+                      
+
+            try
+            {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                ////加上附圖
+                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //LinkedResource res = new LinkedResource(path);
+                //res.ContentId = Guid.NewGuid().ToString();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"資訊每日檢查 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "資訊每日檢查"
+                    + " <br>"
+                    );
+
+                foreach (DataRow DR in DTWEBLINKS.Rows)
+                {
+                    if (CheckUrlVisit(DR["WEBLINKS"].ToString()) != true)
+                    {                      
+                        BODY.AppendFormat(" <br>"
+                                 + "{0} 此網站不通，請檢查網站狀況"
+                                   + " <br>"
+                                  , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+                    }
+                    else
+                    {
+                        BODY.AppendFormat(" <br>"
+                                 + "{0} 此網站正常"
+                                 +" <br>"
+                                  , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+                    }
+
+
+                }
+               
+
+
+               BODY.AppendFormat(" "
+                             + "<br>" + "謝謝"
+
+                             + "</span><br>");
+
+
+
+                SENDEMAILITCHECK(SUBJEST, BODY);
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+        public void SENDEMAILITCHECK(StringBuilder Subject, StringBuilder Body)
+        {
+            DataSet DSFINDITCHECKMAILTO = FINDPURCHECKMAILTO("IT");
+
+            try
+            {
+                if (DSFINDITCHECKMAILTO.Tables[0].Rows.Count > 0)
+                {
+                    foreach (DataRow DR in DSFINDITCHECKMAILTO.Tables[0].Rows)
+                    {
+                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                        string NAME = ConfigurationManager.AppSettings["NAME"];
+                        string PW = ConfigurationManager.AppSettings["PW"];
+
+                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                        MyMail.Subject = Subject.ToString();
+                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                        MyMail.Body = Body.ToString();
+                        MyMail.IsBodyHtml = true; //是否使用html格式
+
+                        //加上附圖
+                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+
+
+                        try
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                                                                  //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MySMTP.Send(MyMail);
+
+                            MyMail.Dispose(); //釋放資源
+
+
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("有錯誤");
+
+                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+
+        }
         #endregion
 
         #region BUTTON
@@ -4531,6 +4772,12 @@ namespace TKMQ
         private void button16_Click(object sender, EventArgs e)
         {
             PREPARESENDEMAILERPPURCHECK();
+        }
+        private void button17_Click(object sender, EventArgs e)
+        {
+            //WEBTEST();
+
+            PREPAREITCHECK();
         }
 
         #endregion
