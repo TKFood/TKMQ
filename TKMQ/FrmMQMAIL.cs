@@ -4523,7 +4523,8 @@ namespace TKMQ
         public void PREPAREITCHECK()
         {
             DataTable DTWEBLINKS = SEARCHLINKS();
-                      
+
+            string ISCHECK = "Y";         
 
             try
             {
@@ -4557,6 +4558,8 @@ namespace TKMQ
                                  + "{0} 此網站不通，請檢查網站狀況"
                                    + " <br>"
                                   , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+
+                        ISCHECK = "N";
                     }
                     else
                     {
@@ -4577,6 +4580,14 @@ namespace TKMQ
                              + "</span><br>");
 
 
+                if(ISCHECK.Equals("N"))
+                {
+                    SUBJEST.AppendFormat(@" 有異常");
+                }
+                else
+                {
+                    SUBJEST.AppendFormat(@" ");
+                }
 
                 SENDEMAILITCHECK(SUBJEST, BODY);
 
