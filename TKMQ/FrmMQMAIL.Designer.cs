@@ -50,9 +50,10 @@
             this.button14 = new System.Windows.Forms.Button();
             this.button15 = new System.Windows.Forms.Button();
             this.button16 = new System.Windows.Forms.Button();
+            this.button17 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button17 = new System.Windows.Forms.Button();
+            this.button18 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -113,6 +114,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button15, 3, 4);
             this.tableLayoutPanel1.Controls.Add(this.button16, 4, 13);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.button18, 6, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -336,6 +338,16 @@
             this.button16.UseVisualStyleBackColor = true;
             this.button16.Click += new System.EventHandler(this.button16_Click);
             // 
+            // button17
+            // 
+            this.button17.Location = new System.Drawing.Point(3, 123);
+            this.button17.Name = "button17";
+            this.button17.Size = new System.Drawing.Size(127, 34);
+            this.button17.TabIndex = 19;
+            this.button17.Text = "資訊-來客WEB";
+            this.button17.UseVisualStyleBackColor = true;
+            this.button17.Click += new System.EventHandler(this.button17_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Location = new System.Drawing.Point(4, 26);
@@ -350,15 +362,15 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button17
+            // button18
             // 
-            this.button17.Location = new System.Drawing.Point(3, 123);
-            this.button17.Name = "button17";
-            this.button17.Size = new System.Drawing.Size(127, 34);
-            this.button17.TabIndex = 19;
-            this.button17.Text = "資訊-來客WEB";
-            this.button17.UseVisualStyleBackColor = true;
-            this.button17.Click += new System.EventHandler(this.button17_Click);
+            this.button18.Location = new System.Drawing.Point(723, 83);
+            this.button18.Name = "button18";
+            this.button18.Size = new System.Drawing.Size(114, 34);
+            this.button18.TabIndex = 20;
+            this.button18.Text = "測試UOF校稿未完成";
+            this.button18.UseVisualStyleBackColor = true;
+            this.button18.Click += new System.EventHandler(this.button18_Click);
             // 
             // FrmMQMAIL
             // 
@@ -404,5 +416,6 @@
         private System.Windows.Forms.Button button15;
         private System.Windows.Forms.Button button16;
         private System.Windows.Forms.Button button17;
+        private System.Windows.Forms.Button button18;
     }
 }
