@@ -877,6 +877,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //校稿追踨
+            PREPAREPROOFREAD();
+
             //IT檢查網站是否正常
             PREPAREITCHECK();
 
