@@ -877,6 +877,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //校稿追踨 UOF
+            PREPARE_TB_EIP_PRIV_MESS();
+
             //校稿追踨
             PREPAREPROOFREAD();
 
@@ -4918,6 +4921,329 @@ namespace TKMQ
 
         }
 
+        public void PREPARE_TB_EIP_PRIV_MESS()
+        {
+            DataTable DTFIND_USER_GUID = FIND_USER_GUID();
+            string MESS = null;
+            
+
+            if(DTFIND_USER_GUID.Rows.Count>0)
+            {
+                foreach (DataRow DR in DTFIND_USER_GUID.Rows)
+                {
+                    MESS = FIND_SUBJECT(DR["USER_GUID"].ToString());
+                    ADD_TB_EIP_PRIV_MESS(DR["USER_GUID"].ToString(), MESS);
+                }
+            }
+
+            //ADD_TB_EIP_PRIV_MESS("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
+        }
+
+        public DataTable FIND_USER_GUID()
+        {
+            DataSet DSPROOFREAD = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  
+                                    SELECT USER_GUID
+                                    FROM 
+                                    (
+                                    SELECT CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始時間'
+                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
+                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
+                                    ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
+                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '交辨'
+                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
+                                    ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
+                                    ,TB_EB_USER.NAME AS '交辨人'
+                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
+                                    ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
+                                    ,TB_EB_USER.ACCOUNT
+                                    ,TB_EB_USER.USER_GUID
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    WHERE 1=1
+                                    AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
+                                    AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    ) AS TEMP
+                                    GROUP BY USER_GUID
+
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DSPROOFREAD.Clear();
+                adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
+                sqlConn.Close();
+
+
+
+                if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
+                {
+                    return DSPROOFREAD.Tables["DSPROOFREAD"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
+
+        public string FIND_SUBJECT(string USER_GUID)
+        {
+            StringBuilder MESS = new StringBuilder();
+            DataSet DSPROOFREAD = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"
+                                    
+                                    SELECT CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始時間'
+                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
+                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
+                                    ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
+                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '交辨'
+                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
+                                    ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
+                                    ,TB_EB_USER.NAME AS '交辨人'
+                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
+                                    ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
+                                    ,TB_EB_USER.ACCOUNT
+                                    ,TB_EB_USER.USER_GUID
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    WHERE 1=1
+                                    AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
+                                    AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EB_USER.USER_GUID='{0}'
+
+                                   ", USER_GUID);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DSPROOFREAD.Clear();
+                adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
+                sqlConn.Close();
+
+
+
+                if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
+                {
+                    MESS.AppendFormat(@"<table> 
+                                        <tr>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨開始時間</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨項目</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨人</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨狀態</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨回覆</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">回覆時間</td>
+                                       
+                                        </tr>
+                                        ");
+
+                    foreach (DataRow DR in DSPROOFREAD.Tables["DSPROOFREAD"].Rows)
+                    {
+                        MESS.AppendFormat(@"<tr>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨開始時間"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨項目"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨人"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨狀態"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨回覆"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["回覆時間"].ToString() + "</td>");
+                        MESS.AppendFormat(@"</tr>");
+                    }
+
+                    MESS.AppendFormat(@"</table> ");
+
+                    return MESS.ToString();
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+            return MESS.ToString();
+        }
+
+
+        public void ADD_TB_EIP_PRIV_MESS(string USER_GUID,string MESS)
+        {
+            Guid NEW = Guid.NewGuid();
+            string MESSAGE_GUID= NEW.ToString();
+            string TOPIC="每日校稿"+DateTime.Now.ToString("yyyyMMdd");
+            string MESSAGE_CONTENT= MESS;
+            string MESSAGE_TO= USER_GUID;
+            string MESSAGE_FROM= "916e213c-7b2e-46e3-8821-b7066378042b";
+            string REPLY_MESSAGE_GUID=null;
+            string CREATE_TIME= DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
+            string READED_TIME = null;
+            string REPLY_TIME = null;
+            string FROM_DELETED="0";
+            string TO_DELETED = "0";
+            string FILE_GROUP_ID = null;
+            string MASTER_GUID=NEW.ToString();
+            string EVENT_ID = null;
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+            connectionString = sqlConn.ConnectionString.ToString();
+
+            StringBuilder queryString = new StringBuilder();
+
+
+
+
+            queryString.AppendFormat(@"                     
+                                        INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
+                                        (
+                                        [MESSAGE_GUID]
+                                        ,[TOPIC]
+                                        ,[MESSAGE_CONTENT]
+                                        ,[MESSAGE_TO]
+                                        ,[MESSAGE_FROM]
+                                        ,[REPLY_MESSAGE_GUID]
+                                        ,[CREATE_TIME]
+                                        ,[READED_TIME]
+                                        ,[REPLY_TIME]
+                                        ,[FROM_DELETED]
+                                        ,[TO_DELETED]
+                                        ,[FILE_GROUP_ID]
+                                        ,[MASTER_GUID]
+                                        ,[EVENT_ID]
+                                        )
+                                        VALUES
+                                        (
+                                        '{0}'
+                                        ,'{1}' 
+                                        ,'{2}' 
+                                        , '{3}'
+                                        , '{4}'
+                                        , NULL
+                                        , '{5}'
+                                        , NULL
+                                        , NULL
+                                        , '0'
+                                        , '0'
+                                        , ''
+                                        , '{6}'
+                                        , ''
+                                        )
+                                        ", MESSAGE_GUID
+                                        , TOPIC
+                                        , MESSAGE_CONTENT
+                                        , MESSAGE_TO
+                                        , MESSAGE_FROM
+                                        , CREATE_TIME
+                                        , MASTER_GUID
+
+                                        );
+                                       
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+
+                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);                   
+
+                    command.Connection.Open();
+
+                    int count = command.ExecuteNonQuery();
+
+                    connection.Close();
+                    connection.Dispose();
+
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+
+        }
+
         #endregion
 
         #region BUTTON
@@ -5045,6 +5371,10 @@ namespace TKMQ
         private void button18_Click(object sender, EventArgs e)
         {
             PREPAREPROOFREAD();
+        }
+        private void button19_Click(object sender, EventArgs e)
+        {
+            PREPARE_TB_EIP_PRIV_MESS();
         }
 
         #endregion
