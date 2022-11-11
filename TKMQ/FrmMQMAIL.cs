@@ -877,8 +877,11 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
-            //校稿追踨 UOF
+            //通知各別的被交辨人
             PREPARE_TB_EIP_PRIV_MESS();
+
+            //通知交辨人
+            PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
 
             //校稿追踨
             PREPAREPROOFREAD();
@@ -4924,7 +4927,7 @@ namespace TKMQ
         public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR()
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_DIRECTOR();
-            string MESS = null;
+            string MESS = null; 
             
 
             if(DTFIND_USER_GUID.Rows.Count>0)
