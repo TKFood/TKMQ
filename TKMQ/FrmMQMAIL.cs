@@ -4932,11 +4932,11 @@ namespace TKMQ
                 foreach (DataRow DR in DTFIND_USER_GUID.Rows)
                 {
                     MESS = FIND_SUBJECT(DR["USER_GUID"].ToString());
-                    ADD_TB_EIP_PRIV_MESS(DR["USER_GUID"].ToString(), MESS);
+                    //ADD_TB_EIP_PRIV_MESS(DR["USER_GUID"].ToString(), MESS);
                 }
             }
 
-            //ADD_TB_EIP_PRIV_MESS("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
+            ADD_TB_EIP_PRIV_MESS("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
         }
 
         public DataTable FIND_USER_GUID()
@@ -4976,15 +4976,19 @@ namespace TKMQ
                                     ,TB_EIP_SCH_WORK.EXECUTE_USER AS '交辨'
                                     ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
                                     ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
-                                    ,TB_EB_USER.NAME AS '交辨人'
+                                    ,TB_EB_USER.NAME AS '被交辨人'
                                     ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
                                     ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
                                     ,TB_EB_USER.ACCOUNT
                                     ,TB_EB_USER.USER_GUID
+                                    ,TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    ,USER2.NAME AS '交辨人'
                                     FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
@@ -5061,18 +5065,22 @@ namespace TKMQ
                                     ,TB_EIP_SCH_WORK.EXECUTE_USER AS '交辨'
                                     ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
                                     ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
-                                    ,TB_EB_USER.NAME AS '交辨人'
+                                    ,TB_EB_USER.NAME AS '被交辨人'
                                     ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
                                     ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
                                     ,TB_EB_USER.ACCOUNT
                                     ,TB_EB_USER.USER_GUID
                                     ,CONVERT(nvarchar,TB_EIP_SCH_DEVOLVE.END_TIME,111) AS '交辨預計結案日'
                                     ,DATEDIFF(day, TB_EIP_SCH_DEVOLVE.END_TIME, GETDATE()) AS '逾期天數' 
+                                    ,TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    ,USER2.NAME AS '交辨人'
 
                                     FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
@@ -5097,13 +5105,14 @@ namespace TKMQ
                 {
                     MESS.AppendFormat(@"<table> 
                                         <tr>
-                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨開始時間</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨人</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨項目</td>
-                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">被交辨人</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨開始時間</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨預計結案日</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨狀態</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">被交辨人</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨回覆</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">回覆時間</td>
-                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨預計結案日</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">逾期天數</td>
 
                                         </tr>
@@ -5112,13 +5121,14 @@ namespace TKMQ
                     foreach (DataRow DR in DSPROOFREAD.Tables["DSPROOFREAD"].Rows)
                     {
                         MESS.AppendFormat(@"<tr>");
-                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨開始時間"].ToString() + "</td>");
-                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨項目"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨人"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨項目"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨開始時間"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨預計結案日"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨狀態"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["被交辨人"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨回覆"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["回覆時間"].ToString() + "</td>");
-                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨預計結案日"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["逾期天數"].ToString() + "</td>");
 
                         MESS.AppendFormat(@"</tr>");
@@ -5151,7 +5161,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID= NEW.ToString();
-            string TOPIC= "每日校稿追踨及未結案" + DateTime.Now.ToString("yyyyMMdd");
+            string TOPIC= "每日校稿的未回覆項目，請於3天內至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
             string MESSAGE_CONTENT= MESS;
             string MESSAGE_TO= USER_GUID;
             string MESSAGE_FROM= "916e213c-7b2e-46e3-8821-b7066378042b";
@@ -5386,7 +5396,11 @@ namespace TKMQ
         }
         private void button19_Click(object sender, EventArgs e)
         {
+            //通知各別的被交辨人
             PREPARE_TB_EIP_PRIV_MESS();
+
+            //通知交辨人
+            //PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
         }
 
         #endregion
