@@ -4989,6 +4989,8 @@ namespace TKMQ
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
+
                                     ) AS TEMP
                                     GROUP BY USER_GUID
 
@@ -5064,6 +5066,9 @@ namespace TKMQ
                                     ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
                                     ,TB_EB_USER.ACCOUNT
                                     ,TB_EB_USER.USER_GUID
+                                    ,CONVERT(nvarchar,TB_EIP_SCH_DEVOLVE.END_TIME,111) AS '交辨預計結案日'
+                                    ,DATEDIFF(day, TB_EIP_SCH_DEVOLVE.END_TIME, GETDATE()) AS '逾期天數' 
+
                                     FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
@@ -5072,6 +5077,8 @@ namespace TKMQ
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
+
                                     AND TB_EB_USER.USER_GUID='{0}'
 
                                    ", USER_GUID);
@@ -5092,11 +5099,13 @@ namespace TKMQ
                                         <tr>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨開始時間</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨項目</td>
-                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨人</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">被交辨人</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨狀態</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨回覆</td>
                                         <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">回覆時間</td>
-                                       
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">交辨預計結案日</td>
+                                        <td style=""border: 1px solid #999;font-size:12.0pt width=10% "">逾期天數</td>
+
                                         </tr>
                                         ");
 
@@ -5109,6 +5118,9 @@ namespace TKMQ
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨狀態"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨回覆"].ToString() + "</td>");
                         MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["回覆時間"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["交辨預計結案日"].ToString() + "</td>");
+                        MESS.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt "">" + DR["逾期天數"].ToString() + "</td>");
+
                         MESS.AppendFormat(@"</tr>");
                     }
 
@@ -5139,7 +5151,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID= NEW.ToString();
-            string TOPIC="每日校稿"+DateTime.Now.ToString("yyyyMMdd");
+            string TOPIC= "每日校稿追踨及未結案" + DateTime.Now.ToString("yyyyMMdd");
             string MESSAGE_CONTENT= MESS;
             string MESSAGE_TO= USER_GUID;
             string MESSAGE_FROM= "916e213c-7b2e-46e3-8821-b7066378042b";
