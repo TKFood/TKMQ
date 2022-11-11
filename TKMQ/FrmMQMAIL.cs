@@ -4937,7 +4937,7 @@ namespace TKMQ
             }
 
             //訊息給交辨人
-            ADD_TB_EIP_PRIV_MESS_DIRECTOR("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
+            //ADD_TB_EIP_PRIV_MESS_DIRECTOR("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
         }
 
         public DataTable FIND_USER_GUID_DIRECTOR()
