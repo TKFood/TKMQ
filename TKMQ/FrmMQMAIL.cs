@@ -3864,6 +3864,7 @@ namespace TKMQ
 
                     BODY.AppendFormat(@"<table> ");
                     BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">類別</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
@@ -3878,6 +3879,7 @@ namespace TKMQ
                     {
 
                         BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["部門"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TC001"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TC002"].ToString() + "</td>");
@@ -4070,11 +4072,11 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@"  
-                                    SELECT 單別,TC001,TC002,SERNO,UDF01,UDF02,DOC_NBR
+                                    SELECT 部門,單別,TC001,TC002,SERNO,UDF01,UDF02,DOC_NBR
                                     ,(SELECT  TB_EB_USER.NAME+' ' FROM [192.168.1.223].[UOF].dbo.TB_EB_USER,[192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE,[192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK WHERE TB_EB_USER.USER_GUID=View_TB_WKF_TASK_NODE.ORIGINAL_SIGNER AND View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')='' AND View_TB_WKF_TASK.DOC_NBR=TEMP.DOC_NBR FOR XML PATH('')) AS 'NAME'
                                     FROM 
                                     (
-                                    SELECT  DISTINCT '採購單' AS '單別',TC001,TC002,'' AS SERNO,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
+                                    SELECT  DISTINCT '採購單' AS '單別','' AS '部門',TC001,TC002,'' AS SERNO,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
                                     FROM [TK].dbo.PURTC
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TC001+TC002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
@@ -4082,7 +4084,7 @@ namespace TKMQ
                                     LEFT JOIN [192.168.1.223].[UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=View_TB_WKF_TASK_NODE.ORIGINAL_SIGNER
                                     WHERE TC014='N' 
                                     UNION ALL
-                                    SELECT  DISTINCT '採購單變更' AS '單別',TE001,TE002,TE003,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
+                                    SELECT  DISTINCT '採購單變更' AS '單別','' AS '部門',TE001,TE002,TE003,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
                                     FROM [TK].dbo.PURTE
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TE001+TE002+TE003+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
@@ -4090,7 +4092,7 @@ namespace TKMQ
                                     LEFT JOIN [192.168.1.223].[UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=View_TB_WKF_TASK_NODE.ORIGINAL_SIGNER
                                     WHERE TE017='N' 
                                     UNION ALL
-                                    SELECT  DISTINCT '採購核價單' AS '單別',TL001,TL002,'',UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
+                                    SELECT  DISTINCT '採購核價單' AS '單別','' AS '部門',TL001,TL002,'',UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
                                     FROM [TK].dbo.PURTL
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TL001+TL002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
@@ -4099,24 +4101,27 @@ namespace TKMQ
                                     WHERE TL002>='20220101'
                                     AND TL006='N'
                                     UNION ALL
-                                    SELECT DISTINCT '請購單' AS '單別',TA001,TA002,'',UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
+                                    SELECT DISTINCT '請購單' AS '單別',ME002 AS '部門',TA001,TA002,'',PURTA.UDF01,PURTA.UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
                                     FROM [TK].dbo.PURTA
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
                                     LEFT JOIN [192.168.1.223].[UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=View_TB_WKF_TASK_NODE.ORIGINAL_SIGNER
+                                    LEFT JOIN [TK].dbo.CMSME ON ME001=TA004
                                     WHERE TA007='N' 
                                     UNION ALL
-                                    SELECT DISTINCT '請購變更單' AS '單別', [TA001],[TA002],[VERSIONS],'UOF','',View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
+                                    SELECT DISTINCT '請購變更單' AS '單別',ME002 AS '部門', [PURTATBCHAGE].[TA001],[PURTATBCHAGE].[TA002],[VERSIONS],'UOF','',View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
                                     FROM [TKPUR].[dbo].[PURTATBCHAGE]
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+CONVERT(NVARCHAR,[VERSIONS])+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
                                     LEFT JOIN [192.168.1.223].[UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=View_TB_WKF_TASK_NODE.ORIGINAL_SIGNER
+                                    LEFT JOIN [TK].dbo.PURTA ON PURTA.TA001=[PURTATBCHAGE].TA001 AND PURTA.TA002=[PURTATBCHAGE].TA002
+                                    LEFT JOIN [TK].dbo.CMSME ON ME001=PURTA.TA004  
                                     WHERE ISNULL(View_TB_WKF_EXTERNAL_TASK.DOC_NBR,'')<>''
                                     ) AS TEMP
-                                    GROUP BY 單別,TC001,TC002,SERNO,UDF01,UDF02,DOC_NBR
-                                    ORDER BY TC001,TC002
+                                    GROUP BY 部門,單別,TC001,TC002,SERNO,UDF01,UDF02,DOC_NBR
+                                    ORDER BY 部門,單別,TC001,TC002
     
                                    ");
 
