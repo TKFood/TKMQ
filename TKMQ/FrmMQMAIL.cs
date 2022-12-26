@@ -3831,6 +3831,7 @@ namespace TKMQ
             DataSet DSPURCHECK = ERPPURCHECK();
             DataSet DSPURTDCHECK = ERPPURTDCHECK();
             DataSet DSTKPUR_PURTATBCHAGE_DCHECK = TKPUR_PURTATBCHAGE_DCHECK();
+            DataSet DS_PURTB_NOTIN_PURTD = FRIN_DS_PURTB_NOTIN_PURTD();
 
 
             try
@@ -4007,6 +4008,63 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TD008"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TD009"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["SUMTH007"].ToString() + "</td>");
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                //
+                //已存在的請購單，需求日>=今日，但未有採購單
+                BODY.AppendFormat(" "
+                    + "<br>" + "已存在的請購單，需求日>=今日，但未有採購單"
+
+                    );
+
+
+                if (DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購單別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購序號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DS_PURTB_NOTIN_PURTD.Tables[0].Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["需求日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["請購單別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["請購單號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["請購序號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["請購數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
                         //BODY.AppendFormat("<span></span>");
@@ -4318,6 +4376,80 @@ namespace TKMQ
 
 
         }
+
+        public DataSet FRIN_DS_PURTB_NOTIN_PURTD()
+        {
+            DataSet DS_PURTB_NOTIN_PURTD = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                DateTime SDAYS = DateTime.Now.AddDays(0);
+
+
+                sbSql.AppendFormat(@"  
+                                    SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
+                                    FROM [TK].dbo.PURTA,[TK].dbo.PURTB
+                                    LEFT JOIN [TK].dbo.PURMA ON MA001=TB010
+                                    WHERE TA001=TB001 AND TA002=TB002 
+                                    AND TB001+TB002+TB003 NOT  IN (SELECT TD026+TD027+TD028 FROM [TK].dbo.PURTD WHERE ISNULL(TD026+TD027,'')<>'')
+                                    AND  TA007 IN ('Y','N')
+                                    AND  TB039='N'
+                                    AND  TB025 NOT IN ('V')
+                                    AND  TB011>='{0}'
+                                    ORDER BY MA002,TB011
+                               
+
+                                   ", SDAYS.ToString("yyyyMMdd"));
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_PURTB_NOTIN_PURTD.Clear();
+                adapter.Fill(DS_PURTB_NOTIN_PURTD, "DS_PURTB_NOTIN_PURTD");
+                sqlConn.Close();
+
+
+
+                if (DS_PURTB_NOTIN_PURTD.Tables["DS_PURTB_NOTIN_PURTD"].Rows.Count > 0)
+                {
+                    return DS_PURTB_NOTIN_PURTD;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
 
 
         /// <summary>
