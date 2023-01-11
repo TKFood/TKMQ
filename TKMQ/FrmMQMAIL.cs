@@ -877,6 +877,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //通知各表單申請人
+            PREPARE_UOF_TASK_TASK_APPLICATION();
+
             //通知各別的被交辨人
             PREPARE_TB_EIP_PRIV_MESS();
 
