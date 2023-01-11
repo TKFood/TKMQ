@@ -942,7 +942,7 @@ namespace TKMQ
             SERACHMAILMOCMANULINE();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
             Thread.Sleep(5000);
@@ -952,7 +952,7 @@ namespace TKMQ
             SERACHMAILLOTCHECK();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
             Thread.Sleep(5000);
@@ -961,7 +961,7 @@ namespace TKMQ
             SERACHMAILMOCTARE();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
             Thread.Sleep(5000);
@@ -970,7 +970,7 @@ namespace TKMQ
             SERACHMAILPURTD();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
             Thread.Sleep(5000);
@@ -989,7 +989,7 @@ namespace TKMQ
             SERACHMAILPURTB();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
 
@@ -998,7 +998,7 @@ namespace TKMQ
             SERACHMAILINVMOCTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
 
@@ -1008,7 +1008,7 @@ namespace TKMQ
             SERACHMAILMOCTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
 
@@ -1017,7 +1017,7 @@ namespace TKMQ
             SERACHMAILCOPTE();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
             SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
 
@@ -1027,7 +1027,7 @@ namespace TKMQ
             SERACHMAILPURTA();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
 
@@ -1037,7 +1037,7 @@ namespace TKMQ
             SERACHMAIL();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
             SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
 
@@ -1061,7 +1061,7 @@ namespace TKMQ
             SERACHMAILMOCCOP();
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"系統通知-每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
 
@@ -3848,7 +3848,7 @@ namespace TKMQ
                 BODY.Clear();
 
              
-                SUBJEST.AppendFormat(@"老楊食品-ERP 採購相關單別、單號未核準的明細 及 本月該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量 及 請購變更單不在採購變更單 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-ERP 採購相關單別、單號未核準的明細 及 本月該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量 及 請購變更單不在採購變更單 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
                
                 //ERP 採購相關單別、單號未核準的明細
@@ -4713,7 +4713,7 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"資訊每日檢查 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-資訊每日檢查 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
@@ -4860,7 +4860,7 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"老楊食品-每日-校稿未完成的項目及交辨人回覆狀況 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-校稿未完成的項目及交辨人回覆狀況 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
@@ -5326,7 +5326,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID= NEW.ToString();
-            string TOPIC= "每日校稿的被交辨人未回覆項目" + DateTime.Now.ToString("yyyyMMdd");
+            string TOPIC= "系統通知-每日校稿的被交辨人未回覆項目" + DateTime.Now.ToString("yyyyMMdd");
             string MESSAGE_CONTENT= MESS;
             string MESSAGE_TO= USER_GUID;
             string MESSAGE_FROM= "916e213c-7b2e-46e3-8821-b7066378042b";
@@ -5672,7 +5672,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "每日校稿的未回覆項目，請於3天內至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
+            string TOPIC = "系統通知-每日校稿的未回覆項目，請於3天內至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
             string MESSAGE_CONTENT = MESS;
             string MESSAGE_TO = USER_GUID;
             string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
@@ -5865,6 +5865,7 @@ namespace TKMQ
                                     1=1  
                                     AND  TASK_STATUS NOT IN ('2')
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
+                                    AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
                                     )  AS TEMP 
                                     WHERE ISNULL(APPLICANT_EMAIL,'')<>''
                                     AND APPLICANT_NAME='張健洲'
@@ -5977,6 +5978,8 @@ namespace TKMQ
                                     1=1  
                                     AND  TASK_STATUS NOT IN ('2')
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
+                                    AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
+
                                     ) AS TEMP
                                     WHERE APPLICANT_NAME='{0}'
                                     ORDER BY FORM_NAME,DOC_NBR
@@ -6032,13 +6035,13 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"請查收-每日-UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-請查收-每日-UOF表單中，表單尚未核準的明細及目前表單簽核人員(超過24小時)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "請查收-每日-UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝"
+                    + "<br>" + "系統通知-請查收-每日-UOF表單中，表單尚未核準的明細及目前表單簽核人員(超過24小時)，謝謝"
                     + " <br>"
                     );
 
