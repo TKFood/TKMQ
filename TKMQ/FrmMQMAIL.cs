@@ -5777,6 +5777,377 @@ namespace TKMQ
 
         }
 
+        public void PREPARE_UOF_TASK_TASK_APPLICATION()
+        {
+            DataTable DT_FIND_UOF_TASK_APPLICATION = FIND_UOF_TASK_APPLICATION();
+            DataTable DT_FIND_UOF_TASK_APPLICATION_FORM = new DataTable();
+
+            if (DT_FIND_UOF_TASK_APPLICATION != null && DT_FIND_UOF_TASK_APPLICATION.Rows.Count>=1)
+            {
+                foreach(DataRow DR in DT_FIND_UOF_TASK_APPLICATION.Rows)
+                {
+                    DT_FIND_UOF_TASK_APPLICATION_FORM = FIND_UOF_TASK_APPLICATION_FORM(DR["APPLICANT_NAME"].ToString());
+                 
+                    if(DT_FIND_UOF_TASK_APPLICATION_FORM!=null && DT_FIND_UOF_TASK_APPLICATION_FORM.Rows.Count>=1)
+                    {
+                        SEND_UOF_TASK_APPLICATION_FORM(DR["APPLICANT_NAME"].ToString(), DR["APPLICANT_EMAIL"].ToString(), DT_FIND_UOF_TASK_APPLICATION_FORM);
+                    } 
+                }
+               
+            }
+        }
+
+
+        public DataTable FIND_UOF_TASK_APPLICATION()
+        {
+            StringBuilder MESS = new StringBuilder();
+            DataSet DS_FIND_UOF_TASK_APPLICATION = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"
+                                    SELECT APPLICANT_NAME, APPLICANT_EMAIL
+                                    FROM 
+                                    (
+                                    SELECT
+                                    usr2.NAME AS 'CURRENTNAME'
+                                    ,[TB_EB_JOB_TITLE].TITLE_NAME AS 'CURRENTTITLENAME'
+                                    ,[TB_EB_JOB_TITLE].RANK AS 'CURRENTRANK'
+                                    ,(CASE WHEN  usr.IS_SUSPENDED = 1 THEN  usr.NAME + '(x)' WHEN  ISNULL(usr.ACCOUNT,'''') = '' THEN  'unknown user' ELSE usr.NAME END) AS APPLICANT_NAME
+                                    ,usr.[EMAIL] AS 'APPLICANT_EMAIL'
+                                    ,form.FORM_NAME
+                                    ,DOC_NBR
+                                    ,CONVERT(NVARCHAR,NODES.START_TIME,111) AS 'START_TIME'
+                                    ,DATEDIFF(HOUR,START_TIME,GETDATE()) AS 'HRS'
+                                    ,CONVERT(NVARCHAR,BEGIN_TIME,111) AS BEGIN_TIME
+                                    ,task.TASK_ID
+                                    ,END_TIME
+                                    ,TASK_RESULT
+                                    ,TASK_STATUS
+                                    ,task.USER_GUID
+                                    ,formVer.FORM_VERSION_ID
+                                    ,formVer.FORM_ID
+                                    ,CURRENT_SITE_ID
+                                    ,MESSAGE_CONTENT
+                                    ,LOCK_STATUS
+                                    ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
+                                    ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
+                                    ,[NODES].SIGN_STATUS
+                                    FROM dbo.TB_WKF_TASK task
+                                    INNER JOIN dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID
+                                    LEFT JOIN dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+
+
+                                    WHERE
+                                    1=1  
+                                    AND  TASK_STATUS NOT IN ('2')
+                                    AND ISNULL([NODES].SIGN_STATUS,999)<>0
+                                    )  AS TEMP 
+                                    WHERE ISNULL(APPLICANT_EMAIL,'')<>''
+                                    AND APPLICANT_NAME='張健洲'
+                                    GROUP BY APPLICANT_NAME,APPLICANT_EMAIL
+                                    ORDER BY APPLICANT_NAME,APPLICANT_EMAIL
+
+                                   
+
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_FIND_UOF_TASK_APPLICATION.Clear();
+                adapter.Fill(DS_FIND_UOF_TASK_APPLICATION, "DS_FIND_UOF_TASK_APPLICATION");
+                sqlConn.Close();
+
+
+
+                if (DS_FIND_UOF_TASK_APPLICATION.Tables["DS_FIND_UOF_TASK_APPLICATION"].Rows.Count > 0)
+                {
+
+                    return DS_FIND_UOF_TASK_APPLICATION.Tables["DS_FIND_UOF_TASK_APPLICATION"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+            
+        }
+
+        public DataTable FIND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME)
+        {
+
+            StringBuilder MESS = new StringBuilder();
+            DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"
+                                    
+                                    SELECT
+                                    *
+                                    FROM
+                                    (
+                                    SELECT 
+                                    usr2.NAME AS 'CURRENTNAME'
+                                    ,[TB_EB_JOB_TITLE].TITLE_NAME AS 'CURRENTTITLENAME'
+                                    ,[TB_EB_JOB_TITLE].RANK AS 'CURRENTRANK'
+                                    ,(CASE WHEN  usr.IS_SUSPENDED = 1 THEN  usr.NAME + '(x)' WHEN  ISNULL(usr.ACCOUNT,'''') = '' THEN  'unknown user' ELSE usr.NAME END) AS APPLICANT_NAME
+                                    ,usr.[EMAIL] AS 'APPLICANT_EMAIL'
+                                    ,form.FORM_NAME
+                                    ,DOC_NBR
+                                    ,CONVERT(NVARCHAR,NODES.START_TIME,111) AS 'START_TIME'
+                                    ,DATEDIFF(HOUR,START_TIME,GETDATE()) AS 'HRS'
+                                    ,CONVERT(NVARCHAR,BEGIN_TIME,111) AS BEGIN_TIME
+                                    ,task.TASK_ID
+                                    ,END_TIME
+                                    ,TASK_RESULT
+                                    ,TASK_STATUS
+                                    ,task.USER_GUID
+                                    ,formVer.FORM_VERSION_ID
+                                    ,formVer.FORM_ID
+                                    ,CURRENT_SITE_ID
+                                    ,MESSAGE_CONTENT
+                                    ,LOCK_STATUS
+                                    ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
+                                    ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
+                                    ,[NODES].SIGN_STATUS
+                                    FROM dbo.TB_WKF_TASK task
+                                    INNER JOIN dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID
+                                    LEFT JOIN dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+
+
+                                    WHERE
+                                    1=1  
+                                    AND  TASK_STATUS NOT IN ('2')
+                                    AND ISNULL([NODES].SIGN_STATUS,999)<>0
+                                    ) AS TEMP
+                                    WHERE APPLICANT_NAME='{0}'
+                                    ORDER BY FORM_NAME,DOC_NBR
+
+                                   
+
+                                   ", APPLICANT_NAME);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_FIND_UOF_TASK_APPLICATION_FORM.Clear();
+                adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
+                sqlConn.Close();
+
+
+
+                if (DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"].Rows.Count > 0)
+                {
+
+                    return DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SEND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME,string APPLICANT_EMAIL, DataTable DT)
+        {
+            try
+            {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                ////加上附圖
+                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //LinkedResource res = new LinkedResource(path);
+                //res.ContentId = Guid.NewGuid().ToString();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"請查收，UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "請查收，UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝"
+                    + " <br>"
+                    );
+
+          
+
+
+
+                if (DT.Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人員</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請表單</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
+
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DT.Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["APPLICANT_NAME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["FORM_NAME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["START_TIME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["CURRENTNAME"].ToString() + "</td>");
+                      
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+
+
+                try
+                {
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = SUBJEST.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+
+
+                    try
+                    {
+                        MyMail.To.Add(APPLICANT_EMAIL); //設定收件者Email，多筆mail
+                                                              //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                        //ex.ToString();
+                    }
+                }
+                catch
+                {
+
+                }
+                finally
+                {
+
+                }
+
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -5925,6 +6296,11 @@ namespace TKMQ
 
             //通知交辨人
             PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
+        }
+        private void button20_Click(object sender, EventArgs e)
+        {
+            //通知各表單申請人
+            PREPARE_UOF_TASK_TASK_APPLICATION();
         }
 
         #endregion
