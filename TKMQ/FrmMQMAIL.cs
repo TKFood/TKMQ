@@ -5822,7 +5822,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-
+                //AND APPLICANT_NAME='張健洲'
                 sbSql.AppendFormat(@"
                                     SELECT APPLICANT_NAME, APPLICANT_EMAIL
                                     FROM 
@@ -6032,13 +6032,13 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"請查收，UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"請查收-每日-UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "請查收，UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝"
+                    + "<br>" + "請查收-每日-UOF表單中，尚未核單的明細及目前表單簽核人員，謝謝"
                     + " <br>"
                     );
 
