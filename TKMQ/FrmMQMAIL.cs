@@ -5871,7 +5871,7 @@ namespace TKMQ
                                     AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
                                     )  AS TEMP 
                                     WHERE ISNULL(APPLICANT_EMAIL,'')<>''
-                                    AND APPLICANT_NAME='張健洲'
+                                    
                                     GROUP BY APPLICANT_NAME,APPLICANT_EMAIL
                                     ORDER BY APPLICANT_NAME,APPLICANT_EMAIL
 
