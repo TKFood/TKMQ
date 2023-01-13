@@ -6154,6 +6154,28 @@ namespace TKMQ
             }
         }
 
+        /// <summary>
+        /// 找出昨天核準過的採購單，通知原請購人到貨了
+        /// </summary>
+        public void FIND_UOF_GRAFFAIRS_1005()
+        {
+
+        }
+        /// <summary>
+        /// 通知原請購人到貨了，用UOF訊息
+        /// </summary>
+        public void SEND_MESSAGE_UOF_GRAFFAIRS_1005()
+        {
+
+        }
+        /// <summary>
+        /// 通知原請購人到貨了, 用EMAIL
+        /// </summary>
+        public void SEND_EMAIL_UOF_GRAFFAIRS_1005()
+        {
+
+        }
+
         #endregion
 
         #region BUTTON
@@ -6309,6 +6331,10 @@ namespace TKMQ
             PREPARE_UOF_TASK_TASK_APPLICATION();
         }
 
+        private void button21_Click(object sender, EventArgs e)
+        {
+            FIND_UOF_GRAFFAIRS_1005();
+        }
         #endregion
 
 

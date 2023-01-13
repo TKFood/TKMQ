@@ -53,9 +53,10 @@
             this.button17 = new System.Windows.Forms.Button();
             this.button19 = new System.Windows.Forms.Button();
             this.button18 = new System.Windows.Forms.Button();
+            this.button20 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button20 = new System.Windows.Forms.Button();
+            this.button21 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -117,8 +118,9 @@
             this.tableLayoutPanel1.Controls.Add(this.button16, 4, 13);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 3);
             this.tableLayoutPanel1.Controls.Add(this.button19, 6, 4);
-            this.tableLayoutPanel1.Controls.Add(this.button18, 4, 6);
             this.tableLayoutPanel1.Controls.Add(this.button20, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button18, 6, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -364,13 +366,24 @@
             // 
             // button18
             // 
-            this.button18.Location = new System.Drawing.Point(540, 243);
+            this.button18.Location = new System.Drawing.Point(723, 203);
             this.button18.Name = "button18";
-            this.button18.Size = new System.Drawing.Size(145, 34);
+            this.button18.Size = new System.Drawing.Size(143, 34);
             this.button18.TabIndex = 20;
             this.button18.Text = "測試UOF校稿未完成";
             this.button18.UseVisualStyleBackColor = true;
             this.button18.Click += new System.EventHandler(this.button18_Click);
+            // 
+            // button20
+            // 
+            this.button20.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button20.Location = new System.Drawing.Point(3, 203);
+            this.button20.Name = "button20";
+            this.button20.Size = new System.Drawing.Size(148, 34);
+            this.button20.TabIndex = 22;
+            this.button20.Text = "資訊-UOF表單未核";
+            this.button20.UseVisualStyleBackColor = true;
+            this.button20.Click += new System.EventHandler(this.button20_Click);
             // 
             // tabPage2
             // 
@@ -386,16 +399,15 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button20
+            // button21
             // 
-            this.button20.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button20.Location = new System.Drawing.Point(3, 203);
-            this.button20.Name = "button20";
-            this.button20.Size = new System.Drawing.Size(148, 34);
-            this.button20.TabIndex = 22;
-            this.button20.Text = "資訊-UOF表單未核";
-            this.button20.UseVisualStyleBackColor = true;
-            this.button20.Click += new System.EventHandler(this.button20_Click);
+            this.button21.Location = new System.Drawing.Point(723, 283);
+            this.button21.Name = "button21";
+            this.button21.Size = new System.Drawing.Size(143, 34);
+            this.button21.TabIndex = 23;
+            this.button21.Text = "測試UOF總務採購完成";
+            this.button21.UseVisualStyleBackColor = true;
+            this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
             // FrmMQMAIL
             // 
@@ -444,5 +456,6 @@
         private System.Windows.Forms.Button button18;
         private System.Windows.Forms.Button button19;
         private System.Windows.Forms.Button button20;
+        private System.Windows.Forms.Button button21;
     }
 }
