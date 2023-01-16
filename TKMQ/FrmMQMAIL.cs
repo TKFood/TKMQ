@@ -24,7 +24,7 @@ using NPOI.XSSF.UserModel;
 using TKITDLL;
 using System.Net.Http;
 using System.Net;
-
+using System.Xml;
 
 namespace TKMQ
 {
@@ -6159,14 +6159,214 @@ namespace TKMQ
         /// </summary>
         public void FIND_UOF_GRAFFAIRS_1005()
         {
+            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005();
+
+            if(DTSEARCHUOF_GRAFFAIRS_1005!=null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count>=1)
+            {
+                foreach(DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+                {
+                    string USER_GUID = DR["USER_GUID"].ToString();
+
+                    XmlDocument xmlDoc = new XmlDocument();
+                    xmlDoc.LoadXml(DR["CURRENT_DOC"].ToString());
+
+                    //XmlNode node = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']");
+                   
+                    string ID = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']").Attributes["fieldValue"].Value;
+                    string GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
+                    string GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
+                    string GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
+                    string GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
+                    string GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
+
+                    string MESSAGES = GA003 + " 申請的請購單:"+ GA002 + "，物品:"+ GA005+"，已由"+GA999+" 在"+ GA015+"購買完成。";
+
+                 
+                    SEND_MESSAGE_UOF_GRAFFAIRS_1005(USER_GUID, MESSAGES);
+
+                }
+            }
+
+
+        }
+        //找出昨天，已核單完成的採購單-1005.雜項採購單
+        public DataTable SEARCHUOF_GRAFFAIRS_1005()
+        {
+            StringBuilder MESS = new StringBuilder();
+            DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+            string END_TIME = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"                                    
+                                   SELECT CURRENT_DOC,* 
+                                    FROM [UOF].[dbo].TB_WKF_TASK 
+                                    WHERE TASK_RESULT='2' AND TASK_STATUS='2'
+                                    AND CONVERT(NVARCHAR,END_TIME,112)='20230113'
+                                    AND DOC_NBR = 'GA1005230100005'
+                                   
+
+                                   ", END_TIME);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_FIND_UOF_TASK_APPLICATION_FORM.Clear();
+                adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
+                sqlConn.Close();
+
+
+
+                if (DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"].Rows.Count > 0)
+                {
+
+                    return DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
 
         }
         /// <summary>
         /// 通知原請購人到貨了，用UOF訊息
         /// </summary>
-        public void SEND_MESSAGE_UOF_GRAFFAIRS_1005()
+        public void SEND_MESSAGE_UOF_GRAFFAIRS_1005(string USER_GUID,string MESS)
         {
+            Guid NEW = Guid.NewGuid();
+            string MESSAGE_GUID = NEW.ToString();
+            string TOPIC = "系統通知 "+ MESS;
+            string MESSAGE_CONTENT="系統通知 " + MESS;
+            string MESSAGE_TO = USER_GUID;
+            string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
+            string REPLY_MESSAGE_GUID = null;
+            string CREATE_TIME = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
+            string READED_TIME = null;
+            string REPLY_TIME = null;
+            string FROM_DELETED = "0";
+            string TO_DELETED = "0";
+            string FILE_GROUP_ID = null;
+            string MASTER_GUID = NEW.ToString();
+            string EVENT_ID = null;
 
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+            connectionString = sqlConn.ConnectionString.ToString();
+
+            StringBuilder queryString = new StringBuilder();
+
+
+
+
+            queryString.AppendFormat(@"                     
+                                        INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
+                                        (
+                                        [MESSAGE_GUID]
+                                        ,[TOPIC]
+                                        ,[MESSAGE_CONTENT]
+                                        ,[MESSAGE_TO]
+                                        ,[MESSAGE_FROM]
+                                        ,[REPLY_MESSAGE_GUID]
+                                        ,[CREATE_TIME]
+                                        ,[READED_TIME]
+                                        ,[REPLY_TIME]
+                                        ,[FROM_DELETED]
+                                        ,[TO_DELETED]
+                                        ,[FILE_GROUP_ID]
+                                        ,[MASTER_GUID]
+                                        ,[EVENT_ID]
+                                        )
+                                        VALUES
+                                        (
+                                        '{0}'
+                                        ,'{1}' 
+                                        ,'{2}' 
+                                        , '{3}'
+                                        , '{4}'
+                                        , NULL
+                                        , '{5}'
+                                        , NULL
+                                        , NULL
+                                        , '0'
+                                        , '0'
+                                        , ''
+                                        , '{6}'
+                                        , ''
+                                        )
+                                        ", MESSAGE_GUID
+                                        , TOPIC
+                                        , MESSAGE_CONTENT
+                                        , MESSAGE_TO
+                                        , MESSAGE_FROM
+                                        , CREATE_TIME
+                                        , MASTER_GUID
+
+                                        );
+
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+
+                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);
+
+                    command.Connection.Open();
+
+                    int count = command.ExecuteNonQuery();
+
+                    connection.Close();
+                    connection.Dispose();
+
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
         }
         /// <summary>
         /// 通知原請購人到貨了, 用EMAIL
