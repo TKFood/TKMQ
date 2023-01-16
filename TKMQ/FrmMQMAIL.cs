@@ -6166,6 +6166,7 @@ namespace TKMQ
                 foreach(DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
                 {
                     string USER_GUID = DR["USER_GUID"].ToString();
+                    string EMAILTO = DR["EMAIL"].ToString();
 
                     XmlDocument xmlDoc = new XmlDocument();
                     xmlDoc.LoadXml(DR["CURRENT_DOC"].ToString());
@@ -6183,7 +6184,7 @@ namespace TKMQ
 
                  
                     SEND_MESSAGE_UOF_GRAFFAIRS_1005(USER_GUID, MESSAGES);
-
+                    SEND_EMAIL_UOF_GRAFFAIRS_1005(EMAILTO, MESSAGES, MESSAGES);
                 }
             }
 
@@ -6220,8 +6221,10 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"                                    
                                    SELECT CURRENT_DOC,* 
-                                    FROM [UOF].[dbo].TB_WKF_TASK 
-                                    WHERE TASK_RESULT='2' AND TASK_STATUS='2'
+                                   
+                                    FROM [UOF].[dbo].TB_WKF_TASK ,[UOF].[dbo].[TB_EB_USER]
+                                    WHERE TB_WKF_TASK.USER_GUID=[TB_EB_USER].USER_GUID
+                                    AND TASK_RESULT='2' AND TASK_STATUS='2'
                                     AND CONVERT(NVARCHAR,END_TIME,112)='20230113'
                                     AND DOC_NBR = 'GA1005230100005'
                                    
@@ -6371,9 +6374,60 @@ namespace TKMQ
         /// <summary>
         /// 通知原請購人到貨了, 用EMAIL
         /// </summary>
-        public void SEND_EMAIL_UOF_GRAFFAIRS_1005()
+        public void SEND_EMAIL_UOF_GRAFFAIRS_1005(string EMAILTO,string Subject,string Body)
         {
+            try
+            {
+                string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                string NAME = ConfigurationManager.AppSettings["NAME"];
+                string PW = ConfigurationManager.AppSettings["PW"];
 
+                System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                MyMail.Subject = Subject.ToString();
+                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                MyMail.Body = Body.ToString();
+                MyMail.IsBodyHtml = true; //是否使用html格式
+
+                //加上附圖
+                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+
+
+                try
+                {
+                    MyMail.To.Add(EMAILTO); //設定收件者Email，多筆mail
+                                                          //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                    MySMTP.Send(MyMail);
+
+                    MyMail.Dispose(); //釋放資源
+
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("有錯誤");
+
+                    //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                    //ex.ToString();
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
         }
 
         #endregion
@@ -6533,6 +6587,7 @@ namespace TKMQ
 
         private void button21_Click(object sender, EventArgs e)
         {
+            //通知原請購人，總務已完成採購
             FIND_UOF_GRAFFAIRS_1005();
         }
         #endregion
