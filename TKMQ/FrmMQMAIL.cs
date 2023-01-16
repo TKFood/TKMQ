@@ -6183,8 +6183,16 @@ namespace TKMQ
                     string MESSAGES = GA003 + " 申請的請購單:"+ GA002 + "，物品:"+ GA005+"，已由"+GA999+" 在"+ GA015+"購買完成。";
 
                  
-                    SEND_MESSAGE_UOF_GRAFFAIRS_1005(USER_GUID, MESSAGES);
-                    SEND_EMAIL_UOF_GRAFFAIRS_1005(EMAILTO, MESSAGES, MESSAGES);
+                    if(!string.IsNullOrEmpty(USER_GUID))
+                    {
+                        SEND_MESSAGE_UOF_GRAFFAIRS_1005(USER_GUID, MESSAGES);
+                    }
+                    if (!string.IsNullOrEmpty(EMAILTO))
+                    {
+                        SEND_EMAIL_UOF_GRAFFAIRS_1005(EMAILTO, MESSAGES, MESSAGES);
+                    }
+
+                       
                 }
             }
 
