@@ -6176,13 +6176,52 @@ namespace TKMQ
                     xmlDoc.LoadXml(DR["CURRENT_DOC"].ToString());
 
                     //XmlNode node = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']");
-                   
-                    string ID = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']").Attributes["fieldValue"].Value;
-                    string GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
-                    string GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
-                    string GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
-                    string GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
-                    string GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
+                    string ID = "";
+                    string GA002 = "";
+                    string GA003 = "";
+                    string GA005 = "";
+                    string GA015 = "";
+                    string GA999 = "";
+
+
+                    try
+                    {
+                        ID = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']").Attributes["fieldValue"].Value;
+                        
+
+                    }
+                    catch { }
+                    try
+                    {
+                        GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
+                       
+                    }
+                    catch { }
+                    try
+                    {
+                        GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
+                       
+                    }
+                    catch { }
+                    try
+                    {
+                        GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
+                        
+                    }
+                    catch { }
+                    try
+                    {
+                        GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
+                        
+                    }
+                    catch { }
+                    try
+                    {
+                        
+                        GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
+                    }
+                    catch { }
+
 
                     string MESSAGES = GA003 + " 申請的請購單:"+ GA002 + "，物品:"+ GA005+"，已由"+GA999+" 在"+ GA015+"購買完成。";
 
