@@ -877,6 +877,10 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+
+            //通知原請購人，總務已完成採購
+            FIND_UOF_GRAFFAIRS_1005();
+
             //通知各表單申請人
             PREPARE_UOF_TASK_TASK_APPLICATION();
 
@@ -6226,6 +6230,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
+                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                    SELECT CURRENT_DOC,* 
@@ -6236,8 +6241,8 @@ namespace TKMQ
                                     AND TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID
                                     AND TB_WKF_FORM.FORM_NAME='1005.雜項採購單'
                                     AND TASK_RESULT='0' AND TASK_STATUS='2'
-                                    AND CONVERT(NVARCHAR,END_TIME,112)='20230117'
-                                    AND DOC_NBR = 'GA1005230100006'
+                                    AND CONVERT(NVARCHAR,END_TIME,112)='{0}'
+                                 
 
                                    ", END_TIME);
 
