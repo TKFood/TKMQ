@@ -5943,8 +5943,8 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"
                                     
-                                    SELECT
-                                    *
+                                   SELECT
+                                    APPLICANT_NAME,FORM_NAME,DOC_NBR,START_TIME,CURRENTNAME
                                     FROM
                                     (
                                     SELECT 
@@ -5988,7 +5988,9 @@ namespace TKMQ
                                     AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
 
                                     ) AS TEMP
-                                    WHERE APPLICANT_NAME='{0}'
+                                    WHERE 1=1
+                                    AND  APPLICANT_NAME='{0}'
+                                    GROUP BY APPLICANT_NAME,FORM_NAME,DOC_NBR,START_TIME,CURRENTNAME
                                     ORDER BY FORM_NAME,DOC_NBR
 
                                    
