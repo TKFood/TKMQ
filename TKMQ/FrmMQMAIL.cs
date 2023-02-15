@@ -877,6 +877,9 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
+            //通知副總，總務未簽核的表單
+            PREPARE_UOF_TASK_TASK_GRAFFIR();
+
 
             //通知原請購人，總務已完成採購
             FIND_UOF_GRAFFAIRS_1005();
