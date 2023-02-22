@@ -4755,7 +4755,7 @@ namespace TKMQ
 
                         ISCHECK = "N";
 
-                        LINE_NOTIFY.AppendFormat(@" {0} 此網站不通，請檢查網站狀況", DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+                        LINE_NOTIFY.AppendFormat(@"%0D%0A {0} %0D%0A 此網站不通，請檢查網站狀況 %0D%0A {1}  %0D%0A {2}", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"), DR["COMMENTS"].ToString(), DR["WEBLINKS"].ToString());
                     }
                     else
                     {
@@ -4764,7 +4764,8 @@ namespace TKMQ
                                  +" <br>"
                                   , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
 
-                        LINE_NOTIFY.AppendFormat(@" {0} 此網站正常", DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+                        LINE_NOTIFY.AppendFormat(@"%0D%0A {0} %0D%0A 此網站正常%0D%0A {1}  %0D%0A {2}", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"), DR["COMMENTS"].ToString(), DR["WEBLINKS"].ToString());
+                       
                     }
 
 
@@ -4788,7 +4789,8 @@ namespace TKMQ
                     SUBJEST.AppendFormat(@" ");
                 }
 
-                //SENDEMAILITCHECK(SUBJEST, BODY);
+                SENDEMAILITCHECK(SUBJEST, BODY);
+
                 SEND_LINE(LINE_NOTIFY.ToString());
 
             }
