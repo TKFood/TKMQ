@@ -4716,7 +4716,9 @@ namespace TKMQ
         {
             DataTable DTWEBLINKS = SEARCHLINKS();
 
-            string ISCHECK = "Y";         
+            string ISCHECK = "Y";
+
+            StringBuilder LINE_NOTIFY = new StringBuilder();
 
             try
             {
@@ -4752,6 +4754,8 @@ namespace TKMQ
                                   , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
 
                         ISCHECK = "N";
+
+                        LINE_NOTIFY.AppendFormat(@" {0} 此網站不通，請檢查網站狀況", DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
                     }
                     else
                     {
@@ -4759,6 +4763,8 @@ namespace TKMQ
                                  + "{0} 此網站正常"
                                  +" <br>"
                                   , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
+
+                        LINE_NOTIFY.AppendFormat(@" {0} 此網站正常", DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
                     }
 
 
@@ -4775,13 +4781,15 @@ namespace TKMQ
                 if(ISCHECK.Equals("N"))
                 {
                     SUBJEST.AppendFormat(@" 有異常");
+                 
                 }
                 else
                 {
                     SUBJEST.AppendFormat(@" ");
                 }
 
-                SENDEMAILITCHECK(SUBJEST, BODY);
+                //SENDEMAILITCHECK(SUBJEST, BODY);
+                SEND_LINE(LINE_NOTIFY.ToString());
 
             }
             catch
@@ -6840,10 +6848,10 @@ namespace TKMQ
             }
         }
 
-        public void SEND_LINE()
+        public void SEND_LINE(string message)
         {
             string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
-            string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
+            //string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
 
             string url = "https://notify-api.line.me/api/notify";       
             try
@@ -7046,7 +7054,7 @@ namespace TKMQ
         }
         private void button23_Click(object sender, EventArgs e)
         {
-            SEND_LINE();
+            SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
         }
         #endregion
 
