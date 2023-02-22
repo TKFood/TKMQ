@@ -25,6 +25,15 @@ using TKITDLL;
 using System.Net.Http;
 using System.Net;
 using System.Xml;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Collections.Specialized;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace TKMQ
 {
@@ -6831,6 +6840,44 @@ namespace TKMQ
             }
         }
 
+        public void SEND_LINE()
+        {
+            string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
+            string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            string url = "https://notify-api.line.me/api/notify";       
+            try
+            {
+                ServicePointManager.Expect100Continue = true;
+                ServicePointManager.DefaultConnectionLimit = 9999;
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12; // Use TLS 1.2, TLS 1.1, and TLS 1.0
+
+                var request = (HttpWebRequest)WebRequest.Create(url);
+                var postData = string.Format("message={0}", message);
+                var data = Encoding.UTF8.GetBytes(postData);
+
+                request.Method = "POST";
+                request.ContentType = "application/x-www-form-urlencoded";
+                request.ContentLength = data.Length;
+                request.Headers.Add("Authorization", "Bearer " + token);
+
+                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // Use TLS 1.2
+                ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true; // Bypass certificate validation
+
+                using (var stream = request.GetRequestStream()) stream.Write(data, 0, data.Length);
+                var response = (HttpWebResponse)request.GetResponse();
+                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+
+
+
+
         #endregion
 
         #region BUTTON
@@ -6996,6 +7043,10 @@ namespace TKMQ
             //通知副總，總務未簽核的表單
             PREPARE_UOF_TASK_TASK_GRAFFIR();
 
+        }
+        private void button23_Click(object sender, EventArgs e)
+        {
+            SEND_LINE();
         }
         #endregion
 
