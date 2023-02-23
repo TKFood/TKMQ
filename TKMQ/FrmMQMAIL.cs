@@ -6852,8 +6852,12 @@ namespace TKMQ
 
         public void SEND_LINE(string message)
         {
-            string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
+            //string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
             //string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='IT'");
+
+            string token = dt.Rows[0]["TOKEN"].ToString();
 
             string url = "https://notify-api.line.me/api/notify";       
             try
@@ -6886,7 +6890,46 @@ namespace TKMQ
 
 
 
+        public DataTable GetDataFromMSSQL(string sql)
+        {
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
 
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+          
+            try
+            {
+                // 建立資料庫連線物件
+                using (SqlConnection connection = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    // 建立資料庫查詢命令物件
+                    using (SqlCommand command = new SqlCommand(sql, connection))
+                    {
+                        // 建立資料庫資料適配器物件
+                        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+                        {
+                            // 建立 DataTable 物件
+                            DataTable dataTable = new DataTable();
+
+                            // 使用資料適配器物件填充 DataTable 物件
+                            adapter.Fill(dataTable);
+
+                            // 回傳 DataTable 物件
+                            return dataTable;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            
+        }
 
         #endregion
 
