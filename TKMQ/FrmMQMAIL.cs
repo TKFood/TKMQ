@@ -6993,12 +6993,14 @@ namespace TKMQ
             {
                 smtpClient.Send(message); // 發送郵件
             }
-            catch
+            catch (Exception ex)
             {
                 MessageBox.Show("有錯誤");
             }
 
         }
+      
+
         #endregion
 
         #region BUTTON
@@ -7171,9 +7173,10 @@ namespace TKMQ
         }
         private void button24_Click(object sender, EventArgs e)
         {
-            //SEND_TEST_MAIL();
-            SEND_TEST_MAIL_2();
+            SEND_TEST_MAIL();
+            //SEND_TEST_MAIL_2();
            
+
         }
         #endregion
 
