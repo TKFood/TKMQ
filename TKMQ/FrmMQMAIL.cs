@@ -6963,11 +6963,13 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
+                MessageBox.Show("寄送成功 ");
+
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show("有錯誤");
+                MessageBox.Show("有錯誤 ");
 
                 //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
                 //ex.ToString();
@@ -6992,10 +6994,12 @@ namespace TKMQ
             try
             {
                 smtpClient.Send(message); // 發送郵件
+
+                MessageBox.Show("寄送成功 ");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("有錯誤");
+                MessageBox.Show("有錯誤 ");
             }
 
         }
