@@ -57,9 +57,10 @@
             this.button18 = new System.Windows.Forms.Button();
             this.button22 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.button24 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -127,6 +128,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 7);
             this.tableLayoutPanel1.Controls.Add(this.button18, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button24, 0, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -423,10 +425,6 @@
             this.tabPage2.Text = "LINE";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
-            // timer1
-            // 
-            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
-            // 
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.BackColor = System.Drawing.Color.PaleGreen;
@@ -470,6 +468,20 @@
             this.button23.Text = "測試LINE";
             this.button23.UseVisualStyleBackColor = true;
             this.button23.Click += new System.EventHandler(this.button23_Click);
+            // 
+            // timer1
+            // 
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
+            // button24
+            // 
+            this.button24.Location = new System.Drawing.Point(3, 83);
+            this.button24.Name = "button24";
+            this.button24.Size = new System.Drawing.Size(91, 34);
+            this.button24.TabIndex = 25;
+            this.button24.Text = "寄空白信";
+            this.button24.UseVisualStyleBackColor = true;
+            this.button24.Click += new System.EventHandler(this.button24_Click);
             // 
             // FrmMQMAIL
             // 
@@ -524,5 +536,6 @@
         private System.Windows.Forms.Button button22;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.Button button23;
+        private System.Windows.Forms.Button button24;
     }
 }

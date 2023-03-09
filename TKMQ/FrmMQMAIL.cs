@@ -6931,6 +6931,74 @@ namespace TKMQ
             
         }
 
+        public void  SEND_TEST_MAIL()
+        {
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = "Subject";
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = "Body";
+            MyMail.IsBodyHtml = true; //是否使用html格式
+
+            //加上附圖
+            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            
+
+            try
+            {
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email，多筆mail
+                                                      //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("有錯誤");
+
+                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                //ex.ToString();
+            }
+        }
+
+        public void SEND_TEST_MAIL_2()
+        {
+            string recipientEmail = "tk290@tkfood.com.tw";
+            string senderEmail = "tk290@tkfood.com.tw";
+            string subject = "Email Subject";
+            string body = "Email Body";
+
+            MailMessage message = new MailMessage(senderEmail, recipientEmail, subject, body);
+            SmtpClient smtpClient = new SmtpClient("officemail.cloudmax.com.tw", 587);
+
+            // 設定 smtpClient 的帳號密碼，如果需要的話
+            smtpClient.Credentials = new System.Net.NetworkCredential("tkpublic@tkfood.com.tw", "@@tkmail629");
+
+            smtpClient.EnableSsl = true; // 如果需要使用 SSL 連線，需要設定為 true
+
+            try
+            {
+                smtpClient.Send(message); // 發送郵件
+            }
+            catch
+            {
+                MessageBox.Show("有錯誤");
+            }
+
+        }
         #endregion
 
         #region BUTTON
@@ -7100,6 +7168,12 @@ namespace TKMQ
         private void button23_Click(object sender, EventArgs e)
         {
             SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
+        }
+        private void button24_Click(object sender, EventArgs e)
+        {
+            //SEND_TEST_MAIL();
+            SEND_TEST_MAIL_2();
+           
         }
         #endregion
 
