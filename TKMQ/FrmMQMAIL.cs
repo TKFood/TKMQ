@@ -3878,7 +3878,7 @@ namespace TKMQ
                     );
 
 
-                if (DSPURCHECK.Tables[0].Rows.Count > 0)
+                if (DSPURCHECK !=null && DSPURCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -3933,7 +3933,7 @@ namespace TKMQ
                     );
 
 
-                if (DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
+                if (DSTKPUR_PURTATBCHAGE_DCHECK != null &&  DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -3993,7 +3993,7 @@ namespace TKMQ
                     );
 
 
-                if (DSPURTDCHECK.Tables[0].Rows.Count > 0)
+                if (DSPURTDCHECK != null &&  DSPURTDCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -4050,7 +4050,7 @@ namespace TKMQ
                     );
 
 
-                if (DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
+                if (DS_PURTB_NOTIN_PURTD != null &&  DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
