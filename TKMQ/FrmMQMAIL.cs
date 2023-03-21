@@ -5895,6 +5895,8 @@ namespace TKMQ
                                     AND  TASK_STATUS NOT IN ('2')
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
                                     AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
+
                                     )  AS TEMP 
                                     WHERE ISNULL(APPLICANT_EMAIL,'')<>''
                                     
@@ -6008,6 +6010,7 @@ namespace TKMQ
                                     AND  TASK_STATUS NOT IN ('2')
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
                                     AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
 
                                     ) AS TEMP
                                     WHERE 1=1
