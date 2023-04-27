@@ -7430,7 +7430,7 @@ namespace TKMQ
                                     LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
-                                    AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
+                                  
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
 
