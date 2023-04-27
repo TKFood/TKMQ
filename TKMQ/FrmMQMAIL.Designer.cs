@@ -62,6 +62,7 @@
             this.button23 = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.button25 = new System.Windows.Forms.Button();
+            this.button26 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -101,8 +102,8 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 154F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 151F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 32F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 149F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 91F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 203F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 37F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
@@ -131,6 +132,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button24, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button25, 6, 6);
+            this.tableLayoutPanel1.Controls.Add(this.button26, 6, 7);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -389,7 +391,7 @@
             // 
             this.button21.Location = new System.Drawing.Point(723, 363);
             this.button21.Name = "button21";
-            this.button21.Size = new System.Drawing.Size(143, 34);
+            this.button21.Size = new System.Drawing.Size(197, 34);
             this.button21.TabIndex = 23;
             this.button21.Text = "測試UOF總務採購完成";
             this.button21.UseVisualStyleBackColor = true;
@@ -399,7 +401,7 @@
             // 
             this.button18.Location = new System.Drawing.Point(723, 203);
             this.button18.Name = "button18";
-            this.button18.Size = new System.Drawing.Size(143, 34);
+            this.button18.Size = new System.Drawing.Size(197, 34);
             this.button18.TabIndex = 20;
             this.button18.Text = "測試UOF校稿未完成";
             this.button18.UseVisualStyleBackColor = true;
@@ -489,11 +491,21 @@
             // 
             this.button25.Location = new System.Drawing.Point(723, 243);
             this.button25.Name = "button25";
-            this.button25.Size = new System.Drawing.Size(143, 34);
+            this.button25.Size = new System.Drawing.Size(197, 34);
             this.button25.TabIndex = 26;
             this.button25.Text = "測試UOF交辨未完成";
             this.button25.UseVisualStyleBackColor = true;
             this.button25.Click += new System.EventHandler(this.button25_Click);
+            // 
+            // button26
+            // 
+            this.button26.Location = new System.Drawing.Point(723, 283);
+            this.button26.Name = "button26";
+            this.button26.Size = new System.Drawing.Size(197, 34);
+            this.button26.TabIndex = 27;
+            this.button26.Text = "測試主管UOF交辨未完成";
+            this.button26.UseVisualStyleBackColor = true;
+            this.button26.Click += new System.EventHandler(this.button26_Click);
             // 
             // FrmMQMAIL
             // 
@@ -550,5 +562,6 @@
         private System.Windows.Forms.Button button23;
         private System.Windows.Forms.Button button24;
         private System.Windows.Forms.Button button25;
+        private System.Windows.Forms.Button button26;
     }
 }
