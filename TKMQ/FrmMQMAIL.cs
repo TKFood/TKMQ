@@ -899,6 +899,34 @@ namespace TKMQ
 
             }
 
+            //測試UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+            //測試主管UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
             //通知副總，總務未簽核的表單           
             try
             {
