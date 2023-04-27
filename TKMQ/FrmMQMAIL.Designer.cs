@@ -61,6 +61,7 @@
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.button25 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -125,10 +126,11 @@
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 3);
             this.tableLayoutPanel1.Controls.Add(this.button19, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button20, 0, 5);
-            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 7);
             this.tableLayoutPanel1.Controls.Add(this.button18, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button24, 0, 2);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 9);
+            this.tableLayoutPanel1.Controls.Add(this.button25, 6, 6);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -385,7 +387,7 @@
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(723, 283);
+            this.button21.Location = new System.Drawing.Point(723, 363);
             this.button21.Name = "button21";
             this.button21.Size = new System.Drawing.Size(143, 34);
             this.button21.TabIndex = 23;
@@ -483,6 +485,16 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // button25
+            // 
+            this.button25.Location = new System.Drawing.Point(723, 243);
+            this.button25.Name = "button25";
+            this.button25.Size = new System.Drawing.Size(143, 34);
+            this.button25.TabIndex = 26;
+            this.button25.Text = "測試UOF交辨未完成";
+            this.button25.UseVisualStyleBackColor = true;
+            this.button25.Click += new System.EventHandler(this.button25_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -537,5 +549,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
         private System.Windows.Forms.Button button23;
         private System.Windows.Forms.Button button24;
+        private System.Windows.Forms.Button button25;
     }
 }
