@@ -53,16 +53,16 @@
             this.button17 = new System.Windows.Forms.Button();
             this.button19 = new System.Windows.Forms.Button();
             this.button20 = new System.Windows.Forms.Button();
-            this.button21 = new System.Windows.Forms.Button();
             this.button18 = new System.Windows.Forms.Button();
             this.button22 = new System.Windows.Forms.Button();
             this.button24 = new System.Windows.Forms.Button();
+            this.button21 = new System.Windows.Forms.Button();
+            this.button25 = new System.Windows.Forms.Button();
+            this.button26 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button25 = new System.Windows.Forms.Button();
-            this.button26 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -370,9 +370,9 @@
             // 
             this.button19.Location = new System.Drawing.Point(723, 163);
             this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(143, 34);
+            this.button19.Size = new System.Drawing.Size(197, 34);
             this.button19.TabIndex = 21;
-            this.button19.Text = "測試UOF校稿訊息";
+            this.button19.Text = "測試UOF交辨訊息";
             this.button19.UseVisualStyleBackColor = true;
             this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
@@ -386,16 +386,6 @@
             this.button20.Text = "資訊-UOF表單未核";
             this.button20.UseVisualStyleBackColor = true;
             this.button20.Click += new System.EventHandler(this.button20_Click);
-            // 
-            // button21
-            // 
-            this.button21.Location = new System.Drawing.Point(723, 363);
-            this.button21.Name = "button21";
-            this.button21.Size = new System.Drawing.Size(197, 34);
-            this.button21.TabIndex = 23;
-            this.button21.Text = "測試UOF總務採購完成";
-            this.button21.UseVisualStyleBackColor = true;
-            this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
             // button18
             // 
@@ -427,6 +417,36 @@
             this.button24.Text = "寄信測試";
             this.button24.UseVisualStyleBackColor = true;
             this.button24.Click += new System.EventHandler(this.button24_Click);
+            // 
+            // button21
+            // 
+            this.button21.Location = new System.Drawing.Point(723, 363);
+            this.button21.Name = "button21";
+            this.button21.Size = new System.Drawing.Size(197, 34);
+            this.button21.TabIndex = 23;
+            this.button21.Text = "測試UOF總務採購完成";
+            this.button21.UseVisualStyleBackColor = true;
+            this.button21.Click += new System.EventHandler(this.button21_Click);
+            // 
+            // button25
+            // 
+            this.button25.Location = new System.Drawing.Point(723, 243);
+            this.button25.Name = "button25";
+            this.button25.Size = new System.Drawing.Size(197, 34);
+            this.button25.TabIndex = 26;
+            this.button25.Text = "測試UOF交辨未完成";
+            this.button25.UseVisualStyleBackColor = true;
+            this.button25.Click += new System.EventHandler(this.button25_Click);
+            // 
+            // button26
+            // 
+            this.button26.Location = new System.Drawing.Point(723, 283);
+            this.button26.Name = "button26";
+            this.button26.Size = new System.Drawing.Size(197, 34);
+            this.button26.TabIndex = 27;
+            this.button26.Text = "測試主管UOF交辨未完成";
+            this.button26.UseVisualStyleBackColor = true;
+            this.button26.Click += new System.EventHandler(this.button26_Click);
             // 
             // tabPage2
             // 
@@ -486,26 +506,6 @@
             // timer1
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
-            // 
-            // button25
-            // 
-            this.button25.Location = new System.Drawing.Point(723, 243);
-            this.button25.Name = "button25";
-            this.button25.Size = new System.Drawing.Size(197, 34);
-            this.button25.TabIndex = 26;
-            this.button25.Text = "測試UOF交辨未完成";
-            this.button25.UseVisualStyleBackColor = true;
-            this.button25.Click += new System.EventHandler(this.button25_Click);
-            // 
-            // button26
-            // 
-            this.button26.Location = new System.Drawing.Point(723, 283);
-            this.button26.Name = "button26";
-            this.button26.Size = new System.Drawing.Size(197, 34);
-            this.button26.TabIndex = 27;
-            this.button26.Text = "測試主管UOF交辨未完成";
-            this.button26.UseVisualStyleBackColor = true;
-            this.button26.Click += new System.EventHandler(this.button26_Click);
             // 
             // FrmMQMAIL
             // 

@@ -6100,7 +6100,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "系統通知-每日校稿的未回覆項目，請於3天內至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
+            string TOPIC = "系統通知-每日校稿的未回覆項目，請至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
             string MESSAGE_CONTENT = MESS;
             string MESSAGE_TO = USER_GUID;
             string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
