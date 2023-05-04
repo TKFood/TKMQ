@@ -5271,7 +5271,7 @@ namespace TKMQ
         public void PREPAREPROOFREAD()
         {
             DataSet DSPROOFREAD = UOFPROOFREAD();
-           
+            DataSet DSUOFUOFFORM1002 = UOFUOFFORM1002();
 
 
             try
@@ -5287,12 +5287,11 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
+                
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-交辨未完成的項目及設計表單簽核未完成的項目 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
 
-                SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-交辨未完成的項目及設計表單簽核未完成的項 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
-                //ERP 採購相關單別、單號未核準的明細
-                //
+                //交辨未完成的項目及交辨人回覆狀況
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
                     + "<br>" + "交辨未完成的項目及交辨人回覆狀況 明細如下"
 
@@ -5341,7 +5340,58 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
                 }
 
-               
+
+                //設計表單簽核未完成的項目
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "設計表單簽核未完成的項目 明細如下"
+
+                    );
+
+
+                if (DSUOFUOFFORM1002.Tables[0].Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">目前簽核人員</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=40% "">申請人員</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=40% "">申請表單</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單編號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單申請日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單逾期天數</th>");
+                    
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DSUOFUOFFORM1002.Tables[0].Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["NAME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體'  width=40% "">" + DR["APPLICANT_NAME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體'  width=30% "">" + DR["FORM_NAME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["START_TIME"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DAYS"].ToString() + "</td>");
+
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
+                }
+
+
 
                 BODY.AppendFormat(" "
                              + "<br>" + "謝謝"
@@ -5363,9 +5413,7 @@ namespace TKMQ
             }
         }
 
-        /// <summary>
-        /// 準備寄給採購人員，ERP未核單的單別、單號
-        /// </summary>
+      
         public DataSet UOFPROOFREAD()
         {
             DataSet DSPROOFREAD = new DataSet();
@@ -5420,6 +5468,107 @@ namespace TKMQ
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
                                     AND TB_EIP_SCH_WORK.WORK_STATE NOT IN ('Completed','Audit')
                                     ORDER BY TB_EIP_SCH_DEVOLVE.CREATE_TIME DESC
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DSPROOFREAD.Clear();
+                adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
+                sqlConn.Close();
+
+
+
+                if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
+                {
+                    return DSPROOFREAD;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+
+        }
+
+
+        public DataSet UOFUOFFORM1002()
+        {
+            DataSet DSPROOFREAD = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  
+                                   
+                                        SELECT
+                                        usr2.NAME
+                                        ,(CASE WHEN  usr.IS_SUSPENDED = 1 THEN  usr.NAME + '(x)' WHEN  ISNULL(usr.ACCOUNT,'''') = '' THEN  'unknown user' ELSE usr.NAME END) AS APPLICANT_NAME
+                                        ,form.FORM_NAME
+                                        ,DOC_NBR
+                                        ,CONVERT(NVARCHAR,NODES.START_TIME,111) AS 'START_TIME'
+                                        ,DATEDIFF(DAY,START_TIME,GETDATE()) AS 'DAYS'
+                                        ,CONVERT(NVARCHAR,BEGIN_TIME,111) AS BEGIN_TIME
+
+                                        ,task.TASK_ID
+                                        ,END_TIME
+                                        ,TASK_RESULT
+                                        ,TASK_STATUS
+                                        ,task.USER_GUID
+                                        ,formVer.FORM_VERSION_ID
+                                        ,formVer.FORM_ID
+                                        ,CURRENT_SITE_ID
+                                        ,MESSAGE_CONTENT
+                                        ,LOCK_STATUS
+                                        ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
+                                        ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
+                                        ,[NODES].SIGN_STATUS
+                                        ,task.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""00010""]/@fieldValue)[1]', 'nvarchar(50)') AS '產品設計'
+                                        ,task.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""RDFrm1002PD""]/@fieldValue)[1]', 'nvarchar(50)') AS '設計需求'
+
+                                        FROM [UOF].dbo.TB_WKF_TASK task
+                                        INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                        INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
+                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
+                                        LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                        WHERE
+                                        1=1  
+                                        AND  TASK_STATUS NOT IN ('2')
+                                        AND ISNULL([NODES].SIGN_STATUS,999)<>0
+                                        AND form.FORM_NAME IN ('1002.產品設計申請','1002.設計需求內容清單')
+
+                                        ORDER BY form.FORM_NAME,usr2.NAME,DAYS DESC,DOC_NBR
                                    ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
