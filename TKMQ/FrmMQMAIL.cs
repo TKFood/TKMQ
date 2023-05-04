@@ -5288,13 +5288,13 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-校稿未完成的項目及交辨人回覆狀況 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-交辨未完成的項目及設計表單簽核未完成的項 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "校稿未完成的項目及交辨人回覆狀況 明細如下"
+                    + "<br>" + "交辨未完成的項目及交辨人回覆狀況 明細如下"
 
                     );
 
@@ -5393,23 +5393,33 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@"  
-                                   SELECT CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始時間'
+                                    SELECT CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始時間'
+                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
+                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
                                     ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
+                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '交辨'
+                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
                                     ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
                                     ,TB_EB_USER.NAME AS '被交辨人'
-                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
+                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '已回覆，但交辨人未確認' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始回覆' END) AS '交辨狀態'
                                     ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
-                                    ,TB_EB_USER.ACCOUNT AS '被交辨人工號'
+
+                                    ,TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.*
+                                    ,TB_EB_USER.ACCOUNT
+                                    ,USER2.NAME AS '交辨人'
+
                                     FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
                                     LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
-                                    ORDER BY TB_EIP_SCH_DEVOLVE.CREATE_TIME
-    
+                                    AND TB_EIP_SCH_WORK.WORK_STATE NOT IN ('Completed','Audit')
+                                    ORDER BY TB_EIP_SCH_DEVOLVE.CREATE_TIME DESC
                                    ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);

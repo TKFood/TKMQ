@@ -130,9 +130,9 @@
             this.tableLayoutPanel1.Controls.Add(this.button18, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button24, 0, 2);
-            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 9);
-            this.tableLayoutPanel1.Controls.Add(this.button25, 6, 6);
-            this.tableLayoutPanel1.Controls.Add(this.button26, 6, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button26, 6, 8);
+            this.tableLayoutPanel1.Controls.Add(this.button25, 6, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -393,7 +393,7 @@
             this.button18.Name = "button18";
             this.button18.Size = new System.Drawing.Size(197, 34);
             this.button18.TabIndex = 20;
-            this.button18.Text = "測試UOF校稿未完成";
+            this.button18.Text = "測試UOF交辨+設計未完成";
             this.button18.UseVisualStyleBackColor = true;
             this.button18.Click += new System.EventHandler(this.button18_Click);
             // 
@@ -420,7 +420,7 @@
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(723, 363);
+            this.button21.Location = new System.Drawing.Point(723, 403);
             this.button21.Name = "button21";
             this.button21.Size = new System.Drawing.Size(197, 34);
             this.button21.TabIndex = 23;
@@ -430,7 +430,7 @@
             // 
             // button25
             // 
-            this.button25.Location = new System.Drawing.Point(723, 243);
+            this.button25.Location = new System.Drawing.Point(723, 283);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(197, 34);
             this.button25.TabIndex = 26;
@@ -440,7 +440,7 @@
             // 
             // button26
             // 
-            this.button26.Location = new System.Drawing.Point(723, 283);
+            this.button26.Location = new System.Drawing.Point(723, 323);
             this.button26.Name = "button26";
             this.button26.Size = new System.Drawing.Size(197, 34);
             this.button26.TabIndex = 27;
