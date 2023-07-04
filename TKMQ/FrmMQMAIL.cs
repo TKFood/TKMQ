@@ -906,7 +906,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試UOF交辨未完成");
             }
             finally
             {
@@ -920,7 +920,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
             }
             finally
             {
@@ -934,7 +934,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
             }
             finally
             {
@@ -949,7 +949,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
             }
             finally
             {
@@ -963,7 +963,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 通知各表單申請人");
             }
             finally
             {
@@ -977,7 +977,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 通知各別的被交辨人");
             }
             finally
             {
@@ -991,7 +991,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 通知交辨人");
             }
             finally
             {
@@ -1005,7 +1005,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 校稿追踨");
             }
             finally
             {
@@ -1019,7 +1019,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 IT檢查網站是否正常");
             }
             finally
             {
@@ -1033,13 +1033,14 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
             }
             finally
             {
 
             }
 
+            //測試預排製令
             ///SETFILEMOCMANULINE
             try
             {
@@ -1049,13 +1050,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試預排製令");
             }
             finally
             {
 
             }
-
+            //測試批號錯誤
             ///SETFILELOTCHECK
             try
             {
@@ -1065,13 +1066,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試批號錯誤");
             }
             finally
             {
 
             }
-
+            //測試未完重工單
             ///SETFILEMOCTARE
             try
             {
@@ -1081,14 +1082,14 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試未完重工單");
             }
             finally
             {
 
             }
 
-
+            ///測試已採購未結案
             ///SETFILEPURTD
             try
             {
@@ -1098,13 +1099,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試已採購未結案");
             }
             finally
             {
 
             }
-
+            //測試物料安全水位
             ///SETFILEINVMC
             try
             {
@@ -1114,14 +1115,14 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試物料安全水位 ");
             }
             finally
             {
 
             }
 
-
+            //測試已請購未採購
             ///SETFILEPURTB
             try
             {
@@ -1131,13 +1132,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試已請購未採購");
             }
             finally
             {
 
             }
-
+            //測試半成品-製令
             ///SETFILEINVMOCTA
             try
             {
@@ -1147,13 +1148,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試半成品-製令");
             }
             finally
             {
 
             }
-
+            //測試製令-訂單
             ///SETFILEMOCTA            
             try
             {
@@ -1163,13 +1164,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試製令-訂單");
             }
             finally
             {
 
             }
-
+            //測試訂單變更
             /// SETFILECOPTE
             try
             {
@@ -1179,13 +1180,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試訂單變更");
             }
             finally
             {
 
             }
-
+            //測試請購
             ///SETFILEPURTA
             try
             {
@@ -1196,13 +1197,13 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試請購");
             }
             finally
             {
 
             }
-
+            //測試訂單
             ///SETFILE
             try
             {
@@ -1212,7 +1213,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 測試訂單");
             }
             finally
             {
@@ -1232,7 +1233,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日預排製令表");
             }
             finally
             {
@@ -1253,6 +1254,7 @@ namespace TKMQ
             }
             catch
             {
+                MessageBox.Show("有錯誤 每日批號檢查表");
 
             }
             finally
@@ -1273,7 +1275,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日重工單未結案表");
             }
             finally
             {
@@ -1294,7 +1296,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日每日採購單未結案表");
             }
             finally
             {
@@ -1336,7 +1338,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日已請購未採購表");
             }
             finally
             {
@@ -1357,7 +1359,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
             }
             finally
             {
@@ -1379,7 +1381,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日追踨製令未確認表");
             }
             finally
             {
@@ -1401,7 +1403,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
             }
             finally
             {
@@ -1423,7 +1425,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
             }
             finally
             {
@@ -1444,7 +1446,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
             }
             finally
             {
