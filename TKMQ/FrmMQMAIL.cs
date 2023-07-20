@@ -899,6 +899,20 @@ namespace TKMQ
 
             }
 
+            ///本年新品的銷售報表
+            try
+            {
+
+            }
+            catch
+            {
+                PREPARESENDEMAIL_NEWSLAES();
+            }
+            finally
+            {
+
+            }
+
             //測試UOF交辨未完成
             try
             {
