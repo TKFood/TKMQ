@@ -8015,123 +8015,137 @@ namespace TKMQ
         {
             DataTable DTDETAILS = new DataTable();
             foreach (DataRow DR in DT.Rows)
-            {
-                DTDETAILS.Clear();
-                DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
+            {             
 
-                if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
+                if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
                 {
-                    try
+                    DTDETAILS.Clear();
+                    DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
+
+                    if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
                     {
-                        StringBuilder SUBJEST = new StringBuilder();
-                        StringBuilder BODY = new StringBuilder();
-
-                        ////加上附圖
-                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                        //LinkedResource res = new LinkedResource(path);
-                        //res.ContentId = Guid.NewGuid().ToString();
-
-                        SUBJEST.Clear();
-                        BODY.Clear();
-
-
-                        SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                        //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-                        //ERP 採購相關單別、單號未核準的明細
-                        //
-                        BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                            + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
-                            + " <br>"
-                            );
-
-
-
-
-
-                        if (DTDETAILS.Rows.Count > 0)
+                        try
                         {
-                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+                            StringBuilder SUBJEST = new StringBuilder();
+                            StringBuilder BODY = new StringBuilder();
 
-                            BODY.AppendFormat(@"<table> ");
-                            BODY.AppendFormat(@"<tr >");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
+                            ////加上附圖
+                            //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                            //LinkedResource res = new LinkedResource(path);
+                            //res.ContentId = Guid.NewGuid().ToString();
+
+                            SUBJEST.Clear();
+                            BODY.Clear();
 
 
-                            BODY.AppendFormat(@"</tr> ");
+                            SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
-                            foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
+                            //ERP 採購相關單別、單號未核準的明細
+                            //
+                            BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                                + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
+                                + " <br>"
+                                );
+
+
+
+
+
+                            if (DTDETAILS.Rows.Count > 0)
                             {
+                                BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
+                                BODY.AppendFormat(@"<table> ");
                                 BODY.AppendFormat(@"<tr >");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
+                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
+
 
                                 BODY.AppendFormat(@"</tr> ");
 
-                                //BODY.AppendFormat("<span></span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                                foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
+                                {
+
+                                    BODY.AppendFormat(@"<tr >");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
+                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
+
+                                    BODY.AppendFormat(@"</tr> ");
+
+                                    //BODY.AppendFormat("<span></span>");
+                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                                }
+                                BODY.AppendFormat(@"</table> ");
                             }
-                            BODY.AppendFormat(@"</table> ");
-                        }
-
-
-                        try
-                        {
-                            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                            string NAME = ConfigurationManager.AppSettings["NAME"];
-                            string PW = ConfigurationManager.AppSettings["PW"];
-
-                            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-                            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                            MyMail.Subject = SUBJEST.ToString();
-                            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                            MyMail.Body = BODY.ToString();
-                            MyMail.IsBodyHtml = true; //是否使用html格式
-
-                            //加上附圖
-                            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
 
                             try
                             {
+                                string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                                string NAME = ConfigurationManager.AppSettings["NAME"];
+                                string PW = ConfigurationManager.AppSettings["PW"];
 
-                                MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
-                                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                                MySMTP.Send(MyMail);
+                                System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
-                                MyMail.Dispose(); //釋放資源
+                                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                                MyMail.Subject = SUBJEST.ToString();
+                                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                                MyMail.Body = BODY.ToString();
+                                MyMail.IsBodyHtml = true; //是否使用html格式
+
+                                //加上附圖
+                                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
 
+                                try
+                                {
+
+                                    MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
+                                    MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                    MySMTP.Send(MyMail);
+
+                                    MyMail.Dispose(); //釋放資源
+
+
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show("有錯誤");
+
+                                    //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                                    //ex.ToString();
+                                }
                             }
-                            catch (Exception ex)
+                            catch
                             {
-                                MessageBox.Show("有錯誤");
 
-                                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                                //ex.ToString();
                             }
+                            finally
+                            {
+
+                            }
+
+
                         }
                         catch
                         {
@@ -8141,16 +8155,6 @@ namespace TKMQ
                         {
 
                         }
-
-
-                    }
-                    catch
-                    {
-
-                    }
-                    finally
-                    {
-
                     }
                 }
             }
