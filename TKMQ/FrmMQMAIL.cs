@@ -145,6 +145,7 @@ namespace TKMQ
         string pathFileMOCTARE = null;
         string pathFileLOTCHECK = null;
         string pathFileMOCMANULINE = null;
+        string path_File_NEWSLAES = null;
 
         FileInfo info;
         string[] tempFile;
@@ -184,6 +185,7 @@ namespace TKMQ
             pathFileMOCTARE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令重工表" + DATES.ToString();
             pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
             pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
+            path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -903,11 +905,16 @@ namespace TKMQ
             try
             {
 
+                SETPATH();
+                SETFILE_NEWSLAES(path_File_NEWSLAES);
+                CLEAREXCEL();
+
+                //PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
             }
             catch
             {
-                PREPARESENDEMAIL_NEWSLAES();
-            }
+                MessageBox.Show("有錯誤 本年新品的銷售報表");
+            }        
             finally
             {
 
@@ -8261,7 +8268,7 @@ namespace TKMQ
         /// <summary>
         /// 本年新品的銷售報表
         /// </summary>
-        public void PREPARESENDEMAIL_NEWSLAES()
+        public void PREPARESENDEMAIL_NEWSLAES(string path_File)
         {
             DataSet DS_NEWSLAES = ERP_NEWSLAES();
 
@@ -8366,7 +8373,7 @@ namespace TKMQ
 
 
 
-                SENDEMAIL_NEWSALES(SUBJEST, BODY);
+                SENDEMAIL_NEWSALES(SUBJEST, BODY, path_File);
 
             }
             catch
@@ -8384,7 +8391,7 @@ namespace TKMQ
         /// </summary>
         /// <param name="Subject"></param>
         /// <param name="Body"></param>
-        public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body)
+        public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body,string Attachments)
         {
             DataSet DSFINDPURCHECKMAILTO = FINDPURCHECKMAILTO("NEWSALES");
 
@@ -8420,6 +8427,9 @@ namespace TKMQ
 
                         try
                         {
+                            Attachment attch = new Attachment(Attachments + ".xlsx");
+                            MyMail.Attachments.Add(attch);
+
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                                   //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                             MySMTP.Send(MyMail);
@@ -8573,7 +8583,195 @@ namespace TKMQ
             }
 
         }
+        public void SETFILE_NEWSLAES(string pathFile)
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFile + ".xlsx"))
+                {
+                    File.Delete(pathFile + ".xlsx");
+                }
 
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFile + ".xlsx"))
+            {
+                wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCH_NEWSLAES(pathFile);
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+
+        }
+
+        public void SEARCH_NEWSLAES(string pathFile)
+        {
+            DataSet ds1 = new DataSet();
+            SqlDataAdapter adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+            DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+            DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"  
+                                    
+                                    SELECT  
+                                    MB001 AS '品號'
+                                    ,MB002 AS '品名'
+                                    ,MB003 AS '規格'
+                                    ,MB004 AS '單位'
+                                    ,CREATE_DATE AS '新品建立日期'
+                                    ,TOPTG003 AS '第1天業務銷貨日'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '業務銷貨數量'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '業務銷貨金額'
+                                    ,TOPTI003 AS '第1天業務銷退日'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ007)), 1), '.00', '') AS '業務銷退數量'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ033)), 1), '.00', '') AS '業務銷退金額'
+                                    ,TOPTB001 AS '第1天POS銷售日'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB019)), 1), '.00', '') AS 'POS銷售數量'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB031)), 1), '.00', '') AS 'POS銷售金額'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(DECIMAL(16,4),PERCOSTS)), 1), '.00', '') AS '平均單位成本'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH008-SUMTJ007+SUMTB019))), 1), '.00', '')  AS '總銷售數量'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031))), 1), '.00', '')  AS '總銷售未稅金額'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '總成本'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '總毛利'
+                                    ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '毛利率'
+                                    FROM 
+                                    (
+                                    SELECT *
+                                    ,ISNULL(
+                                    (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
+                                    FROM [TK].dbo.SASLA
+                                    WHERE LA005=MB001
+                                    AND CONVERT(NVARCHAR,LA015,112)>=SDATES
+                                    AND CONVERT(NVARCHAR,LA015,112)<='{1}')
+                                    ,0) AS PERCOSTS
+                                    FROM (
+                                    SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH LEFT JOIN [TK].dbo.INVMD ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
+                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
+
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ LEFT JOIN [TK].dbo.INVMD ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
+                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
+
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
+                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
+                                    FROM [TK].dbo.INVMB
+                                    WHERE 1=1
+                                    AND MB001 LIKE '4%'
+                                    AND MB002 NOT LIKE '%試吃%'
+                                    AND CREATE_DATE>='{0}'
+                                    ) AS TEMP
+                                    ) AS TEMP2
+                                    ORDER BY (SUMTH037+SUMTB031) DESC
+                                    ", firstDayOfYear.ToString("yyyyMMdd"), lastDayOfYear.ToString("yyyyMMdd"));
+
+                adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "TEMPds1");
+                sqlConn.Close();
+
+
+                if (ds1.Tables["TEMPds1"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = ds1.Tables["TEMPds1"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    ds1.Tables["TEMPds1"].Rows.Add(row);
+
+                    ExportDataSetToExcel(ds1, pathFile);
+                }
+                else
+                {
+                    if (ds1.Tables["TEMPds1"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(ds1, pathFile);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
 
         #endregion
 
@@ -8762,8 +8960,16 @@ namespace TKMQ
         }
         private void button27_Click(object sender, EventArgs e)
         {
-            PREPARESENDEMAIL_NEWSLAES();
+            SETPATH();
+            SETFILE_NEWSLAES(path_File_NEWSLAES);
+            CLEAREXCEL();
+        
+            PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+
+            MessageBox.Show("OK");
         }
+
+
         #endregion
 
 
