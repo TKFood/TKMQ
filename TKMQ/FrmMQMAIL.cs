@@ -909,7 +909,7 @@ namespace TKMQ
                 SETFILE_NEWSLAES(path_File_NEWSLAES);
                 CLEAREXCEL();
 
-                //PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+                PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
             }
             catch
             {
