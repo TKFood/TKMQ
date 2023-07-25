@@ -8917,6 +8917,7 @@ namespace TKMQ
                                     ) AS TEMP
                                     LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
                                     LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
+                                    WHERE MB002 NOT LIKE '%暫停%'
                                     ORDER BY LA009,LA001,LA016
 
 
@@ -9205,6 +9206,7 @@ namespace TKMQ
                                     ) AS TEMP
                                     LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
                                     LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
+                                    WHERE MB002 NOT LIKE '%暫停%'
                                     ORDER BY LA009,LA001,LA016
 
 
