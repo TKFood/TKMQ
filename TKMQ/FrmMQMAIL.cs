@@ -146,6 +146,7 @@ namespace TKMQ
         string pathFileLOTCHECK = null;
         string pathFileMOCMANULINE = null;
         string path_File_NEWSLAES = null;
+        string path_File_INV = null;
 
         FileInfo info;
         string[] tempFile;
@@ -186,6 +187,7 @@ namespace TKMQ
             pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
             pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
             path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
+            path_File_INV = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -8773,6 +8775,171 @@ namespace TKMQ
             }
         }
 
+        public void SETFILE_INV(string pathFile)
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFile + ".xlsx"))
+                {
+                    File.Delete(pathFile + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFile + ".xlsx"))
+            {
+                wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCH_INV(pathFile);
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+
+        }
+
+        public void SEARCH_INV(string pathFile)
+        {
+            DataSet ds1 = new DataSet();
+            SqlDataAdapter adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+            DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+            DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@" 
+                                    SELECT 
+                                    LA009 AS '庫別代號'
+                                    ,MC002 AS '庫別'
+                                    ,LA001 AS '品號'
+                                    ,MB002 AS '品名'
+                                    ,MB003 AS '規格'
+                                    ,MB004 AS '單位'
+                                    ,LA016 AS '有效日'
+                                    ,NUMS AS '庫存數量'
+                                    ,生產日期
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'20230725') ELSE 0 END ) AS '在倉日期'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,'20230725',LA016) ELSE 0 END )  AS '有效天數'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN (CASE WHEN DATEDIFF(DAY,生產日期,'20230725')>90 THEN '在倉超過90天' ELSE (CASE WHEN DATEDIFF(DAY,生產日期,'20230725')>30 THEN '在倉超過30天' ELSE '' END) END )  ELSE '' END ) AS '狀態'
+                                    FROM 
+                                    (
+                                    SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
+                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 ORDER BY TF003 ASC),'') AS '生產日期'
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
+                                    AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
+                                    AND ISDATE(LA016)=1
+                                    GROUP BY  LA009,LA001,LA016
+                                    HAVING SUM(LA005*LA011)>0
+                                    ) AS TEMP
+                                    LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
+                                    LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
+                                    ORDER BY LA009,LA001,LA016
+
+                                    ");
+
+                adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "TEMPds1");
+                sqlConn.Close();
+
+
+                if (ds1.Tables["TEMPds1"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = ds1.Tables["TEMPds1"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    ds1.Tables["TEMPds1"].Rows.Add(row);
+
+                    ExportDataSetToExcel(ds1, pathFile);
+                }
+                else
+                {
+                    if (ds1.Tables["TEMPds1"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(ds1, pathFile);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -8969,6 +9136,14 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+        private void button28_Click(object sender, EventArgs e)
+        {
+            SETPATH();
+            SETFILE_INV(path_File_INV);
+            CLEAREXCEL();
+
+            MessageBox.Show("OK");
+        }
 
         #endregion
 
