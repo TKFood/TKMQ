@@ -8849,6 +8849,7 @@ namespace TKMQ
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
             DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
             DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+            string TODAY = DateTime.Now.ToString("yyyyMMdd");
 
             try
             {
@@ -8869,6 +8870,8 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@" 
+                                   --20230725 查INVLA
+
                                     SELECT 
                                     LA009 AS '庫別代號'
                                     ,MC002 AS '庫別'
@@ -8878,14 +8881,16 @@ namespace TKMQ
                                     ,MB004 AS '單位'
                                     ,LA016 AS '有效日'
                                     ,NUMS AS '庫存數量'
-                                    ,生產日期
-                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'20230725') ELSE 0 END ) AS '在倉日期'
-                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,'20230725',LA016) ELSE 0 END )  AS '有效天數'
-                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN (CASE WHEN DATEDIFF(DAY,生產日期,'20230725')>90 THEN '在倉超過90天' ELSE (CASE WHEN DATEDIFF(DAY,生產日期,'20230725')>30 THEN '在倉超過30天' ELSE '' END) END )  ELSE '' END ) AS '狀態'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN 生產日期 WHEN  ISDATE(進貨日期)=1 THEN 進貨日期 WHEN  ISDATE(託外生產日期)=1 THEN 託外生產日期 ELSE 0 END )  AS '生產-進貨日期'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'{0}') WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,'{0}') WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,'{0}') ELSE 0 END ) AS '在倉日期'
+                                    ,(DATEDIFF(DAY,'{0}',LA016))  AS '有效天數'
                                     FROM 
                                     (
                                     SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
-                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 ORDER BY TF003 ASC),'') AS '生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG, [TK].dbo.PURTH WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
+                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
+
                                     FROM [TK].dbo.INVLA 
                                     WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
@@ -8897,7 +8902,8 @@ namespace TKMQ
                                     LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
                                     ORDER BY LA009,LA001,LA016
 
-                                    ");
+
+                                    ", TODAY);
 
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
