@@ -146,7 +146,7 @@ namespace TKMQ
         string pathFileLOTCHECK = null;
         string pathFileMOCMANULINE = null;
         string path_File_NEWSLAES = null;
-        string path_File_INV = null;
+        string path_File_POSINV = null;
 
         FileInfo info;
         string[] tempFile;
@@ -187,7 +187,7 @@ namespace TKMQ
             pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
             pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
             path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
-            path_File_INV = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
+            path_File_POSINV = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -892,11 +892,28 @@ namespace TKMQ
 
             try
             {
-
+               
             }
             catch
             {
 
+            }
+            finally
+            {
+
+            }
+            //營銷各庫庫存通知
+            try
+            {
+                SETPATH();
+                SETFILE_POSINV(path_File_POSINV);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_POSINV(path_File_POSINV);
+            }
+            catch
+            {
+                MessageBox.Show("有錯誤 營銷各庫庫存通知");
             }
             finally
             {
@@ -8775,7 +8792,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILE_INV(string pathFile)
+        public void SETFILE_POSINV(string pathFile)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -8832,7 +8849,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCH_INV(pathFile);
+            SEARCH_POSINV(pathFile);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -8842,7 +8859,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCH_INV(string pathFile)
+        public void SEARCH_POSINV(string pathFile)
         {
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -8945,7 +8962,284 @@ namespace TKMQ
 
             }
         }
+        /// <summary>
+        /// 營銷各庫庫存通知
+        /// </summary>
+        public void PREPARESENDEMAIL_POSINV(string path_File)
+        {
+            DataSet DS_POSINV = ERP_POSINV();
 
+            try
+            {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                ////加上附圖
+                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //LinkedResource res = new LinkedResource(path);
+                //res.ContentId = Guid.NewGuid().ToString();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-營銷各庫庫存通知報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "營銷各庫庫存通知的明細如下(含附件)"
+
+                    );
+
+
+                if (DS_POSINV != null && DS_POSINV.Tables[0].Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別代號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫存數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">生產-進貨日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">在倉日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效天數</th>");
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DS_POSINV.Tables[0].Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫別代號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫存數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["生產-進貨日期"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["在倉日期"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效天數"].ToString() + "</td>");
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                BODY.AppendFormat(" "
+                             + "<br>" + "謝謝"
+
+                             + "</span><br>");
+
+
+
+                SENDEMAIL_POSINV(SUBJEST, BODY, path_File);
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        /// <summary>
+        /// 寄送營銷各庫庫存通知
+        /// </summary>
+        /// <param name="Subject"></param>
+        /// <param name="Body"></param>
+        public void SENDEMAIL_POSINV(StringBuilder Subject, StringBuilder Body, string Attachments)
+        {
+            DataSet DSMAILTO = FINDPURCHECKMAILTO("POSINV");
+            DataSet DSMAILTOCC = FINDPURCHECKMAILTO("POSINVCC");
+
+            try
+            {
+                if (DSMAILTO.Tables[0].Rows.Count > 0)
+                {
+                    
+
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = Subject.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = Body.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+                    
+
+                    try
+                    {
+                        Attachment attch = new Attachment(Attachments + ".xlsx");
+                        MyMail.Attachments.Add(attch);
+
+                        //設定收件者Email，多筆mail
+                        foreach (DataRow DR in DSMAILTO.Tables[0].Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString());
+                        }
+                        //設定收件者Email，多筆mail CC
+                        foreach (DataRow DR in DSMAILTOCC.Tables[0].Rows)
+                        {
+                            MyMail.CC.Add(DR["MAIL"].ToString());
+                        }
+                       
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                        //ex.ToString();
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+
+        }
+
+        public DataSet ERP_POSINV()
+        {
+            DataSet DS_NEWSLAES = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+            DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+            DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+            string TODAY = DateTime.Now.ToString("yyyyMMdd");
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@" 
+                                   --20230725 查INVLA
+
+                                    SELECT 
+                                    LA009 AS '庫別代號'
+                                    ,MC002 AS '庫別'
+                                    ,LA001 AS '品號'
+                                    ,MB002 AS '品名'
+                                    ,MB003 AS '規格'
+                                    ,MB004 AS '單位'
+                                    ,LA016 AS '有效日'
+                                    ,NUMS AS '庫存數量'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN 生產日期 WHEN  ISDATE(進貨日期)=1 THEN 進貨日期 WHEN  ISDATE(託外生產日期)=1 THEN 託外生產日期 ELSE 0 END )  AS '生產-進貨日期'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'{0}') WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,'{0}') WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,'{0}') ELSE 0 END ) AS '在倉日期'
+                                    ,(DATEDIFF(DAY,'{0}',LA016))  AS '有效天數'
+                                    FROM 
+                                    (
+                                    SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
+                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG, [TK].dbo.PURTH WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
+                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
+
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
+                                    AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
+                                    AND ISDATE(LA016)=1
+                                    GROUP BY  LA009,LA001,LA016
+                                    HAVING SUM(LA005*LA011)>0
+                                    ) AS TEMP
+                                    LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
+                                    LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
+                                    ORDER BY LA009,LA001,LA016
+
+
+                                    ", TODAY);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_NEWSLAES.Clear();
+                adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
+                sqlConn.Close();
+
+
+
+                if (DS_NEWSLAES.Tables["DS_NEWSLAES"].Rows.Count > 0)
+                {
+                    return DS_NEWSLAES;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
         #endregion
 
         #region BUTTON
@@ -9145,9 +9439,10 @@ namespace TKMQ
         private void button28_Click(object sender, EventArgs e)
         {
             SETPATH();
-            SETFILE_INV(path_File_INV);
+            SETFILE_POSINV(path_File_POSINV);
             CLEAREXCEL();
 
+            PREPARESENDEMAIL_POSINV(path_File_POSINV);
             MessageBox.Show("OK");
         }
 

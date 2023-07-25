@@ -529,7 +529,7 @@
             this.button28.Name = "button28";
             this.button28.Size = new System.Drawing.Size(148, 34);
             this.button28.TabIndex = 29;
-            this.button28.Text = "各庫庫存通知";
+            this.button28.Text = "營銷各庫庫存通知";
             this.button28.UseVisualStyleBackColor = true;
             this.button28.Click += new System.EventHandler(this.button28_Click);
             // 
