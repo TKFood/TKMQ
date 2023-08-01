@@ -891,10 +891,31 @@ namespace TKMQ
           
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
-
+            
+            
             try
             {
-               
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+            //每日訂單明細表
+            try
+            {
+                //path_File_COPTCD
+                //每日訂單明細表
+                SETPATH();
+                SETFILE_COPTCD(path_File_COPTCD);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
             }
             catch
             {
@@ -9548,6 +9569,423 @@ namespace TKMQ
             }
         }
 
+        /// <summary>
+        /// 訂單明細及金額報表
+        /// </summary>
+        public void PREPARESENDEMAIL_COPTCD(string path_File)
+        {
+            DataSet DS = ERP_COPTCD();
+
+            try
+            {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                ////加上附圖
+                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //LinkedResource res = new LinkedResource(path);
+                //res.ContentId = Guid.NewGuid().ToString();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-訂單明細及金額報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "訂單明細及金額的明細如下(含附件)"
+
+                    );
+
+
+                if (DS != null && DS.Tables[0].Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">KINDS</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">客戶簡稱</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">課稅別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已交數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品已交量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單價</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出貨金額</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已出貨金額</th>");
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DS.Tables[0].Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["KINDS"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["客戶簡稱"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["課稅別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["部門"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已交數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品已交量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單價"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出貨金額"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預交日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已出貨金額"].ToString() + "</td>");
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                BODY.AppendFormat(" "
+                             + "<br>" + "謝謝"
+
+                             + "</span><br>");
+
+
+
+                SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        /// <summary>
+        /// 訂單明細及金額報表
+        /// </summary>
+        /// <param name="Subject"></param>
+        /// <param name="Body"></param>
+        public void SENDEMAIL_COPTCD(StringBuilder Subject, StringBuilder Body, string Attachments)
+        {
+            DataSet DSMAILTO = FINDPURCHECKMAILTO("COPTCD");       
+
+            try
+            {
+                if (DSMAILTO.Tables[0].Rows.Count > 0)
+                {
+
+
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = Subject.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = Body.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                    try
+                    {
+                        Attachment attch = new Attachment(Attachments + ".xlsx");
+                        MyMail.Attachments.Add(attch);
+
+                        //設定收件者Email，多筆mail
+                        foreach (DataRow DR in DSMAILTO.Tables[0].Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString());
+                        }
+                      
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                        //ex.ToString();
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+
+        }
+
+        public DataSet ERP_COPTCD()
+        {
+            DataSet DS = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DateTime FirstDay = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
+            DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@" 
+                                    SELECT *
+                                    FROM 
+                                    (
+                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'                                
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A221' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 IN ('橘平屋')
+                                    GROUP BY MA002
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 IN ('大林廠計畫訂單客戶-業務')
+                                    GROUP BY MA002
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號','其他' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 NOT IN ('橘平屋','大林廠計畫訂單客戶-業務')
+
+
+                                    UNION ALL
+                                    SELECT  '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'                                
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '2國外' KINDS,'A222' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001 NOT IN ('A223')
+
+
+                                    ) AS TEMP 
+                                    ORDER BY KINDS,訂單單別,訂單單號,未出貨金額 DESC
+
+
+
+                                    ", FirstDay.ToString("yyyyMMdd"), LastDay.ToString("yyyyMMdd"));
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count > 0)
+                {
+                    return DS;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
         #endregion
 
         #region BUTTON
@@ -9756,9 +10194,13 @@ namespace TKMQ
         private void button29_Click(object sender, EventArgs e)
         {
             //path_File_COPTCD
+            //每日訂單明細表
             SETPATH();
             SETFILE_COPTCD(path_File_COPTCD);
             CLEAREXCEL();
+
+            PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+            MessageBox.Show("OK");
         }
 
         #endregion
