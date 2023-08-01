@@ -60,11 +60,12 @@
             this.button25 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
             this.button27 = new System.Windows.Forms.Button();
+            this.button28 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button28 = new System.Windows.Forms.Button();
+            this.button29 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -137,6 +138,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
             this.tableLayoutPanel1.Controls.Add(this.button27, 6, 1);
             this.tableLayoutPanel1.Controls.Add(this.button28, 3, 6);
+            this.tableLayoutPanel1.Controls.Add(this.button29, 6, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -463,6 +465,17 @@
             this.button27.UseVisualStyleBackColor = true;
             this.button27.Click += new System.EventHandler(this.button27_Click);
             // 
+            // button28
+            // 
+            this.button28.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button28.Location = new System.Drawing.Point(386, 243);
+            this.button28.Name = "button28";
+            this.button28.Size = new System.Drawing.Size(148, 34);
+            this.button28.TabIndex = 29;
+            this.button28.Text = "營銷各庫庫存通知";
+            this.button28.UseVisualStyleBackColor = true;
+            this.button28.Click += new System.EventHandler(this.button28_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -522,16 +535,16 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button28
+            // button29
             // 
-            this.button28.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button28.Location = new System.Drawing.Point(386, 243);
-            this.button28.Name = "button28";
-            this.button28.Size = new System.Drawing.Size(148, 34);
-            this.button28.TabIndex = 29;
-            this.button28.Text = "營銷各庫庫存通知";
-            this.button28.UseVisualStyleBackColor = true;
-            this.button28.Click += new System.EventHandler(this.button28_Click);
+            this.button29.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button29.Location = new System.Drawing.Point(723, 83);
+            this.button29.Name = "button29";
+            this.button29.Size = new System.Drawing.Size(197, 34);
+            this.button29.TabIndex = 30;
+            this.button29.Text = "本月的訂單明細";
+            this.button29.UseVisualStyleBackColor = true;
+            this.button29.Click += new System.EventHandler(this.button29_Click);
             // 
             // FrmMQMAIL
             // 
@@ -591,5 +604,6 @@
         private System.Windows.Forms.Button button26;
         private System.Windows.Forms.Button button27;
         private System.Windows.Forms.Button button28;
+        private System.Windows.Forms.Button button29;
     }
 }

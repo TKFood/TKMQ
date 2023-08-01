@@ -147,6 +147,7 @@ namespace TKMQ
         string pathFileMOCMANULINE = null;
         string path_File_NEWSLAES = null;
         string path_File_POSINV = null;
+        string path_File_COPTCD = null;
 
         FileInfo info;
         string[] tempFile;
@@ -188,6 +189,7 @@ namespace TKMQ
             pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
             path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
             path_File_POSINV = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
+            path_File_COPTCD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單明細表" + DATES.ToString();
         }
 
         public void CLEAREXCEL()
@@ -9242,6 +9244,310 @@ namespace TKMQ
             }
 
         }
+
+        public void SETFILE_COPTCD(string pathFile)
+        {
+            if (Directory.Exists(DirectoryNAME))
+            {
+                //資料夾存在，pathFile
+                if (File.Exists(pathFile + ".xlsx"))
+                {
+                    File.Delete(pathFile + ".xlsx");
+                }
+
+            }
+            else
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
+            Excel.Application excelApp;
+            Excel._Workbook wBook;
+            Excel._Worksheet wSheet;
+            Excel.Range wRange;
+
+            // 開啟一個新的應用程式
+            excelApp = new Excel.Application();
+            // 讓Excel文件可見
+            //excelApp.Visible = true;
+            // 停用警告訊息
+            excelApp.DisplayAlerts = false;
+            // 加入新的活頁簿
+            excelApp.Workbooks.Add(Type.Missing);
+            // 引用第一個活頁簿
+            wBook = excelApp.Workbooks[1];
+            // 設定活頁簿焦點
+            wBook.Activate();
+
+            if (!File.Exists(pathFile + ".xlsx"))
+            {
+                wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
+            }
+
+
+
+            //關閉Excel
+            excelApp.Quit();
+
+            //釋放Excel資源
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
+            wBook = null;
+            wSheet = null;
+            wRange = null;
+            excelApp = null;
+            GC.Collect();
+
+            Console.Read();
+
+
+            SEARCH_COPTCD(pathFile);
+
+            //if (!File.Exists(pathFile + ".xlsx"))
+            //{
+            //    //SEARCH()
+
+            //}
+
+        }
+
+        public void SEARCH_COPTCD(string pathFile)
+        {
+            DataSet ds1 = new DataSet();
+            SqlDataAdapter adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+            DateTime FirstDay = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
+            DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@" 
+                                    SELECT *
+                                    FROM 
+                                    (
+                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'                                
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A221' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 IN ('橘平屋')
+                                    GROUP BY MA002
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 IN ('大林廠計畫訂單客戶-業務')
+                                    GROUP BY MA002
+
+                                    UNION ALL
+                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號','其他' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND MA002 NOT IN ('橘平屋','大林廠計畫訂單客戶-業務')
+
+
+                                    UNION ALL
+                                    SELECT  '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'                                
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001 NOT IN ('A223')
+
+                                    UNION ALL
+                                    SELECT '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
+                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
+                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
+                                    ,(TD009)*TD011 AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                        
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001  IN ('A223')
+                                    AND TC004 NOT IN ('2248500100')
+                                    AND TC004 NOT IN ('2248500100')
+
+                                    UNION ALL
+                                    SELECT '2國外' KINDS,'A222' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
+                                    ,'' AS '課稅別'
+                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
+                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
+                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND TC004=MA001
+                                    AND TC005=ME001
+                                    AND TC027 IN ('Y','N')                             
+                                    AND TD013>='{0}' AND TD013<='{1}'
+                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
+                                    AND TC001 NOT IN ('A223')
+
+
+                                    ) AS TEMP 
+                                    ORDER BY KINDS,訂單單別,訂單單號,未出貨金額 DESC
+
+
+
+                                    ", FirstDay.ToString("yyyyMMdd"), LastDay.ToString("yyyyMMdd"));
+
+                adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "TEMPds1");
+                sqlConn.Close();
+
+
+                if (ds1.Tables["TEMPds1"].Rows.Count == 0)
+                {
+                    //建立一筆新的DataRow，並且等於新的dt row
+                    DataRow row = ds1.Tables["TEMPds1"].NewRow();
+
+                    //指定每個欄位要儲存的資料                   
+                    row[0] = "本日無資料"; ;
+
+                    //新增資料至DataTable的dt內
+                    ds1.Tables["TEMPds1"].Rows.Add(row);
+
+                    ExportDataSetToExcel(ds1, pathFile);
+                }
+                else
+                {
+                    if (ds1.Tables["TEMPds1"].Rows.Count >= 1)
+                    {
+                        ExportDataSetToExcel(ds1, pathFile);
+                    }
+                }
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -9446,6 +9752,13 @@ namespace TKMQ
 
             PREPARESENDEMAIL_POSINV(path_File_POSINV);
             MessageBox.Show("OK");
+        }
+        private void button29_Click(object sender, EventArgs e)
+        {
+            //path_File_COPTCD
+            SETPATH();
+            SETFILE_COPTCD(path_File_COPTCD);
+            CLEAREXCEL();
         }
 
         #endregion
