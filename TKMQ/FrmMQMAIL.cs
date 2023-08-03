@@ -863,7 +863,8 @@ namespace TKMQ
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-           
+            // 取得目前日期和時間
+            DateTime now = DateTime.Now;
 
             string RUNTIME = DateTime.Now.ToString("HH:mm");
             string hhmm = "09:05";
@@ -878,12 +879,20 @@ namespace TKMQ
 
             if (RUNTIME.Equals(hhmm))
             {
+                //每日寄送
                 HRAUTORUN();
 
-                if(RUNDATE.Equals(date))
+                //每星期一寄送
+                if (RUNDATE.Equals(date))
                 {
                     HRAUTORUN2();
                 }
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN3();
+                }
+                   
             }
 
         }
@@ -1555,6 +1564,36 @@ namespace TKMQ
 
             //MessageBox.Show("OK");
 
+        }
+
+        public void HRAUTORUN3()
+        {
+            try
+            {
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+            //
+            try
+            {
+                SENDEMAIL_DAILY_SALES_MONEY();
+            }
+            catch
+            {
+                MessageBox.Show("國內、外業務部業績日報表 有錯誤");
+            }
+            finally
+            {
+
+            }
         }
 
         public void SETFILEPURTA()
