@@ -9986,6 +9986,116 @@ namespace TKMQ
             }
 
         }
+
+        public void SETFASTREPORT()
+        {
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL();
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\國內、外業務部業績日報表V7.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+
+            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
+
+            report1.Preview = previewControl1;
+            report1.Show(); 
+        }
+
+        public StringBuilder SETSQL()
+        {
+            DateTime now = DateTime.Now;
+            // 取得本月第一天日期
+            DateTime firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
+            // 取得本月最後一天日期
+            int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
+            DateTime lastDayOfMonth = new DateTime(now.Year, now.Month, daysInMonth);
+
+
+            StringBuilder SB = new StringBuilder();
+
+
+            SB.AppendFormat(@"   
+                           --20220712 業務員日 報表
+                            --20210910 業務員日 報表
+                            --200050 張釋予
+                            --140078 蔡顏鴻
+                            --100005 何姍怡
+                            --160155 洪櫻芬
+                            --170007 林杏育
+                            --120003 葉枋俐
+                            SELECT 
+                            DATES
+                            ,國內張釋予銷貨
+                            ,國內張釋予銷退
+                            ,國內蔡顏鴻銷貨
+                            ,國內蔡顏鴻銷退
+                            ,國內何姍怡銷貨
+                            ,國內何姍怡銷退
+                            ,國內洪櫻芬銷貨
+                            ,國內洪櫻芬銷退
+                            ,官網及現銷銷貨
+                            ,官網及現銷銷退
+                            ,全聯銷貨
+                            ,國外洪櫻芬銷貨
+                            ,國外洪櫻芬銷退
+                            ,國外葉枋俐銷貨
+                            ,國外葉枋俐銷退
+                            ,(國內張釋予銷貨+國內張釋予銷退+國內蔡顏鴻銷貨+國內蔡顏鴻銷退+國內何姍怡銷貨+國內何姍怡銷退+國內洪櫻芬銷貨+國內洪櫻芬銷退+全聯銷貨) AS '國內業務合計'
+                            ,(國外洪櫻芬銷貨+國外洪櫻芬銷退+國外葉枋俐銷貨+國外葉枋俐銷退) AS '國外業務合計'
+                            ,(國內張釋予銷貨+國內張釋予銷退+國內蔡顏鴻銷貨+國內蔡顏鴻銷退+國內何姍怡銷貨+國內何姍怡銷退+國內洪櫻芬銷貨+國內洪櫻芬銷退+全聯銷貨+國外洪櫻芬銷貨+國外洪櫻芬銷退+國外葉枋俐銷貨+國外葉枋俐銷退) AS '總計'
+                            ,(SELECT ISNULL(INTARGETMONEYS,0) FROM [TK].[dbo].[ZTARGETMONEYS] WHERE YEARSMOTNS=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6)) AS '國內月目標業績'
+                            ,(SELECT ISNULL([OUTTARGETMONEYS],0) FROM [TK].[dbo].[ZTARGETMONEYS] WHERE YEARSMOTNS=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6)) AS '國外月目標業績'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND SUBSTRING(TG003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%'))  AND TG006 IN ('200050','140078','100005','160155','170007') ) AS '國內月總銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND SUBSTRING(TI003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006 IN ('200050','140078','100005','160155','170007') ) AS '國內月總銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND SUBSTRING(TG003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TG023='Y' AND (TG004 LIKE '3%' OR TG004 LIKE 'A3%' OR TG004 LIKE 'B3%') AND TG006 IN ('160155','120003')) AS '國外月總銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND SUBSTRING(TI003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6)  AND TI019='Y'AND (TI004 LIKE '3%' OR TI004 LIKE 'A3%' OR TI004 LIKE 'B3%') AND TI006 IN ('160155','120003')) AS '國外月總銷退'
+                            ,(((SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND SUBSTRING(TG003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%'))  AND TG006 IN ('200050','140078','100005','160155','170007') )+(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND SUBSTRING(TI003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006 IN ('200050','140078','100005','160155','170007') ))/(SELECT ISNULL(INTARGETMONEYS,0) FROM [TK].[dbo].[ZTARGETMONEYS] WHERE YEARSMOTNS=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6))) AS '國內月累績達成率'
+                            ,(((SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND SUBSTRING(TG003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6) AND TG023='Y' AND (TG004 LIKE '3%' OR TG004 LIKE 'A3%' OR TG004 LIKE 'B3%') AND TG006 IN ('160155','120003'))+(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND SUBSTRING(TI003,1,6)=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6)  AND TI019='Y'AND (TI004 LIKE '3%' OR TI004 LIKE 'A3%' OR TI004 LIKE 'B3%') AND TI006 IN ('160155','120003')))/(SELECT ISNULL([OUTTARGETMONEYS],0) FROM [TK].[dbo].[ZTARGETMONEYS] WHERE YEARSMOTNS=SUBSTRING(CONVERT(nvarchar,DATES,112),1,6))) AS '國外月累績達成率'
+                            FROM (
+                            SELECT CONVERT(nvarchar,DATES,112) AS DATES
+                            ,[RTSALEMONEYS]  AS '全聯銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%'))  AND TG006='200050') AS '國內張釋予銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006='200050') AS '國內張釋予銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TG006='140078') AS '國內蔡顏鴻銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006='140078') AS '國內蔡顏鴻銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TG006='100005') AS '國內何姍怡銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006='100005') AS '國內何姍怡銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TG006='160155') AS '國內洪櫻芬銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI006='160155') AS '國內洪櫻芬銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '1%' OR TG004 LIKE '2%' OR TG004 LIKE 'A2%' OR TG004 LIKE 'B2%') AND (TG004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TG001 IN ('A230','A233','A234','A235','A23A','A23E') AND TG006 NOT IN ('200050','140078','100005','160155')) AS '官網及現銷銷貨' 
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112) AND TI019='Y' AND (TI004 LIKE '1%' OR TI004 LIKE '2%' OR TI004 LIKE 'A2%' OR TI004 LIKE 'B2%') AND (TI004 NOT IN (SELECT MA001 FROM [TK].dbo.COPMA WHERE MA002 LIKE '%全聯%')) AND TI001 IN ('A243','A246','A247','A248','A249') AND TI006 NOT IN ('200050','140078','100005','160155')) AS '官網及現銷銷退' 
+                            ,'-' AS '-'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND (CASE WHEN ISDATE(COPTG.UDF01)=1 THEN COPTG.UDF01 ELSE TG003 END =CONVERT(nvarchar,DATES,112)) AND TG023='Y' AND (TG004 LIKE '3%' OR TG004 LIKE 'A3%' OR TG004 LIKE 'B3%') AND TG006='160155') AS '國外洪櫻芬銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112)  AND TI019='Y'AND (TI004 LIKE '3%' OR TI004 LIKE 'A3%' OR TI004 LIKE 'B3%') AND TI006='160155') AS '國外洪櫻芬銷退'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TH037),0)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG003=CONVERT(nvarchar,DATES,112) AND TG023='Y' AND (TG004 LIKE '3%' OR TG004 LIKE 'A3%' OR TG004 LIKE 'B3%') AND TG006='120003') AS '國外葉枋俐銷貨'
+                            ,(SELECT CONVERT(INT,ISNULL(SUM(TJ033)*-1,0)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI003=CONVERT(nvarchar,DATES,112)  AND TI019='Y'AND (TI004 LIKE '3%' OR TI004 LIKE 'A3%' OR TI004 LIKE 'B3%') AND TI006='120003') AS '國外葉枋俐銷退'
+                            FROM [TK].dbo.ZDATES
+                            WHERE CONVERT(nvarchar,DATES,112)>='{0}' AND CONVERT(nvarchar,DATES,112)<='{1}'
+                            ) AS TEMP
+                            ORDER BY DATES
+                            ", firstDayOfMonth.ToString("yyyyMMdd"), lastDayOfMonth.ToString("yyyyMMdd"));
+
+
+            return SB;
+
+        }
         #endregion
 
         #region BUTTON
@@ -10207,6 +10317,10 @@ namespace TKMQ
 
         }
 
+        private void button31_Click(object sender, EventArgs e)
+        {
+            SETFASTREPORT();
+        }
         #endregion
 
 
