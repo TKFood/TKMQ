@@ -10164,7 +10164,7 @@ namespace TKMQ
 
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日-業務單位業績日報表-" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日-國內外業務業績日報-" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, " + Environment.NewLine + "檢附截至目前各業務每日業績，請參考附件，謝謝" + Environment.NewLine + " ");
             
 
