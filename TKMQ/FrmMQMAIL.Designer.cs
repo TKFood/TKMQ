@@ -61,22 +61,27 @@
             this.button21 = new System.Windows.Forms.Button();
             this.button27 = new System.Windows.Forms.Button();
             this.button28 = new System.Windows.Forms.Button();
+            this.button29 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
-            this.button29 = new System.Windows.Forms.Button();
+            this.button30 = new System.Windows.Forms.Button();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.previewControl1 = new FastReport.Preview.PreviewControl();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.tabPage3.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
@@ -136,9 +141,10 @@
             this.tableLayoutPanel1.Controls.Add(this.button26, 6, 8);
             this.tableLayoutPanel1.Controls.Add(this.button25, 6, 7);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
-            this.tableLayoutPanel1.Controls.Add(this.button27, 6, 1);
             this.tableLayoutPanel1.Controls.Add(this.button28, 3, 6);
-            this.tableLayoutPanel1.Controls.Add(this.button29, 6, 2);
+            this.tableLayoutPanel1.Controls.Add(this.button27, 6, 0);
+            this.tableLayoutPanel1.Controls.Add(this.button29, 6, 1);
+            this.tableLayoutPanel1.Controls.Add(this.button30, 6, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -457,7 +463,7 @@
             // button27
             // 
             this.button27.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button27.Location = new System.Drawing.Point(723, 43);
+            this.button27.Location = new System.Drawing.Point(723, 3);
             this.button27.Name = "button27";
             this.button27.Size = new System.Drawing.Size(197, 34);
             this.button27.TabIndex = 28;
@@ -475,6 +481,17 @@
             this.button28.Text = "營銷各庫庫存通知";
             this.button28.UseVisualStyleBackColor = true;
             this.button28.Click += new System.EventHandler(this.button28_Click);
+            // 
+            // button29
+            // 
+            this.button29.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button29.Location = new System.Drawing.Point(723, 43);
+            this.button29.Name = "button29";
+            this.button29.Size = new System.Drawing.Size(197, 34);
+            this.button29.TabIndex = 30;
+            this.button29.Text = "本月的訂單明細";
+            this.button29.UseVisualStyleBackColor = true;
+            this.button29.Click += new System.EventHandler(this.button29_Click);
             // 
             // tabPage2
             // 
@@ -535,16 +552,39 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
-            // button29
+            // button30
             // 
-            this.button29.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button29.Location = new System.Drawing.Point(723, 83);
-            this.button29.Name = "button29";
-            this.button29.Size = new System.Drawing.Size(197, 34);
-            this.button29.TabIndex = 30;
-            this.button29.Text = "本月的訂單明細";
-            this.button29.UseVisualStyleBackColor = true;
-            this.button29.Click += new System.EventHandler(this.button29_Click);
+            this.button30.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button30.Location = new System.Drawing.Point(723, 83);
+            this.button30.Name = "button30";
+            this.button30.Size = new System.Drawing.Size(197, 34);
+            this.button30.TabIndex = 31;
+            this.button30.Text = "國內、外業務部業績日報";
+            this.button30.UseVisualStyleBackColor = true;
+            this.button30.Click += new System.EventHandler(this.button30_Click);
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.previewControl1);
+            this.tabPage3.Location = new System.Drawing.Point(4, 26);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(976, 595);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "REPORTS";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // previewControl1
+            // 
+            this.previewControl1.BackColor = System.Drawing.SystemColors.AppWorkspace;
+            this.previewControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.previewControl1.Font = new System.Drawing.Font("宋体", 9F);
+            this.previewControl1.Location = new System.Drawing.Point(0, 0);
+            this.previewControl1.Margin = new System.Windows.Forms.Padding(4);
+            this.previewControl1.Name = "previewControl1";
+            this.previewControl1.PageOffset = new System.Drawing.Point(10, 10);
+            this.previewControl1.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.previewControl1.Size = new System.Drawing.Size(976, 595);
+            this.previewControl1.TabIndex = 12;
             // 
             // FrmMQMAIL
             // 
@@ -562,6 +602,7 @@
             this.tableLayoutPanel1.PerformLayout();
             this.tabPage2.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -605,5 +646,8 @@
         private System.Windows.Forms.Button button27;
         private System.Windows.Forms.Button button28;
         private System.Windows.Forms.Button button29;
+        private System.Windows.Forms.Button button30;
+        private System.Windows.Forms.TabPage tabPage3;
+        private FastReport.Preview.PreviewControl previewControl1;
     }
 }

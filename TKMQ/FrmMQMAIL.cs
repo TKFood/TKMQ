@@ -10202,6 +10202,10 @@ namespace TKMQ
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
             MessageBox.Show("OK");
         }
+        private void button30_Click(object sender, EventArgs e)
+        {
+
+        }
 
         #endregion
 
