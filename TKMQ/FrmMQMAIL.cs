@@ -872,9 +872,9 @@ namespace TKMQ
             label1.Text = "每日執行時間為" + hhmm;
             label2.Text = DateTime.Now.ToString();
 
-            // DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
-            string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
-            string date = "1";
+            //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
+            //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
+            //string date = "1";
 
 
             if (RUNTIME.Equals(hhmm))
@@ -883,7 +883,7 @@ namespace TKMQ
                 HRAUTORUN();
 
                 //每星期一寄送
-                if (RUNDATE.Equals(date))
+                if (now.DayOfWeek == DayOfWeek.Monday)
                 {
                     HRAUTORUN2();
                 }
@@ -896,7 +896,9 @@ namespace TKMQ
             }
 
         }
-
+        /// <summary>
+        ///  //每日寄送
+        /// </summary>
         public void HRAUTORUN()
         {
             SETPATH();
@@ -1531,7 +1533,9 @@ namespace TKMQ
             //MessageBox.Show("OK");
 
         }
-
+        /// <summary>
+        /// //每星期一寄送
+        /// </summary>
         public void HRAUTORUN2()
         {         
             
@@ -1565,7 +1569,9 @@ namespace TKMQ
             //MessageBox.Show("OK");
 
         }
-
+        /// <summary>
+        /// //每星期一~星期五寄送
+        /// </summary>
         public void HRAUTORUN3()
         {
             try
