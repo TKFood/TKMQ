@@ -163,6 +163,11 @@ namespace TKMQ
             //timer1.Interval = 1000 ;
             timer1.Start();
 
+            timer2.Enabled = true;
+            timer2.Interval = 1000 * 60;
+            //timer1.Interval = 1000 ;
+            timer2.Start();
+
             CLEAREXCEL();
 
             SETPATH();
@@ -861,6 +866,22 @@ namespace TKMQ
             }
         }
 
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+        //    ///測試用的
+        //    ///
+        //    // 取得目前日期和時間
+        //    DateTime now = DateTime.Now;
+
+        //    int HH = 9;
+        //    int MM = 55;
+        //    // 判斷是否是星期一至星期五，且時間是 09:05
+        //    if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday && now.Hour == HH && now.Minute == MM)
+        //    {
+        //        HRAUTORUN3();
+        //    }
+        }
+
         private void timer1_Tick(object sender, EventArgs e)
         {
             // 取得目前日期和時間
@@ -882,16 +903,18 @@ namespace TKMQ
                 //每日寄送
                 HRAUTORUN();
 
-                //每星期一寄送
-                if (now.DayOfWeek == DayOfWeek.Monday)
-                {
-                    HRAUTORUN2();
-                }
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
                     HRAUTORUN3();
                 }
+
+                //每星期一寄送
+                if (now.DayOfWeek == DayOfWeek.Monday)
+                {
+                    HRAUTORUN2();
+                }
+              
                    
             }
 
@@ -10551,8 +10574,9 @@ namespace TKMQ
         {
             SETFASTREPORT();
         }
+
         #endregion
 
-
+      
     }
 }
