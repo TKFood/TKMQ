@@ -10192,8 +10192,17 @@ namespace TKMQ
             SUBJEST.Clear();
             BODY.Clear();
             SUBJEST.AppendFormat(@"每日-國內外業務業績日報-" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear All, " + Environment.NewLine + "檢附截至目前各業務每日業績，請參考附件，謝謝" + Environment.NewLine + " ");
-            
+            BODY.AppendFormat("Dear All, ");
+            BODY.AppendFormat(Environment.NewLine + "檢附截至目前各業務每日業績，請參考附件，謝謝");
+            BODY.AppendFormat(Environment.NewLine );
+            BODY.AppendFormat(Environment.NewLine );
+            BODY.AppendFormat(Environment.NewLine + "--");
+            BODY.AppendFormat(Environment.NewLine + "業務部 ｜ 連佳瑋");
+            BODY.AppendFormat(Environment.NewLine + "");
+            BODY.AppendFormat(Environment.NewLine + "622 011 嘉義縣大林鎮大埔美園區五路3號");
+            BODY.AppendFormat(Environment.NewLine + "No. 3, Dapumeiyuanqu 5th Rd., Dalin Township, Chiayi County 622 011, Taiwan");
+            BODY.AppendFormat(Environment.NewLine + "TEL/ 05-295 6520 #4011    FAX/ 05-295 6519    E-MAIL/ tk660@tkfood.com.tw");
+            BODY.AppendFormat(Environment.NewLine + "官網/ www.tkfood.com.tw    FB/ www.facebook.com/tkfood");
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
