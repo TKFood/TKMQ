@@ -5114,11 +5114,6 @@ namespace TKMQ
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                     //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                            MySMTP.Send(MyMail);
-
-                            MyMail.Dispose(); //釋放資源
-
-
                         }
                         catch (Exception ex)
                         {
@@ -5128,6 +5123,10 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
+
+                    MySMTP.Send(MyMail);
+
+                    MyMail.Dispose(); //釋放資源
                 }
             }
             catch
@@ -5374,11 +5373,6 @@ namespace TKMQ
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                                   //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                            MySMTP.Send(MyMail);
-
-                            MyMail.Dispose(); //釋放資源
-
-
                         }
                         catch (Exception ex)
                         {
@@ -5388,6 +5382,10 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
+
+                    MySMTP.Send(MyMail);
+
+                    MyMail.Dispose(); //釋放資源
                 }
             }
             catch
@@ -5777,12 +5775,7 @@ namespace TKMQ
                         try
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                                                                  //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                            MySMTP.Send(MyMail);
-
-                            MyMail.Dispose(); //釋放資源
-
-
+                      
                         }
                         catch (Exception ex)
                         {
@@ -5792,6 +5785,13 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
+
+                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                    MySMTP.Send(MyMail);
+
+                    MyMail.Dispose(); //釋放資源
+
+
                 }
             }
             catch
@@ -7505,15 +7505,13 @@ namespace TKMQ
                     {
                         foreach(DataRow DR in TO_EMAIL.Rows)
                         {
-
                             MyMail.To.Add(DR["TO_EMAILS"].ToString()); //設定收件者Email，多筆mail
-                                                     //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                            MySMTP.Send(MyMail);
-
-                            MyMail.Dispose(); //釋放資源
                         }
-                       
 
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
 
                     }
                     catch (Exception ex)
@@ -7900,7 +7898,7 @@ namespace TKMQ
                             {
 
                                 MyMail.To.Add(DR["EMAIL"].ToString()); //設定收件者Email，多筆mail
-                                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                                 MySMTP.Send(MyMail);
 
                                 MyMail.Dispose(); //釋放資源
@@ -8239,7 +8237,7 @@ namespace TKMQ
                                 {
 
                                     MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
-                                    MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                                     MySMTP.Send(MyMail);
 
                                     MyMail.Dispose(); //釋放資源
