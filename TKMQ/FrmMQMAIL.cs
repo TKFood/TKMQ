@@ -6843,8 +6843,8 @@ namespace TKMQ
 
                     try
                     {
-                        //MyMail.To.Add(APPLICANT_EMAIL); //設定收件者Email，多筆mail
-                        MyMail.To.Add("tk290@tkfood.com.tw");                                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MyMail.To.Add(APPLICANT_EMAIL); //設定收件者Email，多筆mail
+                        //MyMail.To.Add("tk290@tkfood.com.tw");                                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         MySMTP.Send(MyMail);
 
                         MyMail.Dispose(); //釋放資源
