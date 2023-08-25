@@ -10462,7 +10462,7 @@ namespace TKMQ
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
             MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
-            Attachment attch = new Attachment(pathFile_SALES_MONEYS);
+            Attachment attch = new Attachment(pathFile_QC_CHECK);
             MyMail.Attachments.Add(attch);
 
 
