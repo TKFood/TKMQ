@@ -902,14 +902,17 @@ namespace TKMQ
 
             if (RUNTIME.Equals(hhmm))
             {
-                //每日寄送
-                HRAUTORUN();
-
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
                     HRAUTORUN3();
                 }
+
+                //每日寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Sunday)
+                {
+                    HRAUTORUN();
+                }                         
 
                 //每星期一寄送
                 if (now.DayOfWeek == DayOfWeek.Monday)
@@ -935,6 +938,20 @@ namespace TKMQ
             try
             {
 
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+            //溫濕度-測試
+            try
+            {
+                SENDEMAIL_DAILY_QC_CHECK();
             }
             catch
             {
@@ -1625,6 +1642,7 @@ namespace TKMQ
             {
 
             }
+
         }
 
         public void SETFILEPURTA()
