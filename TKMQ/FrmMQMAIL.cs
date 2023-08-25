@@ -149,6 +149,7 @@ namespace TKMQ
         string path_File_POSINV = null;
         string path_File_COPTCD = null;
         string pathFile_SALES_MONEYS = null;
+        string pathFile_QC_CHECK = null;
 
         FileInfo info;
         string[] tempFile;
@@ -198,6 +199,7 @@ namespace TKMQ
             path_File_COPTCD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單明細表" + DATES.ToString();
 
             pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
+            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
         }
 
         public void CLEAREXCEL()
@@ -10353,11 +10355,11 @@ namespace TKMQ
         }
 
 
-        public void SETFASTREPORT2()
+        public void SETFASTREPORT_QC_CHECK()
         {
             StringBuilder SQL1 = new StringBuilder();
 
-            SQL1 = SETSQL2();
+            SQL1 = SETSQL_QC_CEHCK();
             Report report1 = new Report();
 
             report1.Load(@"REPORT\\溫溼度警報.frx");
@@ -10384,7 +10386,7 @@ namespace TKMQ
             report1.Show();
         }
 
-        public StringBuilder SETSQL2()
+        public StringBuilder SETSQL_QC_CEHCK()
         {
             DateTime now = DateTime.Now;
             now = now.AddDays(-1);
@@ -10411,6 +10413,183 @@ namespace TKMQ
 
             return SB;
 
+        }
+
+        public void SENDEMAIL_DAILY_QC_CHECK()
+        {
+            DataSet ds= new DataSet();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETPATH();
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            pathFile_QC_CHECK= @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+
+            //如果日期資料夾不存在就新增
+            if (!Directory.Exists(DirectoryNAME))
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+
+            SAVEREPORT_QC_CHECK(pathFile_QC_CHECK);
+
+            ds = SERACHMAIL_QC_CHECK();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日-每日溫溼度警報-" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear All, ");
+            BODY.AppendFormat(Environment.NewLine + "檢附每日溫溼度警報，請參考附件，謝謝");
+            
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            Attachment attch = new Attachment(pathFile_SALES_MONEYS);
+            MyMail.Attachments.Add(attch);
+
+
+            try
+            {
+                foreach (DataRow od in ds.Tables[0].Rows)
+                {
+
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                //ex.ToString();
+            }
+        }
+
+
+        public void SAVEREPORT_QC_CHECK(string pathFile)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL_QC_CEHCK();
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\溫溼度警報.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+
+            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
+
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+
+        }
+
+        public DataSet SERACHMAIL_QC_CHECK()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='QCCHECK'  
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
         }
 
         #endregion
@@ -10643,7 +10822,13 @@ namespace TKMQ
 
         private void button32_Click(object sender, EventArgs e)
         {
-            SETFASTREPORT2();
+            SETFASTREPORT_QC_CHECK();
+        }
+        private void button33_Click(object sender, EventArgs e)
+        {
+            SENDEMAIL_DAILY_QC_CHECK();
+
+            MessageBox.Show("完成");
         }
         #endregion
 

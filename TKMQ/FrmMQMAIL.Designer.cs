@@ -74,6 +74,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.button32 = new System.Windows.Forms.Button();
+            this.button33 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -141,7 +142,6 @@
             this.tableLayoutPanel1.Controls.Add(this.button13, 2, 13);
             this.tableLayoutPanel1.Controls.Add(this.button14, 4, 4);
             this.tableLayoutPanel1.Controls.Add(this.button15, 3, 4);
-            this.tableLayoutPanel1.Controls.Add(this.button16, 4, 13);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 3);
             this.tableLayoutPanel1.Controls.Add(this.button19, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button20, 0, 5);
@@ -155,6 +155,8 @@
             this.tableLayoutPanel1.Controls.Add(this.button27, 6, 0);
             this.tableLayoutPanel1.Controls.Add(this.button29, 6, 1);
             this.tableLayoutPanel1.Controls.Add(this.button30, 6, 2);
+            this.tableLayoutPanel1.Controls.Add(this.button16, 3, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button33, 4, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -370,9 +372,9 @@
             // button16
             // 
             this.button16.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button16.Location = new System.Drawing.Point(540, 523);
+            this.button16.Location = new System.Drawing.Point(386, 283);
             this.button16.Name = "button16";
-            this.button16.Size = new System.Drawing.Size(145, 34);
+            this.button16.Size = new System.Drawing.Size(148, 34);
             this.button16.TabIndex = 18;
             this.button16.Text = "測試採購相關單別";
             this.button16.UseVisualStyleBackColor = true;
@@ -668,6 +670,16 @@
             this.button32.UseVisualStyleBackColor = true;
             this.button32.Click += new System.EventHandler(this.button32_Click);
             // 
+            // button33
+            // 
+            this.button33.Location = new System.Drawing.Point(540, 43);
+            this.button33.Name = "button33";
+            this.button33.Size = new System.Drawing.Size(145, 34);
+            this.button33.TabIndex = 32;
+            this.button33.Text = "溫濕度-測試";
+            this.button33.UseVisualStyleBackColor = true;
+            this.button33.Click += new System.EventHandler(this.button33_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -741,5 +753,6 @@
         private FastReport.Preview.PreviewControl previewControl1;
         private System.Windows.Forms.Timer timer2;
         private System.Windows.Forms.Button button32;
+        private System.Windows.Forms.Button button33;
     }
 }
