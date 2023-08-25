@@ -10352,8 +10352,66 @@ namespace TKMQ
             }
         }
 
-     
 
+        public void SETFASTREPORT2()
+        {
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL2();
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\\溫溼度警報.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+
+            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
+
+            report1.Preview = previewControl1;
+            report1.Show();
+        }
+
+        public StringBuilder SETSQL2()
+        {
+            DateTime now = DateTime.Now;
+            now = now.AddDays(-1);
+            string SDAYS = now.ToString("yyyyMMdd");
+
+
+            StringBuilder SB = new StringBuilder();
+
+
+            SB.AppendFormat(@"   
+                          
+                            SELECT CONVERT(NVARCHAR,[開始時間],112) AS '日期'
+                            ,[Machine].[區域]
+                            ,[alarm_table].[機台名稱],[alarm_table].[警報名稱],COUNT([alarm_table].[NO]) AS '警報次數'
+                            ,CONVERT(decimal(16,2),COUNT([alarm_table].[NO])*3/60) AS '警報持續時間(分)'
+                            FROM [TK_FOOD].[dbo].[alarm_table]
+                            LEFT JOIN [TK_FOOD].[dbo].[Machine] ON [Machine].[機台名稱]= [alarm_table].[機台名稱]
+                            WHERE CONVERT(NVARCHAR,[開始時間],112)='{0}'
+                            GROUP BY CONVERT(NVARCHAR,[開始時間],112),[Machine].[區域],[alarm_table].[機台名稱],[警報名稱]
+                            ORDER BY COUNT([alarm_table].[NO]) DESC
+
+                            ", SDAYS);
+
+
+            return SB;
+
+        }
 
         #endregion
 
@@ -10583,8 +10641,12 @@ namespace TKMQ
             SETFASTREPORT();
         }
 
+        private void button32_Click(object sender, EventArgs e)
+        {
+            SETFASTREPORT2();
+        }
         #endregion
 
-      
+
     }
 }

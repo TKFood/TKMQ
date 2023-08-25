@@ -73,6 +73,7 @@
             this.previewControl1 = new FastReport.Preview.PreviewControl();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.button32 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -601,8 +602,8 @@
             // 
             this.tableLayoutPanel3.BackColor = System.Drawing.Color.PaleGreen;
             this.tableLayoutPanel3.ColumnCount = 8;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 45F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 195F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
@@ -610,6 +611,7 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 132F));
             this.tableLayoutPanel3.Controls.Add(this.button31, 1, 1);
+            this.tableLayoutPanel3.Controls.Add(this.button32, 1, 3);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -627,11 +629,11 @@
             // 
             // button31
             // 
-            this.button31.Location = new System.Drawing.Point(123, 43);
+            this.button31.Location = new System.Drawing.Point(48, 43);
             this.button31.Name = "button31";
-            this.button31.Size = new System.Drawing.Size(91, 34);
+            this.button31.Size = new System.Drawing.Size(189, 34);
             this.button31.TabIndex = 4;
-            this.button31.Text = "測試";
+            this.button31.Text = "國內、外業務部業績測試";
             this.button31.UseVisualStyleBackColor = true;
             this.button31.Click += new System.EventHandler(this.button31_Click);
             // 
@@ -655,6 +657,16 @@
             // timer2
             // 
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
+            // 
+            // button32
+            // 
+            this.button32.Location = new System.Drawing.Point(48, 123);
+            this.button32.Name = "button32";
+            this.button32.Size = new System.Drawing.Size(189, 34);
+            this.button32.TabIndex = 5;
+            this.button32.Text = "溫濕度-測試";
+            this.button32.UseVisualStyleBackColor = true;
+            this.button32.Click += new System.EventHandler(this.button32_Click);
             // 
             // FrmMQMAIL
             // 
@@ -728,5 +740,6 @@
         private System.Windows.Forms.Button button31;
         private FastReport.Preview.PreviewControl previewControl1;
         private System.Windows.Forms.Timer timer2;
+        private System.Windows.Forms.Button button32;
     }
 }
