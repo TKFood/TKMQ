@@ -8838,7 +8838,7 @@ namespace TKMQ
                                     (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
                                     FROM [TK].dbo.SASLA
                                     WHERE LA005=MB001
-                                    AND CONVERT(NVARCHAR,LA015,112)>=SDATES
+                                    AND CONVERT(NVARCHAR,LA015,112)>='{0}'
                                     AND CONVERT(NVARCHAR,LA015,112)<='{1}')
                                     ,0) AS PERCOSTS
                                     FROM (
