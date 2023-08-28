@@ -8858,6 +8858,7 @@ namespace TKMQ
                                     WHERE 1=1
                                     AND MB001 LIKE '4%'
                                     AND MB002 NOT LIKE '%試吃%'
+                                    AND ISNULL(MB002,'')<>''
                                     AND CREATE_DATE>='{0}'
                                     ) AS TEMP
                                     ) AS TEMP2
