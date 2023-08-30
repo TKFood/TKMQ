@@ -908,7 +908,7 @@ namespace TKMQ
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                   //HRAUTORUN3();
+                   HRAUTORUN3();
                 }
 
                 //每星期一寄送
