@@ -39,8 +39,7 @@ namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
     {
-        private System.Timers.Timer timer;
-        private string targetTime;
+        private System.Timers.Timer timer;   
 
         private ComponentResourceManager _ResourceManager = new ComponentResourceManager();
         SqlConnection sqlConn = new SqlConnection();
@@ -892,10 +891,13 @@ namespace TKMQ
             // 取得目前日期和時間
             DateTime now = DateTime.Now;
 
-            targetTime = "09:05";
-            string currentTime = DateTime.Now.ToString("HH:mm");
+            string targetTime1 = "08:30";
+            string currentTime1 = DateTime.Now.ToString("HH:mm");
 
-            label1.Text = "每日執行時間為: " + targetTime;
+            string targetTime2 = "08:50";
+            string currentTime2 = DateTime.Now.ToString("HH:mm");
+
+            label1.Text = "每日執行時間為: " + targetTime2;
             label2.Text = DateTime.Now.ToString();
 
             //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
@@ -903,18 +905,23 @@ namespace TKMQ
             //string date = "1";
 
 
-            if (currentTime == targetTime)
+            if (currentTime1 == targetTime1)
             {
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                   HRAUTORUN3();
+                    HRAUTORUN3();
                 }
+              
 
+            }
+
+            if (currentTime2 == targetTime2)
+            {                
                 //每星期一寄送
                 if (now.DayOfWeek == DayOfWeek.Monday)
                 {
-                    //HRAUTORUN2();
+                    HRAUTORUN2();
                 }
 
                 //每日寄送               
