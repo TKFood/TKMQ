@@ -889,7 +889,8 @@ namespace TKMQ
         private void timer1_Tick(object sender, EventArgs e)
         {
             // 取得目前日期和時間
-            DateTime now = DateTime.Now;
+            DateTime now = DateTime.Now;  
+
 
             string targetTime1 = "08:30";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
