@@ -4001,10 +4001,11 @@ namespace TKMQ
 
                
                 sbSql.AppendFormat(@"  
-                                    SELECT TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
+                                    
+                                    SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
                                     FROM 
                                     ( 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4012,7 +4013,7 @@ namespace TKMQ
                                     AND TH004 LIKE '1%' 
                                     AND TH010<>TH036 
                                     UNION ALL 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4020,7 +4021,7 @@ namespace TKMQ
                                     AND TH004 LIKE '2%' 
                                     AND TH010<>TH117 
                                     UNION ALL 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4028,7 +4029,7 @@ namespace TKMQ
                                     AND TH004 LIKE '3%' 
                                     AND TH010<>TH117 
                                     UNION ALL 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4036,7 +4037,7 @@ namespace TKMQ
                                     AND TH004 LIKE '4%' 
                                     AND TH010<>TH036 
                                     UNION ALL 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4044,7 +4045,16 @@ namespace TKMQ
                                     AND TH004 LIKE '5%' 
                                     AND TH010<>TH036 
                                     UNION ALL 
-                                    SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
+                                    SELECT  '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH004 LIKE '1%' 
+                                    AND ISDATE(TH010)<>1
+                                    AND TH009 NOT LIKE '21%'
+                                    UNION ALL 
+                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
                                     FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4055,7 +4065,7 @@ namespace TKMQ
                                     AND TG004 NOT LIKE '309%' 
                                     AND TG017<>TG040 
                                     UNION ALL 
-                                    SELECT TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
+                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
                                     FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4064,34 +4074,9 @@ namespace TKMQ
                                     AND TG004 NOT LIKE '408%' 
                                     AND TG004 NOT LIKE '409%' 
                                     AND TG017<>TG018 
+
                                     UNION ALL 
-                                    SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '3%'   
-                                    AND TI037='Y' 
-                                    AND TI010<>TI061 
-                                    AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
-                                    UNION ALL 
-                                    SELECT TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '4%' 
-                                    AND TI037='Y' 
-                                    AND TI010<>TI011  
-                                    UNION ALL 
-                                    SELECT TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '1%' 
-                                    AND ISDATE(TH010)<>1
-                                    AND TH009 NOT LIKE '21%'
-                                    UNION ALL 
-                                    SELECT TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
+                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
                                     FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
@@ -4101,6 +4086,84 @@ namespace TKMQ
                                     AND TG004 NOT LIKE '308%' 
                                     AND TG004 NOT LIKE '309%' 
                                     AND ISDATE(TG017)<>1
+                                    UNION ALL 
+                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '3%'   
+                                    AND TI037='Y' 
+                                    AND TI010<>TI061 
+                                    AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
+                                    UNION ALL 
+                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '4%' 
+                                    AND TI037='Y' 
+                                    AND TI010<>TI011
+                                    UNION ALL 
+                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號不是日期' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '4%' 
+                                    AND TI037='Y' 
+                                    AND ISDATE(TI011)<>1
+                                    UNION 
+
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND TH117>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                    UNION ALL
+                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
+                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    WHERE TG001=TH001 AND TG002=TH002 
+                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TH030='Y' 
+                                    AND ISDATE(TH117)<>1
+                                    UNION ALL
+                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日是未來日' AS COMMET 
+                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    WHERE TF001=TG001 AND TF002=TG002 
+                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TG022='Y' 
+                                    AND TG004 LIKE '3%'  
+                                    AND TG004 NOT LIKE '307%' 
+                                    AND TG004 NOT LIKE '308%' 
+                                    AND TG004 NOT LIKE '309%' 
+                                    AND TG040>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                    UNION ALL
+                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
+                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    WHERE TF001=TG001 AND TF002=TG002 
+                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TG022='Y' 
+                                    AND TG004 LIKE '3%'  
+                                    AND TG004 NOT LIKE '307%' 
+                                    AND TG004 NOT LIKE '308%' 
+                                    AND TG004 NOT LIKE '309%' 
+                                    AND ISDATE(TG040)<>1
+                                    UNION ALL
+                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '4%' 
+                                    AND TI037='Y' 
+                                    AND TI061>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                    UNION ALL
+                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日不是日期' AS COMMET 
+                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    WHERE TH001=TI001 AND TH002=TI002 
+                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                    AND TI004 LIKE '4%' 
+                                    AND TI037='Y' 
+                                    AND ISDATE(TI061)<>1
                                     ) 
                                     AS TEMP 
                                     ORDER BY TH004  
