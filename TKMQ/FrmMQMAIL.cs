@@ -1010,9 +1010,9 @@ namespace TKMQ
             try
             {
 
-                SETPATH();
-                SETFILE_NEWSLAES(path_File_NEWSLAES);
-                CLEAREXCEL();
+                //SETPATH();
+                //SETFILE_NEWSLAES(path_File_NEWSLAES);
+                //CLEAREXCEL();
 
                 PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
             }
