@@ -1663,8 +1663,9 @@ namespace TKMQ
         /// //每星期一寄送
         /// </summary>
         public void HRAUTORUN2()
-        {         
-            
+        {
+            StringBuilder MSG = new StringBuilder();
+
             try
             {
                 SETPATH();
@@ -1685,7 +1686,7 @@ namespace TKMQ
             }
             catch
             {
-
+                MSG.AppendFormat(@"  失敗 ||");
             }
             finally
             {
@@ -1700,6 +1701,8 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN3()
         {
+            StringBuilder MSG = new StringBuilder();
+
             try
             {
 
@@ -1717,10 +1720,13 @@ namespace TKMQ
             try
             {
                 SENDEMAIL_DAILY_SALES_MONEY();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("國內、外業務部業績日報表 有錯誤");
+                //MessageBox.Show("國內、外業務部業績日報表 有錯誤");
+                MSG.AppendFormat(@" 國內、外業務部業績日報表  失敗 ||");
             }
             finally
             {
