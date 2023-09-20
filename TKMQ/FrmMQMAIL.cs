@@ -946,11 +946,11 @@ namespace TKMQ
             try
             {
 
-                Thread.Sleep(5000);
+                //Thread.Sleep(5000);
             }
             catch
             {
-                MSG.AppendFormat(@" 溫濕度 失敗 ||");
+                //MSG.AppendFormat(@" 溫濕度 失敗 ||");
             }
             finally
             {
@@ -1686,7 +1686,7 @@ namespace TKMQ
             }
             catch
             {
-                MSG.AppendFormat(@"  失敗 ||");
+                MSG.AppendFormat(@" 每日製令準時完工率數量達交率 失敗 ||");
             }
             finally
             {
