@@ -4249,6 +4249,11 @@ namespace TKMQ
                                     AND ISDATE(TI061)<>1
                                     ) 
                                     AS TEMP 
+                                    WHERE  TH004 IN (
+                                    SELECT MB001
+                                    FROM [TK].dbo.INVMB
+                                    WHERE MB022 NOT IN ('N')
+                                    )
                                     ORDER BY TH004  
                                     ");
 
