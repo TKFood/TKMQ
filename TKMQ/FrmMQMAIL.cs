@@ -936,6 +936,7 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN()
         {
+            StringBuilder MSG = new StringBuilder();
             SETPATH();
           
             StringBuilder SUBJEST = new StringBuilder();
@@ -945,10 +946,11 @@ namespace TKMQ
             try
             {
 
+                Thread.Sleep(5000);
             }
             catch
             {
-
+                MSG.AppendFormat(@" 溫濕度 失敗 ||");
             }
             finally
             {
@@ -959,10 +961,11 @@ namespace TKMQ
             try
             {
                 SENDEMAIL_DAILY_QC_CHECK();
+                Thread.Sleep(5000);
             }
             catch
             {
-
+                MSG.AppendFormat(@" 溫濕度 失敗 ||");
             }
             finally
             {
@@ -979,10 +982,12 @@ namespace TKMQ
                 CLEAREXCEL();
 
                 PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+
+                Thread.Sleep(5000);
             }
             catch
             {
-
+                MSG.AppendFormat(@" 每日訂單明細表 失敗 ||");
             }
             finally
             {
@@ -996,10 +1001,13 @@ namespace TKMQ
                 CLEAREXCEL();
 
                 PREPARESENDEMAIL_POSINV(path_File_POSINV);
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 營銷各庫庫存通知");
+                //MessageBox.Show("有錯誤 營銷各庫庫存通知");
+                MSG.AppendFormat(@" 營銷各庫庫存通知 失敗 ||");
             }
             finally
             {
@@ -1015,10 +1023,13 @@ namespace TKMQ
                 //CLEAREXCEL();
 
                 PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 本年新品的銷售報表");
+                //MessageBox.Show("有錯誤 本年新品的銷售報表");
+                MSG.AppendFormat(@" 本年新品的銷售報表 失敗 ||");
             }        
             finally
             {
@@ -1029,10 +1040,13 @@ namespace TKMQ
             try
             {
                 CHECK_TB_EIP_SCH_DEVOLVE();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試UOF交辨未完成");
+                //MessageBox.Show("有錯誤 測試UOF交辨未完成");
+                MSG.AppendFormat(@" 測試UOF交辨未完成 失敗 ||");
             }
             finally
             {
@@ -1043,10 +1057,13 @@ namespace TKMQ
             try
             {
                 CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
+                //MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
+                MSG.AppendFormat(@" 測試主管UOF交辨未完成 失敗 ||");
             }
             finally
             {
@@ -1057,10 +1074,13 @@ namespace TKMQ
             try
             {
                 PREPARE_UOF_TASK_TASK_GRAFFIR();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
+                //MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
+                MSG.AppendFormat(@"  通知副總，總務未簽核的表單 失敗 ||");
             }
             finally
             {
@@ -1072,10 +1092,14 @@ namespace TKMQ
             try
             {
                 FIND_UOF_GRAFFAIRS_1005();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
+                //MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
+                MSG.AppendFormat(@"  通知原請購人，總務已完成採購 失敗 ||");
+
             }
             finally
             {
@@ -1086,10 +1110,13 @@ namespace TKMQ
             try
             {
                 PREPARE_UOF_TASK_TASK_APPLICATION();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 通知各表單申請人");
+                //MessageBox.Show("有錯誤 通知各表單申請人");
+                MSG.AppendFormat(@"  通知各表單申請人 失敗 ||");
             }
             finally
             {
@@ -1100,10 +1127,13 @@ namespace TKMQ
             try
             {
                 PREPARE_TB_EIP_PRIV_MESS();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 通知各別的被交辨人");
+                //MessageBox.Show("有錯誤 通知各別的被交辨人");
+                MSG.AppendFormat(@"  通知各別的被交辨人 失敗 ||");
             }
             finally
             {
@@ -1114,10 +1144,13 @@ namespace TKMQ
             try
             {
                 PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 通知交辨人");
+                //MessageBox.Show("有錯誤 通知交辨人");
+                MSG.AppendFormat(@"  通知交辨人 失敗 ||");
             }
             finally
             {
@@ -1128,10 +1161,13 @@ namespace TKMQ
             try
             {
                 PREPAREPROOFREAD();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 校稿追踨");
+                //MessageBox.Show("有錯誤 校稿追踨");
+                MSG.AppendFormat(@"  校稿追踨 失敗 ||");
             }
             finally
             {
@@ -1142,10 +1178,13 @@ namespace TKMQ
             try
             {
                 PREPAREITCHECK();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 IT檢查網站是否正常");
+                //MessageBox.Show("有錯誤 IT檢查網站是否正常");
+                MSG.AppendFormat(@"  IT檢查網站是否正常 失敗 ||");
             }
             finally
             {
@@ -1156,10 +1195,13 @@ namespace TKMQ
             try
             {
                 PREPARESENDEMAILERPPURCHECK();
+
+                Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
+                //essageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
+                MSG.AppendFormat(@"  給採購人員，ERP未核單的單別、單號  失敗 ||");
             }
             finally
             {
@@ -1172,11 +1214,13 @@ namespace TKMQ
             {
                 SETFILEMOCMANULINE();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試預排製令");
+                //MessageBox.Show("有錯誤 測試預排製令");
+                MSG.AppendFormat(@"  測試預排製令  失敗 ||");
             }
             finally
             {
@@ -1188,11 +1232,13 @@ namespace TKMQ
             {
                 SETFILELOTCHECK();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試批號錯誤");
+                //MessageBox.Show("有錯誤 測試批號錯誤");
+                MSG.AppendFormat(@"  測試批號錯誤  失敗 ||");
             }
             finally
             {
@@ -1204,11 +1250,13 @@ namespace TKMQ
             {
                 SETFILEMOCTARE();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試未完重工單");
+                //MessageBox.Show("有錯誤 測試未完重工單");
+                MSG.AppendFormat(@"  測試未完重工單  失敗 ||");
             }
             finally
             {
@@ -1221,11 +1269,13 @@ namespace TKMQ
             {
                 SETFILEPURTD();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試已採購未結案");
+                //MessageBox.Show("有錯誤 測試已採購未結案");
+                MSG.AppendFormat(@"  測試已採購未結案  失敗 ||");
             }
             finally
             {
@@ -1237,11 +1287,13 @@ namespace TKMQ
             {
                 SETFILEINVMC();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試物料安全水位 ");
+                //MessageBox.Show("有錯誤 測試物料安全水位 ");
+                MSG.AppendFormat(@"  測試物料安全水位  失敗 ||");
             }
             finally
             {
@@ -1254,11 +1306,13 @@ namespace TKMQ
             {
                 SETFILEPURTB();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試已請購未採購");
+                //MessageBox.Show("有錯誤 測試已請購未採購");
+                MSG.AppendFormat(@"  測試已請購未採購  失敗 ||");
             }
             finally
             {
@@ -1270,11 +1324,13 @@ namespace TKMQ
             {
                 SETFILEINVMOCTA();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試半成品-製令");
+                //MessageBox.Show("有錯誤 測試半成品-製令");
+                MSG.AppendFormat(@"  測試半成品-製令  失敗 ||");
             }
             finally
             {
@@ -1286,11 +1342,13 @@ namespace TKMQ
             {
                 SETFILEMOCTA();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試製令-訂單");
+                //MessageBox.Show("有錯誤 測試製令-訂單");
+                MSG.AppendFormat(@"  測試製令-訂單  失敗 ||");
             }
             finally
             {
@@ -1302,11 +1360,13 @@ namespace TKMQ
             {
                 SETFILECOPTE();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試訂單變更");
+                //MessageBox.Show("有錯誤 測試訂單變更");
+                MSG.AppendFormat(@"  測試訂單變更  失敗 ||");
             }
             finally
             {
@@ -1319,11 +1379,13 @@ namespace TKMQ
                 SETFILEPURTA();
                 //SETFILEPURTA2();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試請購");
+                //MessageBox.Show("有錯誤 測試請購");
+                MSG.AppendFormat(@"  測試請購  失敗 ||");
             }
             finally
             {
@@ -1335,11 +1397,13 @@ namespace TKMQ
             {
                 SETFILE();
                 CLEAREXCEL();
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 測試訂單");
+                //MessageBox.Show("有錯誤 測試訂單");
+                MSG.AppendFormat(@"  測試訂單  失敗 ||");
             }
             finally
             {
@@ -1355,11 +1419,13 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日預排製令表");
+                //MessageBox.Show("有錯誤 每日預排製令表");
+                MSG.AppendFormat(@"  每日預排製令表  失敗 ||");
             }
             finally
             {
@@ -1376,12 +1442,13 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日批號檢查表");
-
+                //MessageBox.Show("有錯誤 每日批號檢查表");
+                MSG.AppendFormat(@"  每日批號檢查表  失敗 ||");
             }
             finally
             {
@@ -1397,11 +1464,13 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日重工單未結案表");
+                //MessageBox.Show("有錯誤 每日重工單未結案表");
+                MSG.AppendFormat(@"  每日重工單未結案表  失敗 ||");
             }
             finally
             {
@@ -1418,11 +1487,13 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
+
                 Thread.Sleep(5000);
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日每日採購單未結案表");
+                //MessageBox.Show("有錯誤 每日每日採購單未結案表");
+                MSG.AppendFormat(@"  每日每日採購單未結案表  失敗 ||");
             }
             finally
             {
@@ -1464,7 +1535,8 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日已請購未採購表");
+                //MessageBox.Show("有錯誤 每日已請購未採購表");
+                MSG.AppendFormat(@"  每日已請購未採購表  失敗 ||");
             }
             finally
             {
@@ -1485,7 +1557,8 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
+                //MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
+                MSG.AppendFormat(@"  每日追踨半成品-製令的比對表  失敗 ||");
             }
             finally
             {
@@ -1507,7 +1580,8 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日追踨製令未確認表");
+                //MessageBox.Show("有錯誤 每日追踨製令未確認表");
+                MSG.AppendFormat(@"  每日追踨製令未確認表  失敗 ||");
             }
             finally
             {
@@ -1529,7 +1603,8 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
+                //MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
+                MSG.AppendFormat(@"  每日追踨訂單變更追踨表  失敗 ||");
             }
             finally
             {
@@ -1551,7 +1626,8 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
+                //MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
+                MSG.AppendFormat(@"  請購表，是否有製令已開但未請購  失敗 ||");
             }
             finally
             {
@@ -1572,14 +1648,15 @@ namespace TKMQ
             }
             catch
             {
-                MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
+                //MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
+                MSG.AppendFormat(@" 製令追踨表，是否有訂單未開製令  失敗 ||");
             }
             finally
             {
 
             }
 
-            //MessageBox.Show("OK");
+            MessageBox.Show(MSG.ToString());
 
         }
         /// <summary>
