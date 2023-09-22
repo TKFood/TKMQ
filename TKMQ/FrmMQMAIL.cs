@@ -1656,7 +1656,12 @@ namespace TKMQ
 
             }
 
-            MessageBox.Show(MSG.ToString());
+            if(!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+            
+
 
         }
         /// <summary>
@@ -1695,6 +1700,11 @@ namespace TKMQ
 
             //MessageBox.Show("OK");
 
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
         }
         /// <summary>
         /// //每星期一~星期五寄送
@@ -1731,6 +1741,11 @@ namespace TKMQ
             finally
             {
 
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
             }
 
         }
