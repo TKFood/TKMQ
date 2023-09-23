@@ -8714,10 +8714,7 @@ namespace TKMQ
         /// <param name="Subject"></param>
         /// <param name="Body"></param>
         public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body,string Attachments)
-        {
-            
-
-
+        {   
             try
             {
 
