@@ -8749,7 +8749,7 @@ namespace TKMQ
 
                         try
                         {
-                            Attachment attch = new Attachment(Attachments + ".xlsx");
+                            Attachment attch = new Attachment(Attachments);
                             MyMail.Attachments.Add(attch);
 
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
