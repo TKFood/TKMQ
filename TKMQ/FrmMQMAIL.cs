@@ -8715,60 +8715,56 @@ namespace TKMQ
         /// <param name="Body"></param>
         public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body,string Attachments)
         {
-            DataSet DSFINDPURCHECKMAILTO = FINDPURCHECKMAILTO("NEWSALES");
+            
+
 
             try
             {
+
+                DataSet DSFINDPURCHECKMAILTO = FINDPURCHECKMAILTO("NEWSALES");
+
+                string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                string NAME = ConfigurationManager.AppSettings["NAME"];
+                string PW = ConfigurationManager.AppSettings["PW"];
+
+                System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                MyMail.Subject = Subject.ToString();
+                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                MyMail.Body = Body.ToString();
+                MyMail.IsBodyHtml = true; //是否使用html格式
+
+                //加上附圖
+                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+                Attachment attch = new Attachment(Attachments);
+                MyMail.Attachments.Add(attch);
                 if (DSFINDPURCHECKMAILTO.Tables[0].Rows.Count > 0)
                 {
                     foreach (DataRow DR in DSFINDPURCHECKMAILTO.Tables[0].Rows)
-                    {
-                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                        string NAME = ConfigurationManager.AppSettings["NAME"];
-                        string PW = ConfigurationManager.AppSettings["PW"];
-
-                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                        MyMail.Subject = Subject.ToString();
-                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                        MyMail.Body = Body.ToString();
-                        MyMail.IsBodyHtml = true; //是否使用html格式
-
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
-
+                    {                       
                         try
-                        {
-                            Attachment attch = new Attachment(Attachments);
-                            MyMail.Attachments.Add(attch);
-
+                        { 
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                                                                  //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                            MySMTP.Send(MyMail);
-
-                            MyMail.Dispose(); //釋放資源
-
-
+                                                                  //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email                          
                         }
                         catch (Exception ex)
                         {
-                            //MessageBox.Show("有錯誤");
-
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            
                         }
                     }
                 }
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
             }
             catch
             {
