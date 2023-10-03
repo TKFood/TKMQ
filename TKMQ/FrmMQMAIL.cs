@@ -8884,7 +8884,7 @@ namespace TKMQ
                 sqlConn.Open();
                 DS_NEWSLAES.Clear();
                 // 設置查詢的超時時間，以秒為單位
-                adapter1.SelectCommand.CommandTimeout = 120;
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
                 sqlConn.Close();
 
