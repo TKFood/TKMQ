@@ -479,7 +479,7 @@
             this.button27.Name = "button27";
             this.button27.Size = new System.Drawing.Size(197, 34);
             this.button27.TabIndex = 28;
-            this.button27.Text = "本年新品的銷售報表";
+            this.button27.Text = "本季新品的銷售報表";
             this.button27.UseVisualStyleBackColor = true;
             this.button27.Click += new System.EventHandler(this.button27_Click);
             // 

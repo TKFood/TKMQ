@@ -1018,9 +1018,9 @@ namespace TKMQ
             try
             {
 
-                //SETPATH();
-                //SETFILE_NEWSLAES(path_File_NEWSLAES);
-                //CLEAREXCEL();
+                SETPATH();
+                SETFILE_NEWSLAES(path_File_NEWSLAES);
+                CLEAREXCEL();
 
                 PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
 
@@ -8577,10 +8577,11 @@ namespace TKMQ
         {           
             SETPATH();
 
-            DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString() + ".pdf";
-            path_File = path_File_NEWSLAES;
+            path_File= path_File + ".xlsx";
+            //DATES = DateTime.Now.ToString("yyyyMMdd");
+            //DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            //path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString() + ".pdf";
+            //path_File = path_File_NEWSLAES;
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -8590,7 +8591,7 @@ namespace TKMQ
             }
 
 
-            SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
+           // SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
 
             DataSet DS_NEWSLAES = ERP_NEWSLAES();
 
@@ -8608,13 +8609,13 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"系統通知-老楊食品-本年新品的銷售報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                SUBJEST.AppendFormat(@"系統通知-老楊食品-本季新品的銷售報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "本年新品的銷售報表的明細如下"
+                    + "<br>" + "本季新品的銷售報表表的明細如下"
 
                     );
 
@@ -8970,8 +8971,15 @@ namespace TKMQ
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
-            DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
-            DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+            // 取得當前日期和時間
+            DateTime currentDate = DateTime.Now;
+            // 減去 3 個月的時間
+            DateTime threeMonthsAgo = currentDate.AddMonths(-3);
+            DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
+            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 31);
+            //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+            //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
 
             try
             {
@@ -9046,13 +9054,15 @@ namespace TKMQ
                                     ) AS TEMP
                                     ) AS TEMP2
                                     ORDER BY (SUMTH037+SUMTB031) DESC
-                                    ", firstDayOfYear.ToString("yyyyMMdd"), lastDayOfYear.ToString("yyyyMMdd"));
+                                    ", firstDay.ToString("yyyyMMdd"), lastDay.ToString("yyyyMMdd"));
 
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
                 sqlConn.Open();
                 ds1.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter1.SelectCommand.CommandTimeout = 120;
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
@@ -11104,10 +11114,10 @@ namespace TKMQ
         }
         private void button27_Click(object sender, EventArgs e)
         {
-            //SETPATH();
-            //SETFILE_NEWSLAES(path_File_NEWSLAES);
-            //CLEAREXCEL();
-        
+            SETPATH();
+            SETFILE_NEWSLAES(path_File_NEWSLAES);
+            CLEAREXCEL();
+
             PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
 
             MessageBox.Show("OK");
