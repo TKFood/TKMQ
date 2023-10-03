@@ -8786,8 +8786,17 @@ namespace TKMQ
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-            DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
-            DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+            // 取得當前日期和時間
+            DateTime currentDate = DateTime.Now;
+            // 減去 3 個月的時間
+            DateTime threeMonthsAgo = currentDate.AddMonths(-3);
+            DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
+            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 31);
+            //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+            //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+         
 
             try
             {
@@ -8867,13 +8876,15 @@ namespace TKMQ
 
 
     
-                                   ", firstDayOfYear.ToString("yyyyMMdd"), lastDayOfYear.ToString("yyyyMMdd"));
+                                   ", firstDay.ToString("yyyyMMdd"), lastDay.ToString("yyyyMMdd"));
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
 
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_NEWSLAES.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter1.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
                 sqlConn.Close();
 
