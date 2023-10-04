@@ -393,6 +393,8 @@ namespace TKMQ
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
                 sqlConn.Open();
                 ds1.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter1.SelectCommand.CommandTimeout = 120;
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
@@ -567,6 +569,8 @@ namespace TKMQ
                 sqlCmdBuilderMAIL = new SqlCommandBuilder(adapterMAIL);
                 sqlConn.Open();
                 dsMAIL.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAIL.SelectCommand.CommandTimeout = 120;
                 adapterMAIL.Fill(dsMAIL, "TEMPdsMAIL");
                 sqlConn.Close();
 
@@ -701,6 +705,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsCOPTE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterCOPTE.SelectCommand.CommandTimeout = 120;
                 adapterCOPTE.Fill(dsCOPTE, "TEMPdsCOPTE");
                 sqlConn.Close();
 
@@ -843,6 +849,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILCOPTE = new SqlCommandBuilder(adapterMAILCOPTE);
                 sqlConn.Open();
                 dsMAILCOPTE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILCOPTE.SelectCommand.CommandTimeout = 120;
                 adapterMAILCOPTE.Fill(dsMAILCOPTE, "TEMPdsMAILCOPTE");
                 sqlConn.Close();
 
@@ -1873,6 +1881,8 @@ namespace TKMQ
                 sqlConn.Open();
 
                 dsPURTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterPURTA.SelectCommand.CommandTimeout = 120;
                 adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
                 sqlConn.Close();
 
@@ -1971,6 +1981,8 @@ namespace TKMQ
                 sqlConn.Open();
 
                 dsPURTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterPURTA.SelectCommand.CommandTimeout = 120;
                 adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
                 sqlConn.Close();
 
@@ -2172,6 +2184,8 @@ namespace TKMQ
                 sqlConn.Open();
 
                 dsPURTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterPURTA.SelectCommand.CommandTimeout = 120;
                 adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
                 sqlConn.Close();
 
@@ -2235,6 +2249,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILPURTA = new SqlCommandBuilder(adapterMAILPURTA);
                 sqlConn.Open();
                 dsMAILPURTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILPURTA.SelectCommand.CommandTimeout = 120;
                 adapterMAILPURTA.Fill(dsMAILPURTA, "TEMPdsMAILPURTA");
                 sqlConn.Close();
 
@@ -2366,6 +2382,8 @@ namespace TKMQ
                 sqlCmdBuilderMOCTA = new SqlCommandBuilder(adapterMOCTA);
                 sqlConn.Open();
                 dsMOCTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMOCTA.SelectCommand.CommandTimeout = 120;
                 adapterMOCTA.Fill(dsMOCTA, "dsMOCTA");
                 sqlConn.Close();
 
@@ -2436,6 +2454,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILMOCTA = new SqlCommandBuilder(adapterMAILMOCTA);
                 sqlConn.Open();
                 dsMAILMOCTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILMOCTA.SelectCommand.CommandTimeout = 120;
                 adapterMAILMOCTA.Fill(dsMAILMOCTA, "dsMAILMOCTA");
                 sqlConn.Close();
 
@@ -2627,6 +2647,8 @@ namespace TKMQ
                 sqlCmdBuilderINVMOCTA = new SqlCommandBuilder(adapterINVMOCTA);
                 sqlConn.Open();
                 dsINVMOCTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterINVMOCTA.SelectCommand.CommandTimeout = 120;
                 adapterINVMOCTA.Fill(dsINVMOCTA, "dsINVMOCTA");
                 sqlConn.Close();
 
@@ -2696,6 +2718,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILINVMOCTA = new SqlCommandBuilder(adapterMAILINVMOCTA);
                 sqlConn.Open();
                 dsMAILINVMOCTA.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILINVMOCTA.SelectCommand.CommandTimeout = 120;
                 adapterMAILINVMOCTA.Fill(dsMAILINVMOCTA, "dsMAILINVMOCTA");
                 sqlConn.Close();
 
@@ -2832,6 +2856,8 @@ namespace TKMQ
                 sqlCmdBuilderPURTB = new SqlCommandBuilder(adapterPURTB);
                 sqlConn.Open();
                 dsPURTB.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterPURTB.SelectCommand.CommandTimeout = 120;
                 adapterPURTB.Fill(dsPURTB, "dsPURTB");
                 sqlConn.Close();
 
@@ -2902,6 +2928,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILPURTB = new SqlCommandBuilder(adapterMAILPURTB);
                 sqlConn.Open();
                 dsMAILPURTB.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILPURTB.SelectCommand.CommandTimeout = 120;
                 adapterMAILPURTB.Fill(dsMAILPURTB, "dsMAILPURTB");
                 sqlConn.Close();
 
@@ -3032,6 +3060,8 @@ namespace TKMQ
                 sqlCmdBuilderMOCINVCHECK = new SqlCommandBuilder(adapterMOCINVCHECK);
                 sqlConn.Open();
                 dsMOCINVCHECK.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMOCINVCHECK.SelectCommand.CommandTimeout = 120;
                 adapterMOCINVCHECK.Fill(dsMOCINVCHECK, "dsMOCINVCHECK");
                 sqlConn.Close();
 
@@ -3188,6 +3218,8 @@ namespace TKMQ
                 
                 sqlConn.Open();
                 dsMOCCOP.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMOCCOP.SelectCommand.CommandTimeout = 120;
                 adapterMOCCOP.Fill(dsMOCCOP, "dsMOCCOP");
                 sqlConn.Close();
 
@@ -3256,6 +3288,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILMOCCOP = new SqlCommandBuilder(adapterMAILMOCCOP);
                 sqlConn.Open();
                 dsMAILMOCCOP.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILMOCCOP.SelectCommand.CommandTimeout = 120;
                 adapterMAILMOCCOP.Fill(dsMAILMOCCOP, "dsMAILMOCCOP");
                 sqlConn.Close();
 
@@ -3391,6 +3425,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsINVMC.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterINVMC.SelectCommand.CommandTimeout = 120;
                 adapterINVMC.Fill(dsINVMC, "dsINVMC");
                 sqlConn.Close();
 
@@ -3460,6 +3496,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILINVMC = new SqlCommandBuilder(adapterMAILINVMC);
                 sqlConn.Open();
                 dsMAILINVMC.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILINVMC.SelectCommand.CommandTimeout = 120;
                 adapterMAILINVMC.Fill(dsMAILINVMC, "dsMAILINVMC");
                 sqlConn.Close();
 
@@ -3593,6 +3631,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsPURTD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterPURTD.SelectCommand.CommandTimeout = 120;
                 adapterPURTD.Fill(dsPURTD, "dsPURTD");
                 sqlConn.Close();
 
@@ -3663,6 +3703,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILMOCTARE = new SqlCommandBuilder(adapterMAILMOCTARE);
                 sqlConn.Open();
                 dsMAILMOCTARE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILMOCTARE.SelectCommand.CommandTimeout = 120;
                 adapterMAILMOCTARE.Fill(dsMAILMOCTARE, "dsMAILMOCTARE");
                 sqlConn.Close();
 
@@ -3722,6 +3764,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILMOCMANULINE = new SqlCommandBuilder(adapterMAILMOCMANULINE);
                 sqlConn.Open();
                 dsMAILMOCMANULINE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILMOCMANULINE.SelectCommand.CommandTimeout = 120;
                 adapterMAILMOCMANULINE.Fill(dsMAILMOCMANULINE, "dsMAILMOCMANULINE");
                 sqlConn.Close();
 
@@ -3781,6 +3825,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILLOTCHECK = new SqlCommandBuilder(adapterMAILLOTCHECK);
                 sqlConn.Open();
                 dsMAILLOTCHECK.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILLOTCHECK.SelectCommand.CommandTimeout = 120;
                 adapterMAILLOTCHECK.Fill(dsMAILLOTCHECK, "dsMAILLOTCHECK");
                 sqlConn.Close();
 
@@ -3842,6 +3888,8 @@ namespace TKMQ
                 sqlCmdBuilderMAILPURTD = new SqlCommandBuilder(adapterMAILPURTD);
                 sqlConn.Open();
                 dsMAILPURTD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMAILPURTD.SelectCommand.CommandTimeout = 120;
                 adapterMAILPURTD.Fill(dsMAILPURTD, "dsMAILPURTD");
                 sqlConn.Close();
 
@@ -3973,6 +4021,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsMOCTARE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMOCTARE.SelectCommand.CommandTimeout = 120;
                 adapterMOCTARE.Fill(dsMOCTARE, "dsMOCTARE");
                 sqlConn.Close();
 
@@ -4281,6 +4331,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsLOTCHECK.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterLOTCHECK.SelectCommand.CommandTimeout = 120;
                 adapterLOTCHECK.Fill(dsLOTCHECK, "dsLOTCHECK");
                 sqlConn.Close();
 
@@ -4468,6 +4520,8 @@ namespace TKMQ
 
                 sqlConn.Open();
                 dsMOCMANULINE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterMOCMANULINE.SelectCommand.CommandTimeout = 120;
                 adapterMOCMANULINE.Fill(dsMOCMANULINE, "dsMOCMANULINE");
                 sqlConn.Close();
 
@@ -4935,6 +4989,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPURCHECK.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPURCHECK, "DSPURCHECK");
                 sqlConn.Close();
            
@@ -5012,6 +5068,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSERPPURTDCHECK.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSERPPURTDCHECK, "DSERPPURTDCHECK");
                 sqlConn.Close();
 
@@ -5096,7 +5154,10 @@ namespace TKMQ
 
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
+
                 DSTKPUR_PURTATBCHAGE.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSTKPUR_PURTATBCHAGE, "DSTKPUR_PURTATBCHAGE");
                 sqlConn.Close();
 
@@ -5172,6 +5233,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_PURTB_NOTIN_PURTD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_PURTB_NOTIN_PURTD, "DS_PURTB_NOTIN_PURTD");
                 sqlConn.Close();
 
@@ -5243,7 +5306,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 FINDSENDMAILTO.Clear();
-
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(FINDSENDMAILTO, "FINDSENDMAILTO");
                 sqlConn.Close();
 
@@ -5411,7 +5475,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS.Clear();
-
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
@@ -5800,6 +5865,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -5901,6 +5968,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -6084,6 +6153,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -6175,6 +6246,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -6430,6 +6503,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -6521,6 +6596,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DSPROOFREAD.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
@@ -6798,6 +6875,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
@@ -6915,6 +6994,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_UOF_TASK_APPLICATION_FORM.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
                 sqlConn.Close();
 
@@ -7205,6 +7286,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_UOF_TASK_APPLICATION_FORM.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
                 sqlConn.Close();
 
@@ -7511,6 +7594,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_OF_TASK_TASK_GRAFFIR.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_OF_TASK_TASK_GRAFFIR, "DS_FIND_OF_TASK_TASK_GRAFFIR");
                 sqlConn.Close();
 
@@ -7578,6 +7663,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_GRAFFIR_TO_EMAIL.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_GRAFFIR_TO_EMAIL, "DS_FIND_GRAFFIR_TO_EMAIL");
                 sqlConn.Close();
 
@@ -7959,6 +8046,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES, "DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES");
                 sqlConn.Close();
 
@@ -8203,6 +8292,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
                 sqlConn.Close();
 
@@ -8295,6 +8386,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES, "DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES");
                 sqlConn.Close();
 
@@ -8544,6 +8637,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
                 sqlConn.Close();
 
@@ -9246,6 +9341,9 @@ namespace TKMQ
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
                 sqlConn.Open();
                 ds1.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter1.SelectCommand.CommandTimeout = 120;
+
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
@@ -9535,6 +9633,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS_NEWSLAES.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
                 sqlConn.Close();
 
@@ -9828,6 +9928,8 @@ namespace TKMQ
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
                 sqlConn.Open();
                 ds1.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter1.SelectCommand.CommandTimeout = 120;
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
@@ -10256,6 +10358,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
@@ -10552,6 +10656,8 @@ namespace TKMQ
                 sqlCmdBuilderSALESMONEYS = new SqlCommandBuilder(adapterSALESMONEYS);
                 sqlConn.Open();
                 dsSALESMONEYS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapterSALESMONEYS.SelectCommand.CommandTimeout = 120;
                 adapterSALESMONEYS.Fill(dsSALESMONEYS, "dsSALESMONEYS");
                 sqlConn.Close();
 
@@ -10790,6 +10896,8 @@ namespace TKMQ
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
                 sqlConn.Open();
                 ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
