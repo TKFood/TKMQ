@@ -7565,21 +7565,24 @@ namespace TKMQ
                                     ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
                                     ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
                                     ,[NODES].SIGN_STATUS
-                                    FROM dbo.TB_WKF_TASK task
-                                    INNER JOIN dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
-                                    INNER JOIN dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
-                                    LEFT JOIN dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
-                                    LEFT JOIN dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
-                                    LEFT JOIN dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
-                                    LEFT JOIN dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID
-                                    LEFT JOIN dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+                                    FROM [UOF].dbo.TB_WKF_TASK task
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
+                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
 
 
                                     WHERE
                                     1=1  
-                                    AND  TASK_STATUS NOT IN ('2')
+                                    AND  TASK_STATUS NOT IN ('2','3','4')
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
-                                    AND DATEDIFF(HOUR,START_TIME,GETDATE())>=24
+                                 
+                                    AND DATEDIFF(HOUR,CONVERT(datetime,START_TIME),GETDATE())>=36
+                                    AND DATEDIFF(DAY,CONVERT(datetime,START_TIME),GETDATE())<=365
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
 
                                     ) AS TEMP
                                     WHERE 1=1
@@ -11210,6 +11213,7 @@ namespace TKMQ
         {
             //通知副總，總務未簽核的表單
             PREPARE_UOF_TASK_TASK_GRAFFIR();
+
 
         }
         private void button23_Click(object sender, EventArgs e)
