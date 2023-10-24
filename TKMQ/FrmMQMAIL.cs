@@ -7638,7 +7638,7 @@ namespace TKMQ
             {
                 //20210902密
                 Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
 
                 //資料庫使用者密碼解密
                 sqlsb.Password = TKID.Decryption(sqlsb.Password);
@@ -7654,10 +7654,13 @@ namespace TKMQ
                 //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
-                                   SELECT 
-                                    [TO_NAMES]
-                                    ,[TO_EMAILS]
-                                    FROM [UOF].[dbo].[Z_UOF_GRAFFIR_TO_EMAILS]
+                                  SELECT [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='PURTOCC'
 
                                    ");
 
@@ -7791,7 +7794,7 @@ namespace TKMQ
                     {
                         foreach(DataRow DR in TO_EMAIL.Rows)
                         {
-                            MyMail.To.Add(DR["TO_EMAILS"].ToString()); //設定收件者Email，多筆mail
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                         }
 
                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
