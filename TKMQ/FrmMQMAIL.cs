@@ -8893,11 +8893,11 @@ namespace TKMQ
             // 減去 3 個月的時間
             DateTime threeMonthsAgo = currentDate.AddMonths(-3);
             DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
-            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 31);
+            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1).AddDays(-1);
             //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
             //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
 
-         
+
 
             try
             {
@@ -9089,7 +9089,7 @@ namespace TKMQ
             // 減去 3 個月的時間
             DateTime threeMonthsAgo = currentDate.AddMonths(-3);
             DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
-            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 31);
+            DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1).AddDays(-1);
             //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
             //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
 
