@@ -10416,7 +10416,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-
+            table.Connection.CommandTimeout = 120;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
             report1.Preview = previewControl1;
@@ -10608,11 +10608,11 @@ namespace TKMQ
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
+            //adapter1.SelectCommand.CommandTimeout = 120;
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-
+            table.Connection.CommandTimeout =120;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
@@ -10714,7 +10714,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-
+            table.Connection.CommandTimeout = 120;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
             report1.Preview = previewControl1;
@@ -10852,7 +10852,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-
+            table.Connection.CommandTimeout = 120;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
@@ -11039,7 +11039,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-
+            table.Connection.CommandTimeout = 120;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
