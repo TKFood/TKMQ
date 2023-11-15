@@ -786,7 +786,7 @@ namespace TKMQ
 
 
                     cmd.Connection = sqlConn;
-                    cmd.CommandTimeout = 60;
+                    cmd.CommandTimeout = 120;
                     cmd.CommandText = sbSql.ToString();
                     cmd.Transaction = tran;
                     result = cmd.ExecuteNonQuery();
