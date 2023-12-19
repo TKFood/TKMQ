@@ -5370,7 +5370,7 @@ namespace TKMQ
                         try
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                                                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         }
                         catch (Exception ex)
                         {
@@ -5395,6 +5395,75 @@ namespace TKMQ
 
             }
            
+
+        }
+
+        /// <summary>
+        /// 實際寄出MEAIL，採購人員，ERP未核單的單別、單號
+        /// </summary>
+        public void SENDE_TO_PURTYPES(StringBuilder Subject, StringBuilder Body)
+        {
+            DataSet DSFMAILTO = FINDPURCHECKMAILTO("PURTYPES");
+
+            try
+            {
+                if (DSFMAILTO.Tables[0].Rows.Count > 0)
+                {
+
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = Subject.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = Body.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                    foreach (DataRow DR in DSFMAILTO.Tables[0].Rows)
+                    {
+
+                        try
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //MessageBox.Show("有錯誤");
+
+                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
+                    }
+
+                    MySMTP.Send(MyMail);
+
+                    MyMail.Dispose(); //釋放資源
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
 
         }
         //測試來客記錄的網站是否正常
@@ -11052,6 +11121,254 @@ namespace TKMQ
 
         }
 
+        /// <summary>
+        /// 更新已進貨的數量，用驗收數量>TOTALNUMS
+        /// </summary>
+        public void UDPATE_PURVERSIONSNUMS_TOTALNUMS()
+        {
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+                sbSql.Clear();
+
+                sbSql.AppendFormat(@"  
+                                    UPDATE [TKPUR].[dbo].[PURVERSIONSNUMS]
+                                    SET [TOTALNUMS]=(SELECT SUM(TH015) FROM[TK].dbo.PURTH,[TK].dbo.PURTG WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
+                                    WHERE [TOTALNUMS]<>(SELECT SUM(TH015) FROM[TK].dbo.PURTH,[TK].dbo.PURTG WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
+
+                                    ");
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = 60;
+                cmd.CommandText = sbSql.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+
+
+                }
+            }
+            catch
+            {
+
+            }
+
+            finally
+            {
+                sqlConn.Close();
+            }
+        }
+
+        public void NEW_PURVERSIONSNUMS()
+        {
+            try
+            {
+                DataTable DT = SEARCH_PURVERSIONSNUMS();
+                if (DT != null && DT.Rows.Count >= 1)
+                {
+                    SEND_PURVERSIONSNUMS(DT);
+                }
+            }
+            catch
+            {
+
+            }
+            finally { }
+            
+        }
+
+        public DataTable SEARCH_PURVERSIONSNUMS()
+        {
+            DataTable DT = new DataTable();
+            SqlDataAdapter Adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder SqlCmdBuilder1 = new SqlCommandBuilder();
+            DataSet DS = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT *
+                                    FROM [TKPUR].[dbo].[PURVERSIONSNUMS]
+                                    WHERE ISCLOSE='N'
+                                    AND TOTALNUMS>=TARGETNUMS 
+                                    ");
+
+                Adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                SqlCmdBuilder1 = new SqlCommandBuilder(Adapter1);
+                sqlConn.Open();
+                DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                Adapter1.SelectCommand.CommandTimeout = 120;
+                Adapter1.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count >= 1)
+                {
+                    return DS.Tables["DS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+            
+        }
+
+        public void SEND_PURVERSIONSNUMS(DataTable DT)
+        {
+            try
+            {             
+                if (DT != null && DT.Rows.Count >= 1)
+                {
+                    try
+                    {
+                        StringBuilder SUBJEST = new StringBuilder();
+                        StringBuilder BODY = new StringBuilder();
+
+                        ////加上附圖
+                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                        //LinkedResource res = new LinkedResource(path);
+                        //res.ContentId = Guid.NewGuid().ToString();
+
+                        SUBJEST.Clear();
+                        BODY.Clear();
+
+
+                        SUBJEST.AppendFormat(@"系統通知-老楊食品-版費可退回明細 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                        //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                        //ERP 採購相關單別、單號未核準的明細
+                        //
+                        BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                            + "<br>" + "版費可退回明細如下"
+
+                            );
+
+
+                        if (DT != null && DT.Rows.Count > 0)
+                        {
+                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                            BODY.AppendFormat(@"<table> ");
+                            BODY.AppendFormat(@"<tr >");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">版型</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">可退還的版費</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目標進貨量</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已進貨量</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否結案</th>");
+                            
+                            BODY.AppendFormat(@"</tr> ");
+
+                            foreach (DataRow DR in DT.Rows)
+                            {
+
+                                BODY.AppendFormat(@"<tr >");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["NAMES"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["MB001"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["MB002"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["BACKMONEYS"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TARGETNUMS"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TOTALNUMS"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["ISCLOSE"].ToString() + "</td>");
+
+                                BODY.AppendFormat(@"</tr> ");
+
+                                //BODY.AppendFormat("<span></span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                            }
+                            BODY.AppendFormat(@"</table> ");
+                        }
+                        else
+                        {
+                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                        }
+                                            
+
+                        BODY.AppendFormat(" "
+                                     + "<br>" + "謝謝"
+
+                                     + "</span><br>");
+
+
+
+                        SENDE_TO_PURTYPES(SUBJEST, BODY);
+
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            finally { }
+        }
+
         #endregion
 
         #region BUTTON
@@ -11288,6 +11605,13 @@ namespace TKMQ
         private void button33_Click(object sender, EventArgs e)
         {
             SENDEMAIL_DAILY_QC_CHECK();
+
+            MessageBox.Show("完成");
+        }
+        private void button34_Click(object sender, EventArgs e)
+        {
+            UDPATE_PURVERSIONSNUMS_TOTALNUMS();
+            NEW_PURVERSIONSNUMS();
 
             MessageBox.Show("完成");
         }

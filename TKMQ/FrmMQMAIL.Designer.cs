@@ -75,6 +75,7 @@
             this.previewControl1 = new FastReport.Preview.PreviewControl();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
+            this.button34 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -157,6 +158,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button26, 0, 8);
             this.tableLayoutPanel1.Controls.Add(this.button21, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -680,6 +682,17 @@
             // 
             this.timer2.Tick += new System.EventHandler(this.timer2_Tick);
             // 
+            // button34
+            // 
+            this.button34.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button34.Location = new System.Drawing.Point(540, 243);
+            this.button34.Name = "button34";
+            this.button34.Size = new System.Drawing.Size(145, 34);
+            this.button34.TabIndex = 33;
+            this.button34.Text = "版費提醒退費";
+            this.button34.UseVisualStyleBackColor = true;
+            this.button34.Click += new System.EventHandler(this.button34_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -754,5 +767,6 @@
         private System.Windows.Forms.Timer timer2;
         private System.Windows.Forms.Button button32;
         private System.Windows.Forms.Button button33;
+        private System.Windows.Forms.Button button34;
     }
 }
