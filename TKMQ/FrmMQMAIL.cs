@@ -965,6 +965,21 @@ namespace TKMQ
 
             }
 
+            ///版費退回
+            try
+            {
+                DataTable DT = SEARCH_PURVERSIONSNUMS();
+                if (DT != null && DT.Rows.Count >= 1)
+                {
+                    SEND_PURVERSIONSNUMS(DT);
+                }
+            }
+            catch
+            {
+
+            }
+            finally { }
+
             //溫濕度-測試
             try
             {
