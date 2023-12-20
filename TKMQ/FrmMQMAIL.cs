@@ -9824,7 +9824,10 @@ namespace TKMQ
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
             DateTime FirstDay = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
-            DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
+            //2個月內
+            DateTime LastDay = DateTime.Now.AddMonths(2).AddDays(-DateTime.Now.AddMonths(1).Day);
+            //本月
+            //DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
 
             try
             {
@@ -10253,7 +10256,10 @@ namespace TKMQ
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DateTime FirstDay = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
-            DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
+            //2個月內
+            DateTime LastDay = DateTime.Now.AddMonths(2).AddDays(-DateTime.Now.AddMonths(1).Day);
+            //本月
+            //DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
 
 
             try
