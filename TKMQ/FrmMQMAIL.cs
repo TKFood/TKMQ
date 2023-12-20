@@ -10064,112 +10064,128 @@ namespace TKMQ
         /// </summary>
         public void PREPARESENDEMAIL_COPTCD(string path_File)
         {
-            DataSet DS = ERP_COPTCD();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"系統通知-老楊食品-訂單明細及金額報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+            BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                + "<br>" + "訂單明細及金額的明細如附件");
+            BODY.AppendFormat(" "
+                         + "<br>" + "謝謝"
 
-            try
-            {
-                StringBuilder SUBJEST = new StringBuilder();
-                StringBuilder BODY = new StringBuilder();
-
-                ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
-
-                SUBJEST.Clear();
-                BODY.Clear();
-
-
-                SUBJEST.AppendFormat(@"系統通知-老楊食品-訂單明細及金額報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-                //ERP 採購相關單別、單號未核準的明細
-                //
-                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "訂單明細及金額的明細如下(含附件)"
-
-                    );
-
-
-                if (DS != null && DS.Tables[0].Rows.Count > 0)
-                {
-                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-                    BODY.AppendFormat(@"<table> ");
-                    BODY.AppendFormat(@"<tr >");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">KINDS</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單別</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單號</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">客戶簡稱</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">課稅別</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單數量</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已交數量</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品數量</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品已交量</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出數量</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單價</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出貨金額</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
-                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已出貨金額</th>");
-                    BODY.AppendFormat(@"</tr> ");
-
-                    foreach (DataRow DR in DS.Tables[0].Rows)
-                    {
-
-                        BODY.AppendFormat(@"<tr >");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["KINDS"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單別"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單號"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["客戶簡稱"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["課稅別"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["部門"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已交數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品已交量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單價"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出貨金額"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預交日"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已出貨金額"].ToString() + "</td>");
-                        BODY.AppendFormat(@"</tr> ");
-
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-                    }
-                    BODY.AppendFormat(@"</table> ");
-                }
-                else
-                {
-                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
-                }
-
-                BODY.AppendFormat(" "
-                             + "<br>" + "謝謝"
-
-                             + "</span><br>");
+                         + "</span><br>");
 
 
 
-                SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
+           SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
 
-            }
-            catch
-            {
+            //DataSet DS = ERP_COPTCD();
 
-            }
-            finally
-            {
+            //try
+            //{
+            //    StringBuilder SUBJEST = new StringBuilder();
+            //    StringBuilder BODY = new StringBuilder();
 
-            }
+            //    ////加上附圖
+            //    //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+            //    //LinkedResource res = new LinkedResource(path);
+            //    //res.ContentId = Guid.NewGuid().ToString();
+
+            //    SUBJEST.Clear();
+            //    BODY.Clear();
+
+
+            //    SUBJEST.AppendFormat(@"系統通知-老楊食品-訂單明細及金額報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+            //    //ERP 採購相關單別、單號未核準的明細
+            //    //
+            //    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+            //        + "<br>" + "訂單明細及金額的明細如下(含附件)"
+
+            //        );
+
+
+            //    if (DS != null && DS.Tables[0].Rows.Count > 0)
+            //    {
+            //        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+            //        BODY.AppendFormat(@"<table> ");
+            //        BODY.AppendFormat(@"<tr >");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">KINDS</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單別</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單號</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">客戶簡稱</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">課稅別</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單數量</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已交數量</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品數量</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品已交量</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出數量</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單價</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出貨金額</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
+            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已出貨金額</th>");
+            //        BODY.AppendFormat(@"</tr> ");
+
+            //        foreach (DataRow DR in DS.Tables[0].Rows)
+            //        {
+
+            //            BODY.AppendFormat(@"<tr >");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["KINDS"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單別"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單號"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["客戶簡稱"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["課稅別"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["部門"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單數量"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已交數量"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品數量"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品已交量"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出數量"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單價"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出貨金額"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預交日"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已出貨金額"].ToString() + "</td>");
+            //            BODY.AppendFormat(@"</tr> ");
+
+            //            //BODY.AppendFormat("<span></span>");
+            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+            //        }
+            //        BODY.AppendFormat(@"</table> ");
+            //    }
+            //    else
+            //    {
+            //        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+            //    }
+
+            //    BODY.AppendFormat(" "
+            //                 + "<br>" + "謝謝"
+
+            //                 + "</span><br>");
+
+
+
+            //    SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
+
+            //}
+            //catch
+            //{
+
+            //}
+            //finally
+            //{
+
+            //}
         }
 
         /// <summary>
