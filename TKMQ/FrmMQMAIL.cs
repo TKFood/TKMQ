@@ -171,12 +171,923 @@ namespace TKMQ
             //timer1.Interval = 1000 ;
             timer2.Start();
 
+            // 在適當的地方設置 timer3 的屬性
+            timer3.Enabled = true;
+            timer3.Interval = (int)TimeSpan.FromDays(1).TotalMilliseconds; // 設置為一天的毫秒數
+            timer3.Tick += new EventHandler(timer3_Tick);
+            timer3.Start();
+
             CLEAREXCEL();
 
             SETPATH();
         }
 
         #region FUNCTION
+        private void timer3_Tick(object sender, EventArgs e)
+        {
+            // 檢查是否為每季度的1號
+            // 每3、6、9和12月的1號執行一次
+            if (DateTime.Now.Day == 1 && (DateTime.Now.Month % 3 == 0 || DateTime.Now.Month % 6 == 0 || DateTime.Now.Month % 9 == 0 || DateTime.Now.Month % 12 == 0))
+            {
+                // 執行您的操作
+                ///版費退回
+                try
+                {
+                    DataTable DT = SEARCH_PURVERSIONSNUMS();
+                    if (DT != null && DT.Rows.Count >= 1)
+                    {
+                        SEND_PURVERSIONSNUMS(DT);
+                    }
+                }
+                catch
+                {
+
+                }
+                finally { }
+
+
+            }
+        }
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            //    ///測試用的
+            //    ///
+            //    // 取得目前日期和時間
+            //    DateTime now = DateTime.Now;
+
+            //    int HH = 9;
+            //    int MM = 55;
+            //    // 判斷是否是星期一至星期五，且時間是 09:05
+            //    if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday && now.Hour == HH && now.Minute == MM)
+            //    {
+            //        HRAUTORUN3();
+            //    }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            // 取得目前日期和時間
+            DateTime now = DateTime.Now;
+
+
+            string targetTime1 = "08:30";
+            string currentTime1 = DateTime.Now.ToString("HH:mm");
+
+            string targetTime2 = "08:50";
+            string currentTime2 = DateTime.Now.ToString("HH:mm");
+
+            label1.Text = "每日執行時間為: " + targetTime2;
+            label2.Text = DateTime.Now.ToString();
+
+            //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
+            //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
+            //string date = "1";
+
+
+            if (currentTime1 == targetTime1)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN3();
+                }
+
+
+            }
+
+            if (currentTime2 == targetTime2)
+            {
+                //每星期一寄送
+                if (now.DayOfWeek == DayOfWeek.Monday)
+                {
+                    HRAUTORUN2();
+                }
+
+                //每日寄送               
+                HRAUTORUN();
+
+            }
+
+        }
+        /// <summary>
+        ///  //每日寄送
+        /// </summary>
+        public void HRAUTORUN()
+        {
+            StringBuilder MSG = new StringBuilder();
+            SETPATH();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+
+            try
+            {
+
+                //Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+           
+            //溫濕度-測試
+            try
+            {
+                SENDEMAIL_DAILY_QC_CHECK();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //每日訂單明細表
+            try
+            {
+                //path_File_COPTCD
+                //每日訂單明細表
+                SETPATH();
+                SETFILE_COPTCD(path_File_COPTCD);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 每日訂單明細表 失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //營銷各庫庫存通知
+            try
+            {
+                SETPATH();
+                SETFILE_POSINV(path_File_POSINV);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_POSINV(path_File_POSINV);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 營銷各庫庫存通知");
+                MSG.AppendFormat(@" 營銷各庫庫存通知 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///本年新品的銷售報表
+            try
+            {
+
+                SETPATH();
+                SETFILE_NEWSLAES(path_File_NEWSLAES);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 本年新品的銷售報表");
+                MSG.AppendFormat(@" 本年新品的銷售報表 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試UOF交辨未完成");
+                MSG.AppendFormat(@" 測試UOF交辨未完成 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試主管UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
+                MSG.AppendFormat(@" 測試主管UOF交辨未完成 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知副總，總務未簽核的表單           
+            try
+            {
+                PREPARE_UOF_TASK_TASK_GRAFFIR();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
+                MSG.AppendFormat(@"  通知副總，總務未簽核的表單 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            //通知原請購人，總務已完成採購           
+            try
+            {
+                FIND_UOF_GRAFFAIRS_1005();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
+                MSG.AppendFormat(@"  通知原請購人，總務已完成採購 失敗 ||");
+
+            }
+            finally
+            {
+
+            }
+
+            //通知各表單申請人           
+            try
+            {
+                PREPARE_UOF_TASK_TASK_APPLICATION();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知各表單申請人");
+                MSG.AppendFormat(@"  通知各表單申請人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知各別的被交辨人
+            try
+            {
+                PREPARE_TB_EIP_PRIV_MESS();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知各別的被交辨人");
+                MSG.AppendFormat(@"  通知各別的被交辨人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知交辨人         
+            try
+            {
+                PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知交辨人");
+                MSG.AppendFormat(@"  通知交辨人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //校稿追踨          
+            try
+            {
+                PREPAREPROOFREAD();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 校稿追踨");
+                MSG.AppendFormat(@"  校稿追踨 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //IT檢查網站是否正常           
+            try
+            {
+                PREPAREITCHECK();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 IT檢查網站是否正常");
+                MSG.AppendFormat(@"  IT檢查網站是否正常 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //給採購人員，ERP未核單的單別、單號           
+            try
+            {
+                PREPARESENDEMAILERPPURCHECK();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //essageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
+                MSG.AppendFormat(@"  給採購人員，ERP未核單的單別、單號  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試預排製令
+            ///SETFILEMOCMANULINE
+            try
+            {
+                SETFILEMOCMANULINE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試預排製令");
+                MSG.AppendFormat(@"  測試預排製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試批號錯誤
+            ///SETFILELOTCHECK
+            try
+            {
+                SETFILELOTCHECK();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試批號錯誤");
+                MSG.AppendFormat(@"  測試批號錯誤  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試未完重工單
+            ///SETFILEMOCTARE
+            try
+            {
+                SETFILEMOCTARE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試未完重工單");
+                MSG.AppendFormat(@"  測試未完重工單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///測試已採購未結案
+            ///SETFILEPURTD
+            try
+            {
+                SETFILEPURTD();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試已採購未結案");
+                MSG.AppendFormat(@"  測試已採購未結案  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試物料安全水位
+            ///SETFILEINVMC
+            try
+            {
+                SETFILEINVMC();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試物料安全水位 ");
+                MSG.AppendFormat(@"  測試物料安全水位  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試已請購未採購
+            ///SETFILEPURTB
+            try
+            {
+                SETFILEPURTB();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試已請購未採購");
+                MSG.AppendFormat(@"  測試已請購未採購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試半成品-製令
+            ///SETFILEINVMOCTA
+            try
+            {
+                SETFILEINVMOCTA();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試半成品-製令");
+                MSG.AppendFormat(@"  測試半成品-製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試製令-訂單
+            ///SETFILEMOCTA            
+            try
+            {
+                SETFILEMOCTA();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試製令-訂單");
+                MSG.AppendFormat(@"  測試製令-訂單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試訂單變更
+            /// SETFILECOPTE
+            try
+            {
+                SETFILECOPTE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試訂單變更");
+                MSG.AppendFormat(@"  測試訂單變更  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試請購
+            ///SETFILEPURTA
+            try
+            {
+                SETFILEPURTA();
+                //SETFILEPURTA2();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試請購");
+                MSG.AppendFormat(@"  測試請購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試訂單
+            ///SETFILE
+            try
+            {
+                SETFILE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試訂單");
+                MSG.AppendFormat(@"  測試訂單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日預排製令表
+            try
+            {
+                SERACHMAILMOCMANULINE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日預排製令表");
+                MSG.AppendFormat(@"  每日預排製令表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            //系統通知-每日批號檢查表         
+            try
+            {
+                SERACHMAILLOTCHECK();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日批號檢查表");
+                MSG.AppendFormat(@"  每日批號檢查表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日重工單未結案表       
+            try
+            {
+                SERACHMAILMOCTARE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日重工單未結案表");
+                MSG.AppendFormat(@"  每日重工單未結案表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日每日採購單未結案表
+            try
+            {
+                //PURTD
+                SERACHMAILPURTD();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日每日採購單未結案表");
+                MSG.AppendFormat(@"  每日每日採購單未結案表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            /////每日物料安全水位表
+            //try
+            //{
+            //    //INVMC
+            //    //SERACHMAILINVMC();
+            //    //SUBJEST.Clear();
+            //    //BODY.Clear();
+            //    //SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
+            //    //SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
+            //}
+            //catch
+            //{
+
+            //}
+            //finally
+            //{
+
+            //}
+
+            ///系統通知-每日已請購未採購表
+            try
+            {
+                SERACHMAILPURTB();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日已請購未採購表");
+                MSG.AppendFormat(@"  每日已請購未採購表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯
+            try
+            {
+                SERACHMAILINVMOCTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
+                MSG.AppendFormat(@"  每日追踨半成品-製令的比對表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            ///系統通知-每日追踨製令未確認表
+            try
+            {
+                SERACHMAILMOCTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨製令未確認表");
+                MSG.AppendFormat(@"  每日追踨製令未確認表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨訂單變更追踨表
+            try
+            {
+                SERACHMAILCOPTE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
+                MSG.AppendFormat(@"  每日追踨訂單變更追踨表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨製令-請購表，是否有製令已開但未請購
+            try
+            {
+                SERACHMAILPURTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
+                MSG.AppendFormat(@"  請購表，是否有製令已開但未請購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令
+            try
+            {
+                SERACHMAIL();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
+                MSG.AppendFormat(@" 製令追踨表，是否有訂單未開製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
+
+
+        }
+        /// <summary>
+        /// //每星期一寄送
+        /// </summary>
+        public void HRAUTORUN2()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                SETPATH();
+
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                SETFILEMOCCOP();
+                CLEAREXCEL();
+                Thread.Sleep(5000);
+
+                SERACHMAILMOCCOP();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 每日製令準時完工率數量達交率 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //MessageBox.Show("OK");
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
+        }
+        /// <summary>
+        /// //每星期一~星期五寄送
+        /// </summary>
+        public void HRAUTORUN3()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+
+            //
+            try
+            {
+                SENDEMAIL_DAILY_SALES_MONEY();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("國內、外業務部業績日報表 有錯誤");
+                MSG.AppendFormat(@" 國內、外業務部業績日報表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
+        }
         public void SETPATH()
         {
 
@@ -878,900 +1789,7 @@ namespace TKMQ
             }
         }
 
-        private void timer2_Tick(object sender, EventArgs e)
-        {
-        //    ///測試用的
-        //    ///
-        //    // 取得目前日期和時間
-        //    DateTime now = DateTime.Now;
-
-        //    int HH = 9;
-        //    int MM = 55;
-        //    // 判斷是否是星期一至星期五，且時間是 09:05
-        //    if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday && now.Hour == HH && now.Minute == MM)
-        //    {
-        //        HRAUTORUN3();
-        //    }
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            // 取得目前日期和時間
-            DateTime now = DateTime.Now;  
-
-
-            string targetTime1 = "08:30";
-            string currentTime1 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime2 = "08:50";
-            string currentTime2 = DateTime.Now.ToString("HH:mm");
-
-            label1.Text = "每日執行時間為: " + targetTime2;
-            label2.Text = DateTime.Now.ToString();
-
-            //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
-            //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
-            //string date = "1";
-
-
-            if (currentTime1 == targetTime1)
-            {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN3();
-                }
-              
-
-            }
-
-            if (currentTime2 == targetTime2)
-            {                
-                //每星期一寄送
-                if (now.DayOfWeek == DayOfWeek.Monday)
-                {
-                    HRAUTORUN2();
-                }
-
-                //每日寄送               
-                HRAUTORUN();       
-                   
-            }
-
-        }
-        /// <summary>
-        ///  //每日寄送
-        /// </summary>
-        public void HRAUTORUN()
-        {
-            StringBuilder MSG = new StringBuilder();
-            SETPATH();
-          
-            StringBuilder SUBJEST = new StringBuilder();
-            StringBuilder BODY = new StringBuilder();
-            
-            
-            try
-            {
-
-                //Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MSG.AppendFormat(@" 溫濕度 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///版費退回
-            try
-            {
-                DataTable DT = SEARCH_PURVERSIONSNUMS();
-                if (DT != null && DT.Rows.Count >= 1)
-                {
-                    SEND_PURVERSIONSNUMS(DT);
-                }
-            }
-            catch
-            {
-
-            }
-            finally { }
-
-            //溫濕度-測試
-            try
-            {
-                SENDEMAIL_DAILY_QC_CHECK();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 溫濕度 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //每日訂單明細表
-            try
-            {
-                //path_File_COPTCD
-                //每日訂單明細表
-                SETPATH();
-                SETFILE_COPTCD(path_File_COPTCD);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 每日訂單明細表 失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //營銷各庫庫存通知
-            try
-            {
-                SETPATH();
-                SETFILE_POSINV(path_File_POSINV);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_POSINV(path_File_POSINV);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 營銷各庫庫存通知");
-                MSG.AppendFormat(@" 營銷各庫庫存通知 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///本年新品的銷售報表
-            try
-            {
-
-                SETPATH();
-                SETFILE_NEWSLAES(path_File_NEWSLAES);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 本年新品的銷售報表");
-                MSG.AppendFormat(@" 本年新品的銷售報表 失敗 ||");
-            }        
-            finally
-            {
-
-            }
-
-            //測試UOF交辨未完成
-            try
-            {
-                CHECK_TB_EIP_SCH_DEVOLVE();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試UOF交辨未完成");
-                MSG.AppendFormat(@" 測試UOF交辨未完成 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試主管UOF交辨未完成
-            try
-            {
-                CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
-                MSG.AppendFormat(@" 測試主管UOF交辨未完成 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知副總，總務未簽核的表單           
-            try
-            {
-                PREPARE_UOF_TASK_TASK_GRAFFIR();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
-                MSG.AppendFormat(@"  通知副總，總務未簽核的表單 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            //通知原請購人，總務已完成採購           
-            try
-            {
-                FIND_UOF_GRAFFAIRS_1005();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
-                MSG.AppendFormat(@"  通知原請購人，總務已完成採購 失敗 ||");
-
-            }
-            finally
-            {
-
-            }
-
-            //通知各表單申請人           
-            try
-            {
-                PREPARE_UOF_TASK_TASK_APPLICATION();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知各表單申請人");
-                MSG.AppendFormat(@"  通知各表單申請人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知各別的被交辨人
-            try
-            {
-                PREPARE_TB_EIP_PRIV_MESS();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知各別的被交辨人");
-                MSG.AppendFormat(@"  通知各別的被交辨人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知交辨人         
-            try
-            {
-                PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知交辨人");
-                MSG.AppendFormat(@"  通知交辨人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //校稿追踨          
-            try
-            {
-                PREPAREPROOFREAD();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 校稿追踨");
-                MSG.AppendFormat(@"  校稿追踨 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //IT檢查網站是否正常           
-            try
-            {
-                PREPAREITCHECK();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 IT檢查網站是否正常");
-                MSG.AppendFormat(@"  IT檢查網站是否正常 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //給採購人員，ERP未核單的單別、單號           
-            try
-            {
-                PREPARESENDEMAILERPPURCHECK();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //essageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
-                MSG.AppendFormat(@"  給採購人員，ERP未核單的單別、單號  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試預排製令
-            ///SETFILEMOCMANULINE
-            try
-            {
-                SETFILEMOCMANULINE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試預排製令");
-                MSG.AppendFormat(@"  測試預排製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試批號錯誤
-            ///SETFILELOTCHECK
-            try
-            {
-                SETFILELOTCHECK();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試批號錯誤");
-                MSG.AppendFormat(@"  測試批號錯誤  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試未完重工單
-            ///SETFILEMOCTARE
-            try
-            {
-                SETFILEMOCTARE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試未完重工單");
-                MSG.AppendFormat(@"  測試未完重工單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///測試已採購未結案
-            ///SETFILEPURTD
-            try
-            {
-                SETFILEPURTD();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試已採購未結案");
-                MSG.AppendFormat(@"  測試已採購未結案  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試物料安全水位
-            ///SETFILEINVMC
-            try
-            {
-                SETFILEINVMC();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試物料安全水位 ");
-                MSG.AppendFormat(@"  測試物料安全水位  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試已請購未採購
-            ///SETFILEPURTB
-            try
-            {
-                SETFILEPURTB();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試已請購未採購");
-                MSG.AppendFormat(@"  測試已請購未採購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試半成品-製令
-            ///SETFILEINVMOCTA
-            try
-            {
-                SETFILEINVMOCTA();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試半成品-製令");
-                MSG.AppendFormat(@"  測試半成品-製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試製令-訂單
-            ///SETFILEMOCTA            
-            try
-            {
-                SETFILEMOCTA();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試製令-訂單");
-                MSG.AppendFormat(@"  測試製令-訂單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試訂單變更
-            /// SETFILECOPTE
-            try
-            {
-                SETFILECOPTE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試訂單變更");
-                MSG.AppendFormat(@"  測試訂單變更  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試請購
-            ///SETFILEPURTA
-            try
-            {
-                SETFILEPURTA();
-                //SETFILEPURTA2();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試請購");
-                MSG.AppendFormat(@"  測試請購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試訂單
-            ///SETFILE
-            try
-            {
-                SETFILE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試訂單");
-                MSG.AppendFormat(@"  測試訂單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日預排製令表
-            try
-            {
-                SERACHMAILMOCMANULINE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日預排製令表");
-                MSG.AppendFormat(@"  每日預排製令表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            //系統通知-每日批號檢查表         
-            try
-            {
-                SERACHMAILLOTCHECK();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日批號檢查表");
-                MSG.AppendFormat(@"  每日批號檢查表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日重工單未結案表       
-            try
-            {
-                SERACHMAILMOCTARE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日重工單未結案表");
-                MSG.AppendFormat(@"  每日重工單未結案表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日每日採購單未結案表
-            try
-            {
-                //PURTD
-                SERACHMAILPURTD();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日每日採購單未結案表");
-                MSG.AppendFormat(@"  每日每日採購單未結案表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            /////每日物料安全水位表
-            //try
-            //{
-            //    //INVMC
-            //    //SERACHMAILINVMC();
-            //    //SUBJEST.Clear();
-            //    //BODY.Clear();
-            //    //SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
-            //    //SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
-            //}
-            //catch
-            //{
-
-            //}
-            //finally
-            //{
-
-            //}
-
-            ///系統通知-每日已請購未採購表
-            try
-            {
-                SERACHMAILPURTB();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日已請購未採購表");
-                MSG.AppendFormat(@"  每日已請購未採購表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯
-            try
-            {
-                SERACHMAILINVMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
-                MSG.AppendFormat(@"  每日追踨半成品-製令的比對表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            ///系統通知-每日追踨製令未確認表
-            try
-            {
-                SERACHMAILMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨製令未確認表");
-                MSG.AppendFormat(@"  每日追踨製令未確認表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨訂單變更追踨表
-            try
-            {
-                SERACHMAILCOPTE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
-                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
-
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
-                MSG.AppendFormat(@"  每日追踨訂單變更追踨表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨製令-請購表，是否有製令已開但未請購
-            try
-            {
-                SERACHMAILPURTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
-
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
-                MSG.AppendFormat(@"  請購表，是否有製令已開但未請購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令
-            try
-            {
-                SERACHMAIL();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
-                MSG.AppendFormat(@" 製令追踨表，是否有訂單未開製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            if(!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
-            
-
-
-        }
-        /// <summary>
-        /// //每星期一寄送
-        /// </summary>
-        public void HRAUTORUN2()
-        {
-            StringBuilder MSG = new StringBuilder();
-
-            try
-            {
-                SETPATH();
-
-                StringBuilder SUBJEST = new StringBuilder();
-                StringBuilder BODY = new StringBuilder();
-
-                SETFILEMOCCOP();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
-
-                SERACHMAILMOCCOP();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 每日製令準時完工率數量達交率 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //MessageBox.Show("OK");
-
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
-
-        }
-        /// <summary>
-        /// //每星期一~星期五寄送
-        /// </summary>
-        public void HRAUTORUN3()
-        {
-            StringBuilder MSG = new StringBuilder();
-
-            try
-            {
-
-            }
-            catch
-            {
-
-            }
-            finally
-            {
-
-            }
-
-            //
-            try
-            {
-                SENDEMAIL_DAILY_SALES_MONEY();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("國內、外業務部業績日報表 有錯誤");
-                MSG.AppendFormat(@" 國內、外業務部業績日報表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
-
-        }
+      
 
         public void SETFILEPURTA()
         {
@@ -11621,6 +11639,8 @@ namespace TKMQ
             CLEAREXCEL();
 
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+            PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+            PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
             MessageBox.Show("OK");
         }
         private void button30_Click(object sender, EventArgs e)
@@ -11652,8 +11672,9 @@ namespace TKMQ
 
             MessageBox.Show("完成");
         }
+
         #endregion
 
-
+     
     }
 }
