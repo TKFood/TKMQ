@@ -10736,7 +10736,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout =120;
+            table.Connection.CommandTimeout =300;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
