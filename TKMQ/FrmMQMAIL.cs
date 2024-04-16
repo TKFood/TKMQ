@@ -11465,10 +11465,13 @@ namespace TKMQ
             mail.To.Add(new MailAddress(recipientEmail));
             SUBJEST.AppendFormat(@"每日派車- {0}", DATES);
 
-            // 获取当前月份的第一天和最后一天
-            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month+1, 1);
-            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(2).AddDays(-1);
-            
+            // 获取指定月份的第一天和最后一天
+            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            // 确定第一个星期一的日期
+            DateTime firstMonday = firstDayOfMonth.AddDays((7 - (int)firstDayOfMonth.DayOfWeek + (int)DayOfWeek.Monday) % 7);
+
             // 构建HTML内容
             StringBuilder htmlBody = new StringBuilder();
             htmlBody.Append("<html><body>");
@@ -11479,11 +11482,22 @@ namespace TKMQ
             htmlBody.Append("<tr>");
             for (int i = 0; i < 7; i++)
             {
-                htmlBody.Append("<th>" + firstDayOfMonth.AddDays(i).ToString("ddd<br>MM/dd") + "</th>");
+                htmlBody.Append("<th>" + firstMonday.AddDays(i).ToString("ddd<br>") + "</th>");
             }
             htmlBody.Append("</tr>");
 
-            // 遍历指定月份的每一天
+            // 计算第一周之前的日期
+            DateTime currentDay = firstMonday;
+
+            DayOfWeek dayOfWeek = firstDayOfMonth.DayOfWeek;
+            int dayOfWeekNumber = (int)dayOfWeek-2;            
+            while (dayOfWeekNumber >= 0)
+            {
+                htmlBody.Append("<td></td>"); // 空单元格
+                dayOfWeekNumber--;
+            }
+
+            // 遍历当前月份的每一天
             for (int day = 1; day <= lastDayOfMonth.Day; day++)
             {
                 // 检查日期是否在DataTable中存在对应的内容
@@ -11494,24 +11508,22 @@ namespace TKMQ
                 // 每周开始时添加新行
                 if (currentDate.DayOfWeek == DayOfWeek.Monday)
                 {
-                    htmlBody.Append("<tr>");
+                    htmlBody.Append("</tr><tr>");
                 }
 
                 // 添加单元格
                 htmlBody.Append("<td valign='top'>" + currentDate.Day + "<br>" + eventText + "</td>");
-
-                // 每周结束时关闭行
-                if (currentDate.DayOfWeek == DayOfWeek.Sunday)
-                {
-                    htmlBody.Append("</tr>");
-                }
             }
 
-            htmlBody.Append("</table>");
-            htmlBody.Append("</body></html>");
+            // 补齐最后一周的空单元格
+            while (currentDay.DayOfWeek != DayOfWeek.Monday)
+            {
+                htmlBody.Append("<td></td>");
+                currentDay = currentDay.AddDays(1);
+            }
 
-            mail.Body = htmlBody.ToString();
-            mail.IsBodyHtml = true;
+            htmlBody.Append("</tr></table>");
+            htmlBody.Append("</body></html>");
 
             mail.Body = htmlBody.ToString();
             mail.IsBodyHtml = true;
