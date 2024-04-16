@@ -9732,6 +9732,9 @@ namespace TKMQ
                                     LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
                                     WHERE MB002 NOT LIKE '%暫停%'
                                     ORDER BY LA009,LA001,LA016
+                                    ORDER BY LA009,LA001,LA016
+                                    ORDER BY LA009,LA001,LA016
+                                    ORDER BY LA009,LA001,LA016
 
 
                                     ", TODAY);
@@ -11424,6 +11427,131 @@ namespace TKMQ
             finally { }
         }
 
+        public void SENDEMAIL_DAILY_TKWH_CALENDAR()
+        {
+            DataSet DS_EMAIL_CALENDAR = new DataSet();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETPATH();
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+
+            DS_EMAIL_CALENDAR = SERACHMAILSALESMONEYS();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+
+            // 创建一个DataTable来存储日期和内容
+            DataTable eventsTable = new DataTable();
+            eventsTable.Columns.Add("Date", typeof(DateTime));
+            eventsTable.Columns.Add("Event", typeof(string));
+
+            // 假设这是从某个数据源获取的日期和内容，这里只是简单地手动添加了一些示例数据
+            eventsTable.Rows.Add(new DateTime(2024, 4, 16), "会议");
+            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会");
+            eventsTable.Rows.Add(new DateTime(2024, 4, 18), "项目截止日期");
+
+            // 设置发件人的电子邮件地址和密码
+            string senderEmail = "your_email@example.com";
+            string senderPassword = "your_password";
+
+            // 设置收件人的电子邮件地址
+            string recipientEmail = "recipient@example.com";
+
+            // 创建电子邮件消息
+            MailMessage mail = new MailMessage();
+            mail.From = new MailAddress(senderEmail);
+            mail.To.Add(new MailAddress(recipientEmail));
+            SUBJEST.AppendFormat(@"每日派車- {0}", DATES);
+
+            // 获取当前月份的第一天和最后一天
+            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            // 构建HTML内容
+            StringBuilder htmlBody = new StringBuilder();
+            htmlBody.Append("<html><body>");
+            htmlBody.Append("<h1>每日派車</h1>");
+            htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
+
+            // 添加表头
+            htmlBody.Append("<tr>");
+            for (int i = 0; i < 7; i++)
+            {
+                htmlBody.Append("<th>" + firstDayOfMonth.AddDays(i).ToString("ddd<br>MM/dd") + "</th>");
+            }
+            htmlBody.Append("</tr>");
+
+            // 遍历当前月份的每一周
+            for (int week = 0; week < 6; week++)
+            {
+                htmlBody.Append("<tr>");
+                // 遍历一周的每一天
+                for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++)
+                {
+                    DateTime currentDate = firstDayOfMonth.AddDays(week * 7 + dayOfWeek);
+                    DataRow[] rows = eventsTable.Select("Date = '" + currentDate.ToString("yyyy-MM-dd") + "'");
+                    string eventText = (rows.Length > 0) ? rows[0]["Event"].ToString() : ""; // 如果有内容，取第一条内容，否则为空字符串
+
+                    // 添加单元格
+                    htmlBody.Append("<td valign='top'>" + eventText + "</td>");
+                }
+                htmlBody.Append("</tr>");
+            }
+
+            htmlBody.Append("</table>");
+            htmlBody.Append("</body></html>");
+
+            mail.Body = htmlBody.ToString();
+            mail.IsBodyHtml = true;
+
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = htmlBody.ToString();
+            MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            //Attachment attch = new Attachment(pathFile_SALES_MONEYS);
+            //MyMail.Attachments.Add(attch);
+
+
+            try
+            {
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email，多筆mail
+
+                //foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
+                //{
+
+                //    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                //}
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                //ex.ToString();
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -11673,8 +11801,14 @@ namespace TKMQ
             MessageBox.Show("完成");
         }
 
+        private void button35_Click(object sender, EventArgs e)
+        {
+            SENDEMAIL_DAILY_TKWH_CALENDAR();
+
+            MessageBox.Show("完成");
+        }
         #endregion
 
-     
+
     }
 }

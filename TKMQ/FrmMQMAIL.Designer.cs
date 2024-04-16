@@ -77,6 +77,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button35 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -160,6 +161,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button21, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 5);
             this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
+            this.tableLayoutPanel1.Controls.Add(this.button35, 6, 2);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -698,6 +700,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
+            // button35
+            // 
+            this.button35.Location = new System.Drawing.Point(723, 83);
+            this.button35.Name = "button35";
+            this.button35.Size = new System.Drawing.Size(145, 34);
+            this.button35.TabIndex = 34;
+            this.button35.Text = "派車-測試";
+            this.button35.UseVisualStyleBackColor = true;
+            this.button35.Click += new System.EventHandler(this.button35_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -774,5 +786,6 @@
         private System.Windows.Forms.Button button33;
         private System.Windows.Forms.Button button34;
         private System.Windows.Forms.Timer timer3;
+        private System.Windows.Forms.Button button35;
     }
 }
