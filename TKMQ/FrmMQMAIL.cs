@@ -11490,7 +11490,8 @@ namespace TKMQ
             DateTime currentDay = firstMonday;
 
             DayOfWeek dayOfWeek = firstDayOfMonth.DayOfWeek;
-            int dayOfWeekNumber = (int)dayOfWeek-2;            
+            //int dayOfWeekNumber = (int)dayOfWeek-2;
+            int dayOfWeekNumber = ((int)firstDayOfMonth.DayOfWeek - 2 + 7) % 7;
             while (dayOfWeekNumber >= 0)
             {
                 htmlBody.Append("<td></td>"); // 空单元格
