@@ -11466,16 +11466,16 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日派車- {0}", DATES);
 
             // 获取当前月份的第一天和最后一天
-            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-
+            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month+1, 1);
+            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(2).AddDays(-1);
+            
             // 构建HTML内容
             StringBuilder htmlBody = new StringBuilder();
             htmlBody.Append("<html><body>");
-            htmlBody.Append("<h1>每日派車</h1>");
+            htmlBody.Append("<h1>每日行事历</h1>");
             htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
-            // 添加表头
+            // 添加固定的表头，从星期一到星期日
             htmlBody.Append("<tr>");
             for (int i = 0; i < 7; i++)
             {
@@ -11483,25 +11483,35 @@ namespace TKMQ
             }
             htmlBody.Append("</tr>");
 
-            // 遍历当前月份的每一周
-            for (int week = 0; week < 6; week++)
+            // 遍历指定月份的每一天
+            for (int day = 1; day <= lastDayOfMonth.Day; day++)
             {
-                htmlBody.Append("<tr>");
-                // 遍历一周的每一天
-                for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++)
-                {
-                    DateTime currentDate = firstDayOfMonth.AddDays(week * 7 + dayOfWeek);
-                    DataRow[] rows = eventsTable.Select("Date = '" + currentDate.ToString("yyyy-MM-dd") + "'");
-                    string eventText = (rows.Length > 0) ? rows[0]["Event"].ToString() : ""; // 如果有内容，取第一条内容，否则为空字符串
+                // 检查日期是否在DataTable中存在对应的内容
+                DateTime currentDate = new DateTime(firstDayOfMonth.Year, firstDayOfMonth.Month, day);
+                DataRow[] rows = eventsTable.Select("Date = '" + currentDate.ToString("yyyy-MM-dd") + "'");
+                string eventText = (rows.Length > 0) ? rows[0]["Event"].ToString() : ""; // 如果有内容，取第一条内容，否则为空字符串
 
-                    // 添加单元格
-                    htmlBody.Append("<td valign='top'>" + eventText + "</td>");
+                // 每周开始时添加新行
+                if (currentDate.DayOfWeek == DayOfWeek.Monday)
+                {
+                    htmlBody.Append("<tr>");
                 }
-                htmlBody.Append("</tr>");
+
+                // 添加单元格
+                htmlBody.Append("<td valign='top'>" + currentDate.Day + "<br>" + eventText + "</td>");
+
+                // 每周结束时关闭行
+                if (currentDate.DayOfWeek == DayOfWeek.Sunday)
+                {
+                    htmlBody.Append("</tr>");
+                }
             }
 
             htmlBody.Append("</table>");
             htmlBody.Append("</body></html>");
+
+            mail.Body = htmlBody.ToString();
+            mail.IsBodyHtml = true;
 
             mail.Body = htmlBody.ToString();
             mail.IsBodyHtml = true;
