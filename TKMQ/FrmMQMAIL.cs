@@ -11475,7 +11475,7 @@ namespace TKMQ
             //mail.From = new MailAddress(senderEmail);
             //mail.To.Add(new MailAddress(recipientEmail));
 
-            SUBJEST.AppendFormat(@"每日派車- {0}", DATES);
+            SUBJEST.AppendFormat(@"系統通知-每日派車- {0}", DATES);
 
             // 获取指定月份的第一天和最后一天
             DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month , 1);
@@ -11490,14 +11490,14 @@ namespace TKMQ
             // 构建HTML内容
             StringBuilder htmlBody = new StringBuilder();
             htmlBody.Append("<html><body>");
-            htmlBody.Append("<h1>每日行事歷</h1>");
+            htmlBody.Append("<h1>每日派車行事歷</h1>");
             htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
             // 添加固定的表头，从星期一到星期日
             htmlBody.Append("<tr>");
             for (int i = 0; i < 7; i++)
             {
-                htmlBody.Append("<th>" + firstMonday.AddDays(i).ToString("ddd<br>") + "</th>");
+                htmlBody.Append("<th>" + firstMonday.AddDays(i).ToString("ddd") + "</th>");
             }
             htmlBody.Append("</tr>");
 
@@ -11507,7 +11507,7 @@ namespace TKMQ
             DayOfWeek dayOfWeek = firstDayOfMonth.DayOfWeek;
             //int dayOfWeekNumber = (int)dayOfWeek-2;
             int dayOfWeekNumber = ((int)firstDayOfMonth.DayOfWeek - 2 + 7) % 7;
-            while (dayOfWeekNumber >= 0)
+            while (dayOfWeekNumber >= 0&& dayOfWeekNumber<=5)
             {
                 htmlBody.Append("<td></td>"); // 空单元格
                 dayOfWeekNumber--;
@@ -11533,7 +11533,7 @@ namespace TKMQ
                     }
 
                     // 添加单元格
-                    htmlBody.Append("<td valign='top'>" + currentDate.Day + "<br>" + eventText + "</td>");
+                    htmlBody.Append("<td valign='top'>" + currentDate.Month+"/"+ currentDate.Day+ "<br>" + eventText + "</td>");
                 }
 
             }
