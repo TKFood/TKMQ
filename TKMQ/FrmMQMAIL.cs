@@ -11449,7 +11449,8 @@ namespace TKMQ
 
             // 假设这是从某个数据源获取的日期和内容，这里只是简单地手动添加了一些示例数据
             eventsTable.Rows.Add(new DateTime(2024, 4, 16), "会议");
-            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会");
+            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会1");
+            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会2");
             eventsTable.Rows.Add(new DateTime(2024, 4, 18), "项目截止日期");
 
             // 设置发件人的电子邮件地址和密码
@@ -11503,8 +11504,9 @@ namespace TKMQ
             {
                 // 检查日期是否在DataTable中存在对应的内容
                 DateTime currentDate = new DateTime(firstDayOfMonth.Year, firstDayOfMonth.Month, day);
-                DataRow[] rows = eventsTable.Select("Date = '" + currentDate.ToString("yyyy-MM-dd") + "'");
-                string eventText = (rows.Length > 0) ? rows[0]["Event"].ToString() : ""; // 如果有内容，取第一条内容，否则为空字符串
+                var rows = eventsTable.AsEnumerable().Where(row => row.Field<DateTime>("Date") == currentDate);
+                List<string> events = rows.Select(row => row.Field<string>("Event")).ToList();
+                string eventText = string.Join("<br>", events);
 
                 // 每周开始时添加新行
                 if (currentDate.DayOfWeek == DayOfWeek.Monday)
