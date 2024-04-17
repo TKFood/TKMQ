@@ -295,7 +295,22 @@ namespace TKMQ
 
             }
 
-           
+
+            try
+            {
+                //派車
+                SENDEMAIL_DAILY_TKWH_CALENDAR();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 派車報表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
             //溫濕度-測試
             try
             {
@@ -1054,7 +1069,7 @@ namespace TKMQ
 
             try
             {
-
+                
             }
             catch
             {
@@ -1068,6 +1083,7 @@ namespace TKMQ
             //
             try
             {
+                // 國內、外業務部業績日報表
                 SENDEMAIL_DAILY_SALES_MONEY();
 
                 Thread.Sleep(5000);
@@ -11497,23 +11513,29 @@ namespace TKMQ
                 dayOfWeekNumber--;
             }
 
+           
             // 遍历当前月份的每一天
             for (int day = 1; day <= lastDayOfMonth.Day; day++)
             {
                 // 检查日期是否在DataTable中存在对应的内容
                 DateTime currentDate = new DateTime(firstDayOfMonth.Year, firstDayOfMonth.Month, day);
-                var rows = DT_CALENDAR.AsEnumerable().Where(row => row.Field<string>("EVENTDATE") == currentDate.ToString("yyyyMMdd"));
-                List<string> events = rows.Select(row => row.Field<string>("EVENTS")).ToList();
-                string eventText = string.Join("<br>", events);
 
-                // 每周开始时添加新行
-                if (currentDate.DayOfWeek == DayOfWeek.Monday)
+                if (DT_CALENDAR != null && DT_CALENDAR.Rows.Count >= 1)
                 {
-                    htmlBody.Append("</tr><tr>");
+                    var rows = DT_CALENDAR.AsEnumerable().Where(row => row.Field<string>("EVENTDATE") == currentDate.ToString("yyyyMMdd"));
+                    List<string> events = rows.Select(row => row.Field<string>("EVENTS")).ToList();
+                    string eventText = string.Join("<br>", events);
+
+                    // 每周开始时添加新行
+                    if (currentDate.DayOfWeek == DayOfWeek.Monday)
+                    {
+                        htmlBody.Append("</tr><tr>");
+                    }
+
+                    // 添加单元格
+                    htmlBody.Append("<td valign='top'>" + currentDate.Day + "<br>" + eventText + "</td>");
                 }
 
-                // 添加单元格
-                htmlBody.Append("<td valign='top'>" + currentDate.Day + "<br>" + eventText + "</td>");
             }
 
             // 补齐最后一周的空单元格
@@ -11552,16 +11574,14 @@ namespace TKMQ
 
             try
             {
-                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email，多筆mail
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email，多筆mail
 
-                //foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
-                //{
+                foreach (DataRow od in DS_EMAIL_CALENDAR.Tables[0].Rows)
+                {
 
-                //    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
-                //}
-
-                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+                
                 MySMTP.Send(MyMail);
 
                 MyMail.Dispose(); //釋放資源
@@ -11607,7 +11627,7 @@ namespace TKMQ
                                     , CONVERT(NVARCHAR,[EVENTDATE],112) AS EVENTDATE
                                     ,[CAR]
                                     ,[EVENT]
-                                    ,[CAR]+'- '+[EVENT] AS 'EVENTS'
+                                    ,[CAR]+':'+[EVENT] AS 'EVENTS'
                                     FROM [TKWAREHOUSE].[dbo].[CALENDAR]
                                     WHERE CONVERT(NVARCHAR,[EVENTDATE],112)>='{0}' AND CONVERT(NVARCHAR,[EVENTDATE],112)<='{1}'
                                     ORDER BY [EVENTDATE],[ID]
