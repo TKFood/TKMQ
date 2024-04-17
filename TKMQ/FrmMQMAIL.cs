@@ -11430,6 +11430,7 @@ namespace TKMQ
         public void SENDEMAIL_DAILY_TKWH_CALENDAR()
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
+            DataTable DT_CALENDAR = new DataTable();
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
@@ -11437,38 +11438,35 @@ namespace TKMQ
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
 
-            DS_EMAIL_CALENDAR = SERACHMAILSALESMONEYS();
-
+            DS_EMAIL_CALENDAR = SERACH_MAIL_CALENDAR();
+            
             SUBJEST.Clear();
             BODY.Clear();
 
-            // 创建一个DataTable来存储日期和内容
-            DataTable eventsTable = new DataTable();
-            eventsTable.Columns.Add("Date", typeof(DateTime));
-            eventsTable.Columns.Add("Event", typeof(string));
+            //// 创建一个DataTable来存储日期和内容
+            //DataTable eventsTable = new DataTable();
+            //eventsTable.Columns.Add("Date", typeof(DateTime));
+            //eventsTable.Columns.Add("Event", typeof(string));
 
-            // 假设这是从某个数据源获取的日期和内容，这里只是简单地手动添加了一些示例数据
-            eventsTable.Rows.Add(new DateTime(2024, 4, 16), "会议");
-            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会1");
-            eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会2");
-            eventsTable.Rows.Add(new DateTime(2024, 4, 18), "项目截止日期");
-
-            // 设置发件人的电子邮件地址和密码
-            string senderEmail = "your_email@example.com";
-            string senderPassword = "your_password";
-
-            // 设置收件人的电子邮件地址
-            string recipientEmail = "recipient@example.com";
+            //// 假设这是从某个数据源获取的日期和内容，这里只是简单地手动添加了一些示例数据
+            //eventsTable.Rows.Add(new DateTime(2024, 4, 16), "会议");
+            //eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会1");
+            //eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会2");
+            //eventsTable.Rows.Add(new DateTime(2024, 4, 18), "项目截止日期");
 
             // 创建电子邮件消息
-            MailMessage mail = new MailMessage();
-            mail.From = new MailAddress(senderEmail);
-            mail.To.Add(new MailAddress(recipientEmail));
+            //MailMessage mail = new MailMessage();
+            //mail.From = new MailAddress(senderEmail);
+            //mail.To.Add(new MailAddress(recipientEmail));
+
             SUBJEST.AppendFormat(@"每日派車- {0}", DATES);
 
             // 获取指定月份的第一天和最后一天
-            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month , 1);
             DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+            DT_CALENDAR = SERACH_DT_CALENDAR(firstDayOfMonth.ToString("yyyyMMdd"), lastDayOfMonth.ToString("yyyyMMdd"));
+
 
             // 确定第一个星期一的日期
             DateTime firstMonday = firstDayOfMonth.AddDays((7 - (int)firstDayOfMonth.DayOfWeek + (int)DayOfWeek.Monday) % 7);
@@ -11476,7 +11474,7 @@ namespace TKMQ
             // 构建HTML内容
             StringBuilder htmlBody = new StringBuilder();
             htmlBody.Append("<html><body>");
-            htmlBody.Append("<h1>每日行事历</h1>");
+            htmlBody.Append("<h1>每日行事歷</h1>");
             htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
             // 添加固定的表头，从星期一到星期日
@@ -11504,8 +11502,8 @@ namespace TKMQ
             {
                 // 检查日期是否在DataTable中存在对应的内容
                 DateTime currentDate = new DateTime(firstDayOfMonth.Year, firstDayOfMonth.Month, day);
-                var rows = eventsTable.AsEnumerable().Where(row => row.Field<DateTime>("Date") == currentDate);
-                List<string> events = rows.Select(row => row.Field<string>("Event")).ToList();
+                var rows = DT_CALENDAR.AsEnumerable().Where(row => row.Field<string>("EVENTDATE") == currentDate.ToString("yyyyMMdd"));
+                List<string> events = rows.Select(row => row.Field<string>("EVENTS")).ToList();
                 string eventText = string.Join("<br>", events);
 
                 // 每周开始时添加新行
@@ -11528,8 +11526,8 @@ namespace TKMQ
             htmlBody.Append("</tr></table>");
             htmlBody.Append("</body></html>");
 
-            mail.Body = htmlBody.ToString();
-            mail.IsBodyHtml = true;
+            //mail.Body = htmlBody.ToString();
+            //mail.IsBodyHtml = true;
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -11577,6 +11575,139 @@ namespace TKMQ
             }
         }
 
+        public DataTable SERACH_DT_CALENDAR(string SDAYS,string EDAYS)
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                   SELECT
+                                     [ID]
+                                    , CONVERT(NVARCHAR,[EVENTDATE],112) AS EVENTDATE
+                                    ,[CAR]
+                                    ,[EVENT]
+                                    ,[CAR]+'- '+[EVENT] AS 'EVENTS'
+                                    FROM [TKWAREHOUSE].[dbo].[CALENDAR]
+                                    WHERE CONVERT(NVARCHAR,[EVENTDATE],112)>='{0}' AND CONVERT(NVARCHAR,[EVENTDATE],112)<='{1}'
+                                    ORDER BY [EVENTDATE],[ID]
+                                    ", SDAYS, EDAYS);
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataSet SERACH_MAIL_CALENDAR()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='CALENDAR'  
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
 
         #region BUTTON
