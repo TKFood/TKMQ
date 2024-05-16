@@ -11446,7 +11446,8 @@ namespace TKMQ
         public void SENDEMAIL_DAILY_TKWH_CALENDAR()
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
-            DataTable DT_CALENDAR = new DataTable();
+            DataTable DT_CALENDAR1 = new DataTable();
+            DataTable DT_CALENDAR2 = new DataTable();
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
@@ -11477,75 +11478,88 @@ namespace TKMQ
 
             SUBJEST.AppendFormat(@"系統通知-每日派車- {0}", DATES);
 
-            // 获取指定月份的第一天和最后一天
-            DateTime firstDayOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month , 1);
-            DateTime lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-
-            DT_CALENDAR = SERACH_DT_CALENDAR(firstDayOfMonth.ToString("yyyyMMdd"), lastDayOfMonth.ToString("yyyyMMdd"));
-
-
-            // 确定第一个星期一的日期
-            DateTime firstMonday = firstDayOfMonth.AddDays((7 - (int)firstDayOfMonth.DayOfWeek + (int)DayOfWeek.Monday) % 7);
-
             // 构建HTML内容
             StringBuilder htmlBody = new StringBuilder();
             htmlBody.Append("<html><body>");
             htmlBody.Append("<h1>每日派車行事歷</h1>");
-            htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
-            // 添加固定的表头，从星期一到星期日
-            htmlBody.Append("<tr>");
-            for (int i = 0; i < 7; i++)
+            //改成2個月
+            // 获取指定月份的第一天和最后一天
+            for (int MONTHSCOUNT = 0; MONTHSCOUNT <= 1; MONTHSCOUNT++)
             {
-                htmlBody.Append("<th>" + firstMonday.AddDays(i).ToString("ddd") + "</th>");
-            }
-            htmlBody.Append("</tr>");
+                DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month+ MONTHSCOUNT, 1);
+                DateTime lastDayOfMonth1 = firstDayOfMonth1.AddMonths(1).AddDays(-1);
 
-            // 计算第一周之前的日期
-            DateTime currentDay = firstMonday;
+                //第1個月
+                DT_CALENDAR1 = SERACH_DT_CALENDAR(firstDayOfMonth1.ToString("yyyyMMdd"), lastDayOfMonth1.ToString("yyyyMMdd"));
 
-            DayOfWeek dayOfWeek = firstDayOfMonth.DayOfWeek;
-            //int dayOfWeekNumber = (int)dayOfWeek-2;
-            int dayOfWeekNumber = ((int)firstDayOfMonth.DayOfWeek - 2 + 7) % 7;
-            while (dayOfWeekNumber >= 0&& dayOfWeekNumber<=5)
-            {
-                htmlBody.Append("<td></td>"); // 空单元格
-                dayOfWeekNumber--;
-            }
 
-           
-            // 遍历当前月份的每一天
-            for (int day = 1; day <= lastDayOfMonth.Day; day++)
-            {
-                // 检查日期是否在DataTable中存在对应的内容
-                DateTime currentDate = new DateTime(firstDayOfMonth.Year, firstDayOfMonth.Month, day);
+                // 确定第一个星期一的日期
+                DateTime firstMonday = firstDayOfMonth1.AddDays((7 - (int)firstDayOfMonth1.DayOfWeek + (int)DayOfWeek.Monday) % 7);
 
-                if (DT_CALENDAR != null && DT_CALENDAR.Rows.Count >= 1)
+              
+                htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
+
+                // 添加固定的表头，从星期一到星期日
+                htmlBody.Append("<tr>");
+                for (int i = 0; i < 7; i++)
                 {
-                    var rows = DT_CALENDAR.AsEnumerable().Where(row => row.Field<string>("EVENTDATE") == currentDate.ToString("yyyyMMdd"));
-                    List<string> events = rows.Select(row => row.Field<string>("EVENTS")).ToList();
-                    string eventText = string.Join("<br>", events);
+                    htmlBody.Append("<th>" + firstMonday.AddDays(i).ToString("ddd") + "</th>");
+                }
+                htmlBody.Append("</tr>");
 
-                    // 每周开始时添加新行
-                    if (currentDate.DayOfWeek == DayOfWeek.Monday)
-                    {
-                        htmlBody.Append("</tr><tr>");
-                    }
+                // 计算第一周之前的日期
+                DateTime currentDay = firstMonday;
 
-                    // 添加单元格
-                    htmlBody.Append("<td valign='top'>" + currentDate.Month+"/"+ currentDate.Day+ "<br>" + eventText + "</td>");
+                DayOfWeek dayOfWeek = firstDayOfMonth1.DayOfWeek;
+                //int dayOfWeekNumber = (int)dayOfWeek-2;
+                int dayOfWeekNumber = ((int)firstDayOfMonth1.DayOfWeek - 2 + 7) % 7;
+                while (dayOfWeekNumber >= 0 && dayOfWeekNumber <= 5)
+                {
+                    htmlBody.Append("<td></td>"); // 空单元格
+                    dayOfWeekNumber--;
                 }
 
-            }
 
-            // 补齐最后一周的空单元格
-            while (currentDay.DayOfWeek != DayOfWeek.Monday)
-            {
-                htmlBody.Append("<td></td>");
-                currentDay = currentDay.AddDays(1);
-            }
+                // 遍历当前月份的每一天
+                for (int day = 1; day <= lastDayOfMonth1.Day; day++)
+                {
+                    // 检查日期是否在DataTable中存在对应的内容
+                    DateTime currentDate = new DateTime(firstDayOfMonth1.Year, firstDayOfMonth1.Month, day);
 
-            htmlBody.Append("</tr></table>");
+                    if (DT_CALENDAR1 != null && DT_CALENDAR1.Rows.Count >= 1)
+                    {
+                        var rows = DT_CALENDAR1.AsEnumerable().Where(row => row.Field<string>("EVENTDATE") == currentDate.ToString("yyyyMMdd"));
+                        List<string> events = rows.Select(row => row.Field<string>("EVENTS")).ToList();
+                        string eventText = string.Join("<br>", events);
+
+                        // 每周开始时添加新行
+                        if (currentDate.DayOfWeek == DayOfWeek.Monday)
+                        {
+                            htmlBody.Append("</tr><tr>");
+                        }
+
+                        // 添加单元格
+                        htmlBody.Append("<td valign='top'>" + currentDate.Month + "/" + currentDate.Day + "<br>" + eventText + "</td>");
+                    }
+
+                }
+
+                // 补齐最后一周的空单元格
+                while (currentDay.DayOfWeek != DayOfWeek.Monday)
+                {
+                    htmlBody.Append("<td></td>");
+                    currentDay = currentDay.AddDays(1);
+                }
+
+                htmlBody.Append("</tr></table>");
+
+                htmlBody.Append("<br><br>");
+            }
+           
+
+        
+
             htmlBody.Append("</body></html>");
 
             //mail.Body = htmlBody.ToString();
