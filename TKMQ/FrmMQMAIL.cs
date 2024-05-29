@@ -11837,9 +11837,7 @@ namespace TKMQ
 
                         System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
                         MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
+                        
 
                         try
                         {
