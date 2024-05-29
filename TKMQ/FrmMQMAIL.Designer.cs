@@ -65,6 +65,7 @@
             this.button21 = new System.Windows.Forms.Button();
             this.button17 = new System.Windows.Forms.Button();
             this.button34 = new System.Windows.Forms.Button();
+            this.button35 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -77,7 +78,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button35 = new System.Windows.Forms.Button();
+            this.button36 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -162,6 +163,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 5);
             this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 2);
+            this.tableLayoutPanel1.Controls.Add(this.button36, 6, 4);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -542,6 +544,16 @@
             this.button34.UseVisualStyleBackColor = true;
             this.button34.Click += new System.EventHandler(this.button34_Click);
             // 
+            // button35
+            // 
+            this.button35.Location = new System.Drawing.Point(723, 83);
+            this.button35.Name = "button35";
+            this.button35.Size = new System.Drawing.Size(145, 34);
+            this.button35.TabIndex = 34;
+            this.button35.Text = "派車-測試";
+            this.button35.UseVisualStyleBackColor = true;
+            this.button35.Click += new System.EventHandler(this.button35_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -700,15 +712,15 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button35
+            // button36
             // 
-            this.button35.Location = new System.Drawing.Point(723, 83);
-            this.button35.Name = "button35";
-            this.button35.Size = new System.Drawing.Size(145, 34);
-            this.button35.TabIndex = 34;
-            this.button35.Text = "派車-測試";
-            this.button35.UseVisualStyleBackColor = true;
-            this.button35.Click += new System.EventHandler(this.button35_Click);
+            this.button36.Location = new System.Drawing.Point(723, 163);
+            this.button36.Name = "button36";
+            this.button36.Size = new System.Drawing.Size(145, 34);
+            this.button36.TabIndex = 35;
+            this.button36.Text = "業務活動通知行銷-測試";
+            this.button36.UseVisualStyleBackColor = true;
+            this.button36.Click += new System.EventHandler(this.button36_Click);
             // 
             // FrmMQMAIL
             // 
@@ -787,5 +799,6 @@
         private System.Windows.Forms.Button button34;
         private System.Windows.Forms.Timer timer3;
         private System.Windows.Forms.Button button35;
+        private System.Windows.Forms.Button button36;
     }
 }
