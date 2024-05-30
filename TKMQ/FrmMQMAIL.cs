@@ -1025,6 +1025,20 @@ namespace TKMQ
         {
             StringBuilder MSG = new StringBuilder();
 
+            //業務活動通知行銷-測試
+            try
+            {
+                SENDEMAIL_TB_SALES_PROMOTIONS();            }
+
+            catch
+            {
+                MSG.AppendFormat(@" 業務活動通知行銷 失敗 ||");
+            }
+            finally
+            {
+            }
+
+            //每日製令準時完工率數量達交率
             try
             {
                 SETPATH();
