@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace TKMQ
 {
@@ -1383,10 +1384,12 @@ namespace TKMQ
             Excel.Range wRangepathFile;
             Excel.Range wRangepathFilePURTA;
 
+            //Add a new worksheet to workbook with the Datatable name
+            Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
+          
+
             foreach (DataTable table in ds.Tables)
             {
-                //Add a new worksheet to workbook with the Datatable name
-                Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
                 excelWorkSheet.Name = table.TableName;
 
                 for (int i = 1; i < table.Columns.Count + 1; i++)
@@ -1477,6 +1480,10 @@ namespace TKMQ
             excelWorkBook.Close();
             excelApp.Quit();
 
+            // 释放COM对象
+            Marshal.ReleaseComObject(excelWorkSheet);
+            Marshal.ReleaseComObject(excelWorkBook);
+            Marshal.ReleaseComObject(excelApp);
         }
 
         public void SERACHMAIL()
