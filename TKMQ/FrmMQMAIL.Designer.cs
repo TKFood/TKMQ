@@ -79,6 +79,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button37 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -164,6 +165,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 2);
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 4);
+            this.tableLayoutPanel1.Controls.Add(this.button37, 4, 7);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -722,6 +724,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
+            // button37
+            // 
+            this.button37.Location = new System.Drawing.Point(540, 283);
+            this.button37.Name = "button37";
+            this.button37.Size = new System.Drawing.Size(145, 34);
+            this.button37.TabIndex = 36;
+            this.button37.Text = "採購今日未到貨";
+            this.button37.UseVisualStyleBackColor = true;
+            this.button37.Click += new System.EventHandler(this.button37_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -800,5 +812,6 @@
         private System.Windows.Forms.Timer timer3;
         private System.Windows.Forms.Button button35;
         private System.Windows.Forms.Button button36;
+        private System.Windows.Forms.Button button37;
     }
 }
