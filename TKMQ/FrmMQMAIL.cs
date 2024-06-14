@@ -1149,7 +1149,23 @@ namespace TKMQ
         public void HRAUTORUN4()
         {
             StringBuilder MSG = new StringBuilder();
+                       
+            try
+            {
+                //採購今日未傳真
+                SENDEMAIL_TBPURCHECKFAX();
 
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
+            }
+            finally
+            {
+            }
+
+           
             try
             {
                 //預計採購未到貨
