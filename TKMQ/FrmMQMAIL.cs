@@ -250,7 +250,7 @@ namespace TKMQ
             //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
             //string date = "1";
 
-
+            //一般用08:30
             if (currentTime1 == targetTime1)
             {
                 //每星期一~星期五寄送
@@ -261,7 +261,7 @@ namespace TKMQ
 
 
             }
-
+            //一般用08:50
             if (currentTime2 == targetTime2)
             {
                 //每星期一寄送
@@ -275,6 +275,8 @@ namespace TKMQ
 
             }
 
+
+            //採購用-15:00
             if (currentTime3 == targetTime3)
             {
                 //每星期一~星期五寄送
@@ -283,6 +285,7 @@ namespace TKMQ
                     HRAUTORUN4();
                 }
             }
+            //採購用-17:00
             if (currentTime4 == targetTime4)
             {
                 //每星期一~星期五寄送
@@ -1048,6 +1051,21 @@ namespace TKMQ
         public void HRAUTORUN2()
         {
             StringBuilder MSG = new StringBuilder();
+
+            //研發每週通知該月樣品
+            try
+            {
+                SENDEMAIL_TB_DEVE_NEWLISTS();
+            }
+
+            catch
+            {
+                MSG.AppendFormat(@" 研發每週通知該月樣品 失敗 ||");
+            }
+            finally
+            {
+            }
+
 
             //業務活動通知行銷-測試
             try
