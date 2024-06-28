@@ -68,6 +68,7 @@
             this.button35 = new System.Windows.Forms.Button();
             this.button36 = new System.Windows.Forms.Button();
             this.button37 = new System.Windows.Forms.Button();
+            this.button38 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -80,7 +81,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button38 = new System.Windows.Forms.Button();
+            this.button39 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -168,6 +169,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button37, 4, 7);
             this.tableLayoutPanel1.Controls.Add(this.button38, 4, 8);
+            this.tableLayoutPanel1.Controls.Add(this.button39, 6, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -578,6 +580,16 @@
             this.button37.UseVisualStyleBackColor = true;
             this.button37.Click += new System.EventHandler(this.button37_Click);
             // 
+            // button38
+            // 
+            this.button38.Location = new System.Drawing.Point(540, 323);
+            this.button38.Name = "button38";
+            this.button38.Size = new System.Drawing.Size(145, 34);
+            this.button38.TabIndex = 37;
+            this.button38.Text = "採購今日未傳真";
+            this.button38.UseVisualStyleBackColor = true;
+            this.button38.Click += new System.EventHandler(this.button38_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -736,15 +748,15 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button38
+            // button39
             // 
-            this.button38.Location = new System.Drawing.Point(540, 323);
-            this.button38.Name = "button38";
-            this.button38.Size = new System.Drawing.Size(145, 34);
-            this.button38.TabIndex = 37;
-            this.button38.Text = "採購今日未傳真";
-            this.button38.UseVisualStyleBackColor = true;
-            this.button38.Click += new System.EventHandler(this.button38_Click);
+            this.button39.Location = new System.Drawing.Point(723, 203);
+            this.button39.Name = "button39";
+            this.button39.Size = new System.Drawing.Size(197, 34);
+            this.button39.TabIndex = 38;
+            this.button39.Text = "研發每週通知該月樣品";
+            this.button39.UseVisualStyleBackColor = true;
+            this.button39.Click += new System.EventHandler(this.button39_Click);
             // 
             // FrmMQMAIL
             // 
@@ -826,5 +838,6 @@
         private System.Windows.Forms.Button button36;
         private System.Windows.Forms.Button button37;
         private System.Windows.Forms.Button button38;
+        private System.Windows.Forms.Button button39;
     }
 }

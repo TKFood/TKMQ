@@ -12703,6 +12703,310 @@ namespace TKMQ
             }
         }
 
+        public void SENDEMAIL_TB_DEVE_NEWLISTS()
+        {
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_DATAS = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_TB_DEVE_NEWLISTS();
+                DT_DATAS = SERACH_TB_DEVE_NEWLISTS();
+
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                {
+                    SUBJEST.Clear();
+                    BODY.Clear();
+
+
+                    SUBJEST.AppendFormat(@"系統通知-請查收-每週-本月研發已開發的樣品，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                    //ERP 採購相關單別、單號未核準的明細
+                    //
+                    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                        + "<br>" + "系統通知-請查收-每週-本月研發已開發的樣品，謝謝"
+                        + " <br>"
+                        );
+
+
+
+
+
+                    if (DT_DATAS.Rows.Count > 0)
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                        BODY.AppendFormat(@"<table> ");
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">編號</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">商品</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">差異特色</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">打樣日期</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單編號</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務回覆</th>");
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        foreach (DataRow DR in DT_DATAS.Rows)
+                        {
+
+                            BODY.AppendFormat(@"<tr >");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["編號"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["商品"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["業務"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["差異特色"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["打樣日期"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["F9FieldValue"].ToString() + "</td>");                            
+                            BODY.AppendFormat(@"</tr> ");
+
+
+                        }
+                        BODY.AppendFormat(@"</table> ");
+                    }
+                    else
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                    }
+
+                    try
+                    {
+                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                        string NAME = ConfigurationManager.AppSettings["NAME"];
+                        string PW = ConfigurationManager.AppSettings["PW"];
+
+                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                        MyMail.Subject = SUBJEST.ToString();
+                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                        MyMail.Body = BODY.ToString();
+                        MyMail.IsBodyHtml = true; //是否使用html格式
+
+                        //加上附圖
+                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                        try
+                        {
+                            foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                            {
+                                MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                            }
+
+                            //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MySMTP.Send(MyMail);
+
+                            MyMail.Dispose(); //釋放資源
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //MessageBox.Show("有錯誤");
+
+                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+
+                    }
+                }
+
+
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_TB_DEVE_NEWLISTS()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            string yyyyMM = DateTime.Now.ToString("yyyyMM");
+            string YY = yyyyMM.Substring(2, 2);
+            string MM = yyyyMM.Substring(4, 2);
+            string NOLIKE = YY + '-' + MM;
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"                                      
+                                   SELECT 
+                                    [NO] AS '編號'
+                                    ,[NAMES] AS '商品'
+                                    ,[SPECS] AS '規格'
+                                    ,[SALES] AS '業務'
+                                    ,[COMMENTS] AS '註記'
+                                    ,[INGREDIENTS] AS '差異特色'
+                                    ,CONVERT(NVARCHAR,[GETDATES],112)  AS '打樣日期'
+                                    ,[REPLY] AS '業務回覆'
+                                    ,[SALESID] AS '業務ID'
+                                    ,[COSTS] AS '成本'
+                                    ,[MOQS] AS 'MOQ'
+                                    ,[MANUPRODS] AS '一天產能量'
+                                    ,CONVERT(NVARCHAR,[CARESTEDATES],112) AS '建立日期'
+                                    ,[ID]
+                                    ,(SELECT TOP 1 [DOC_NBR] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'DOC_NBR'
+                                    ,(SELECT TOP 1 [F01FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F01FieldValue'
+                                    ,(SELECT TOP 1 [F09FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F9FieldValue'
+
+
+                                    FROM [TKRESEARCH].[dbo].[TB_DEVE_NEWLISTS]
+
+ 
+                                    WHERE 1=1
+                                    AND [NO] LIKE '{0}%'
+                                    ORDER BY [NO]
+                                    
+                                    ", NOLIKE);
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_MAIL_TB_DEVE_NEWLISTS()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='TB_DEVE_NEWLISTS'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = 120;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
 
         #endregion
 
@@ -12967,11 +13271,17 @@ namespace TKMQ
         private void button37_Click(object sender, EventArgs e)
         {
             SENDEMAIL_PURNOTIN();
+            SENDEMAIL_PURNOTIN();
             MessageBox.Show("完成");
         }
         private void button38_Click(object sender, EventArgs e)
         {
             SENDEMAIL_TBPURCHECKFAX();
+            MessageBox.Show("完成");
+        }
+        private void button39_Click(object sender, EventArgs e)
+        {
+            SENDEMAIL_TB_DEVE_NEWLISTS();
             MessageBox.Show("完成");
         }
         #endregion
