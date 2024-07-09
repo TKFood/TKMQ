@@ -795,6 +795,7 @@ namespace TKMQ
             try
             {
                 SERACHMAILMOCMANULINE();
+                SETFILEMOCMANULINE();
                 SUBJEST.Clear();
                 BODY.Clear();
                 SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
@@ -4677,7 +4678,7 @@ namespace TKMQ
                 sqlConn.Open();
                 dsMOCMANULINE.Clear();
                 // 設置查詢的超時時間，以秒為單位
-                adapterMOCMANULINE.SelectCommand.CommandTimeout = 120;
+                adapterMOCMANULINE.SelectCommand.CommandTimeout = 300;
                 adapterMOCMANULINE.Fill(dsMOCMANULINE, "dsMOCMANULINE");
                 sqlConn.Close();
 
@@ -13145,8 +13146,19 @@ namespace TKMQ
 
         private void button15_Click(object sender, EventArgs e)
         {
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
             SETPATH();
+            //SETFILEMOCMANULINE();
+
+            SERACHMAILMOCMANULINE();
             SETFILEMOCMANULINE();
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+            SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+
 
             CLEAREXCEL();
             MessageBox.Show("OK");
