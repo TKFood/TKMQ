@@ -13151,8 +13151,9 @@ namespace TKMQ
             SETPATH();
             //SETFILEMOCMANULINE();
 
-            SERACHMAILMOCMANULINE();
             SETFILEMOCMANULINE();
+
+            SERACHMAILMOCMANULINE();
             SUBJEST.Clear();
             BODY.Clear();
             SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
