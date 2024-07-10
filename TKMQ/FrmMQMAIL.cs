@@ -794,13 +794,13 @@ namespace TKMQ
             //系統通知-每日預排製令表
             try
             {
-                SERACHMAILMOCMANULINE();
-                SETFILEMOCMANULINE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+                //SERACHMAILMOCMANULINE();
+                //SETFILEMOCMANULINE();
+                //SUBJEST.Clear();
+                //BODY.Clear();
+                //SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+                //SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
 
                 Thread.Sleep(5000);
             }
@@ -3889,7 +3889,7 @@ namespace TKMQ
             }
         }
 
-        public void SERACHMAILMOCMANULINE()
+        public DataTable SERACH_MAIL_MOCMANULINE()
         {
             try
             {
@@ -3926,23 +3926,19 @@ namespace TKMQ
                 adapterMAILMOCMANULINE.Fill(dsMAILMOCMANULINE, "dsMAILMOCMANULINE");
                 sqlConn.Close();
 
-
-                if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count == 0)
+                if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count >= 1)
                 {
-
-                }
+                    return dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"];
+                }                
                 else
                 {
-                    if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count >= 1)
-                    {
-
-                    }
+                    return null;
                 }
 
             }
             catch
             {
-
+                return null;
             }
             finally
             {
@@ -13028,7 +13024,189 @@ namespace TKMQ
             }
         }
 
+        public void SENDEMAIL_DAILY_MOCMANULINE()
+        {
+            DataSet dsSALESMONEYS = new DataSet();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
 
+            SETPATH();
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString() + ".pdf";
+            //如果日期資料夾不存在就新增
+            if (!Directory.Exists(DirectoryNAME))
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+
+            SAVEREPORT_DAILY_MOCMANULINE(pathFileMOCMANULINE);
+
+            DataTable ds_MAIL_DAILY_MOCMANULINE = SERACH_MAIL_MOCMANULINE();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+        
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            Attachment attch = new Attachment(pathFileMOCMANULINE);
+            MyMail.Attachments.Add(attch);
+
+
+            try
+            {
+                foreach (DataRow od in ds_MAIL_DAILY_MOCMANULINE.Rows)
+                {
+
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                //ex.ToString();
+            }
+        }
+
+        public void SAVEREPORT_DAILY_MOCMANULINE(string pathFile)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL_DAILY_MOCMANULINE();
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\每日預排製令表.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+            //adapter1.SelectCommand.CommandTimeout = 120;
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = 300;
+            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
+
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+
+        }
+
+        public StringBuilder SETSQL_DAILY_MOCMANULINE()        
+        {
+            DateTime now = DateTime.Now;
+            // 取得本月第一天日期
+            DateTime firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
+            // 取得本月最後一天日期
+            int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
+            DateTime lastDayOfMonth = new DateTime(now.Year, now.Month, daysInMonth);
+
+
+            StringBuilder SB = new StringBuilder();
+
+
+            SB.AppendFormat(@"  
+                                  SELECT MANU AS '線別' ,TC053 AS '客戶',MV002 AS '業務員',MANUDATE AS '生產日',[MB002] AS '品名',BAR AS '桶數',NUM AS '數量',PACKAGE AS '包裝數',TD001 AS '訂單',TD002 AS '訂單單號',TD003 AS '訂單序號',MOCTA001 AS '製令',MOCTA002 AS '製令號'
+                                    FROM (
+                                    SELECT  [MOCMANULINE].[MANU] ,CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112) MANUDATE,[MOCMANULINE].[MB002]
+                                    ,ISNULL([MOCMANULINE].[BAR],0) BAR,ISNULL([MOCMANULINE].[NUM],0) NUM,ISNULL([MOCMANULINE].[PACKAGE],0) PACKAGE
+                                    ,[MOCMANULINE].[COPTD001] AS TD001
+                                    ,[MOCMANULINE].[COPTD002] AS TD002
+                                    ,[MOCMANULINE].[COPTD003] AS TD003
+                                    ,[COPTC].TC053,[CMSMV].MV002
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
+                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
+                                    FROM [TKMOC].[dbo].[MOCMANULINE]
+                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINE].[COPTD001]=[COPTD].TD001 AND [MOCMANULINE].[COPTD002]=[COPTD].TD002 AND[MOCMANULINE].[COPTD003]=[COPTD].TD003 
+                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002
+                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
+                                    WHERE CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112)>='{0}' 
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    UNION ALL  
+                                    SELECT  [MOCMANULINETEMP].[MANU] ,CONVERT(nvarchar,dateadd(ms,-3,dateadd(yy, datediff(yy,0,getdate())+2, 0)) ,112) MANUDATE,[MOCMANULINETEMP].[MB002]
+                                    ,ISNULL([MOCMANULINETEMP].[BAR],0) BAR,ISNULL([MOCMANULINETEMP].[NUM],0) NUM,ISNULL([MOCMANULINETEMP].[PACKAGE],0) PACKAGE
+                                    ,[MOCMANULINETEMP].[COPTD001] AS TD001
+                                    ,[MOCMANULINETEMP].[COPTD002] AS TD002
+                                    ,[MOCMANULINETEMP].[COPTD003] AS TD003
+                                    ,[COPTC].TC053,[CMSMV].MV002
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
+                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
+                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
+                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]  
+                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINETEMP].[COPTD001]=[COPTD].TD001 AND [MOCMANULINETEMP].[COPTD002]=[COPTD].TD002 AND[MOCMANULINETEMP].[COPTD003]=[COPTD].TD003   
+                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002  
+                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINE] ON [MOCMANULINE].ID=[MOCMANULINETEMP].TID  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
+                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
+                                    WHERE CONVERT(nvarchar,[MOCMANULINETEMP].[MANUDATE],112)>='{0}' 
+                                    AND [MOCMANULINETEMP].TID IS NULL  
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    ) AS TEMP
+                                    ORDER BY  TEMP.[MANU],CONVERT(nvarchar, TEMP.[MANUDATE],112)    
+                                    ", DateTime.Now.ToString("yyyyMMdd"));
+
+
+
+            return SB;
+
+        }
+    
         #endregion
 
         #region BUTTON
@@ -13146,22 +13324,25 @@ namespace TKMQ
 
         private void button15_Click(object sender, EventArgs e)
         {
-            StringBuilder SUBJEST = new StringBuilder();
-            StringBuilder BODY = new StringBuilder();
-            SETPATH();
+            SENDEMAIL_DAILY_MOCMANULINE();
+            MessageBox.Show("OK");
+
+            //StringBuilder SUBJEST = new StringBuilder();
+            //StringBuilder BODY = new StringBuilder();
+            //SETPATH();
+            ////SETFILEMOCMANULINE();
+
             //SETFILEMOCMANULINE();
 
-            SETFILEMOCMANULINE();
-
-            SERACHMAILMOCMANULINE();
-            SUBJEST.Clear();
-            BODY.Clear();
-            SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-            SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
+            //SERACHMAILMOCMANULINE();
+            //SUBJEST.Clear();
+            //BODY.Clear();
+            //SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
+            //SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
 
 
-            CLEAREXCEL();
+            //CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button14_Click(object sender, EventArgs e)
