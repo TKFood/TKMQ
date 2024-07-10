@@ -4678,7 +4678,7 @@ namespace TKMQ
                 sqlConn.Open();
                 dsMOCMANULINE.Clear();
                 // 設置查詢的超時時間，以秒為單位
-                adapterMOCMANULINE.SelectCommand.CommandTimeout = 300;
+                adapterMOCMANULINE.SelectCommand.CommandTimeout = 600;
                 adapterMOCMANULINE.Fill(dsMOCMANULINE, "dsMOCMANULINE");
                 sqlConn.Close();
 
