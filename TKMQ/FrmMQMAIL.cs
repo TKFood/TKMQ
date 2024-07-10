@@ -590,12 +590,10 @@ namespace TKMQ
             }
 
             //測試預排製令
-            ///SETFILEMOCMANULINE
+            ///SENDEMAIL_DAILY_MOCMANULINE
             try
             {
-                SETFILEMOCMANULINE();
-                CLEAREXCEL();
-
+                SENDEMAIL_DAILY_MOCMANULINE();
                 Thread.Sleep(5000);
             }
             catch
@@ -790,30 +788,6 @@ namespace TKMQ
             {
 
             }
-
-            //系統通知-每日預排製令表
-            try
-            {
-                //SERACHMAILMOCMANULINE();
-                //SETFILEMOCMANULINE();
-                //SUBJEST.Clear();
-                //BODY.Clear();
-                //SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-                //SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日預排製令表");
-                MSG.AppendFormat(@"  每日預排製令表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
 
             //系統通知-每日批號檢查表         
             try
@@ -4523,71 +4497,7 @@ namespace TKMQ
         }
 
 
-        public void SETFILEMOCMANULINE()
-        {
-            if (Directory.Exists(DirectoryNAME))
-            {
-                //資料夾存在，pathFile
-                if (File.Exists(pathFileMOCMANULINE + ".xlsx"))
-                {
-                    File.Delete(pathFileMOCMANULINE + ".xlsx");
-                }
-
-            }
-            else
-            {
-                //新增資料夾
-                Directory.CreateDirectory(DirectoryNAME);
-            }
-
-            // 設定儲存檔名，不用設定副檔名，系統自動判斷 excel 版本，產生 .xls 或 .xlsx 副檔名 
-            Excel.Application excelApp;
-            Excel._Workbook wBook;
-            Excel._Worksheet wSheet;
-            Excel.Range wRange;
-
-            // 開啟一個新的應用程式
-            excelApp = new Excel.Application();
-            // 讓Excel文件可見
-            //excelApp.Visible = true;
-            // 停用警告訊息
-            excelApp.DisplayAlerts = false;
-            // 加入新的活頁簿
-            excelApp.Workbooks.Add(Type.Missing);
-            // 引用第一個活頁簿
-            wBook = excelApp.Workbooks[1];
-            // 設定活頁簿焦點
-            wBook.Activate();
-
-            if (!File.Exists(pathFileLOTCHECK + ".xlsx"))
-            {
-                wBook.SaveAs(pathFileMOCMANULINE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
-            }
-
-
-
-            //關閉Excel
-            excelApp.Quit();
-
-            //釋放Excel資源
-            System.Runtime.InteropServices.Marshal.ReleaseComObject(excelApp);
-            wBook = null;
-            wSheet = null;
-            wRange = null;
-            excelApp = null;
-            GC.Collect();
-
-            Console.Read();
-
-
-            SEARCHMOCMANULINE();
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
-        }
+       
 
         public void SEARCHMOCMANULINE()
         {
@@ -13326,24 +13236,7 @@ namespace TKMQ
         {
             SENDEMAIL_DAILY_MOCMANULINE();
             MessageBox.Show("OK");
-
-            //StringBuilder SUBJEST = new StringBuilder();
-            //StringBuilder BODY = new StringBuilder();
-            //SETPATH();
-            ////SETFILEMOCMANULINE();
-
-            //SETFILEMOCMANULINE();
-
-            //SERACHMAILMOCMANULINE();
-            //SUBJEST.Clear();
-            //BODY.Clear();
-            //SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-            //SENDMAIL(SUBJEST, BODY, dsMAILMOCMANULINE, pathFileMOCMANULINE);
-
-
-            //CLEAREXCEL();
-            MessageBox.Show("OK");
+            
         }
         private void button14_Click(object sender, EventArgs e)
         {
