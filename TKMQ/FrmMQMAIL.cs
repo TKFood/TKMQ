@@ -974,7 +974,7 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
                 SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每每日製令-請購表，請查收" + Environment.NewLine + " ");
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令-請購表，請查收" + Environment.NewLine + " ");
                 SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
 
 
