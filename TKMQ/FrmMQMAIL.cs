@@ -12226,6 +12226,7 @@ namespace TKMQ
                                     AND MA001=TC004
                                     AND TC014='Y'
                                     AND REPLACE(TD001+TD002+TD003,' ','') NOT IN (SELECT REPLACE(TH011+TH012+TH013,' ','') FROM [TK].dbo.PURTH)
+                                    AND TD008>0
                                     AND TD012=CONVERT(NVARCHAR,GETDATE(),112)
                                     ORDER BY TC004
 
@@ -13378,7 +13379,7 @@ namespace TKMQ
         private void button37_Click(object sender, EventArgs e)
         {
             SENDEMAIL_PURNOTIN();
-            SENDEMAIL_PURNOTIN();
+           
             MessageBox.Show("完成");
         }
         private void button38_Click(object sender, EventArgs e)
