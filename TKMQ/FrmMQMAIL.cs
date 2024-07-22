@@ -4276,7 +4276,6 @@ namespace TKMQ
 
                
                 sbSql.AppendFormat(@"  
-                                    
                                     SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
                                     FROM 
                                     ( 
@@ -4336,8 +4335,6 @@ namespace TKMQ
                                     AND TG022='Y' 
                                     AND TG004 LIKE '3%'  
                                     AND TG004 NOT LIKE '307%' 
-                                    AND TG004 NOT LIKE '308%' 
-                                    AND TG004 NOT LIKE '309%' 
                                     AND TG017<>TG040 
                                     UNION ALL 
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
@@ -4346,8 +4343,6 @@ namespace TKMQ
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
                                     AND TG004 LIKE '4%' 
-                                    AND TG004 NOT LIKE '408%' 
-                                    AND TG004 NOT LIKE '409%' 
                                     AND TG017<>TG018 
 
                                     UNION ALL 
@@ -4358,8 +4353,6 @@ namespace TKMQ
                                     AND TG022='Y' 
                                     AND TG004 LIKE '3%'  
                                     AND TG004 NOT LIKE '307%' 
-                                    AND TG004 NOT LIKE '308%' 
-                                    AND TG004 NOT LIKE '309%' 
                                     AND ISDATE(TG017)<>1
                                     UNION ALL 
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
@@ -4409,8 +4402,6 @@ namespace TKMQ
                                     AND TG022='Y' 
                                     AND TG004 LIKE '3%'  
                                     AND TG004 NOT LIKE '307%' 
-                                    AND TG004 NOT LIKE '308%' 
-                                    AND TG004 NOT LIKE '309%' 
                                     AND TG040>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
@@ -4420,8 +4411,6 @@ namespace TKMQ
                                     AND TG022='Y' 
                                     AND TG004 LIKE '3%'  
                                     AND TG004 NOT LIKE '307%' 
-                                    AND TG004 NOT LIKE '308%' 
-                                    AND TG004 NOT LIKE '309%' 
                                     AND ISDATE(TG040)<>1
                                     UNION ALL
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
