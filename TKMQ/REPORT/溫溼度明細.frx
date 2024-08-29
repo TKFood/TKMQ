@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="08/29/2024 10:15:02" ReportInfo.Modified="08/29/2024 13:06:42" ReportInfo.CreatorVersion="2016.4.4.0">
+  <Dictionary>
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8XFLSiUrWaFM7x3NVrsOr0DBDTlvyuIz7OvrQKeAL8dLKvzKs9Afre5Gut+lAvmgJxax03QSXcGpyyod48uRA2MWvNhpWpVf7gd4ui/Lp0hkjkkn90s4MNmUEo9sr8wXC5Pn8jmSBDkUBFBC1WxPW8FAqRQIFsMmhWigijzzRYz74ERR4tTZuV0AbfBI9D1gJ1Z2k9+U7NzEkTGxTy77NKo=">
+      <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="--20240828 查溫溼度&#13;&#10;&#13;&#10;SELECT &#13;&#10;[區域],&#13;&#10;DATEPART(YEAR, [日期時間]) AS '年',&#13;&#10;DATEPART(MONTH, [日期時間]) AS '月',&#13;&#10;DATEPART(DAY, [日期時間]) AS '日',&#13;&#10;DATEPART(HOUR, [日期時間]) AS '時',&#13;&#10;AVG(CONVERT(decimal(16,4),[控項_1])) AS '溫度',&#13;&#10;AVG(CONVERT(decimal(16,4),[控項_4])) AS '溼度',&#13;&#10;(CONVERT(NVARCHAR,DATEPART(YEAR, [日期時間])) +CONVERT(NVARCHAR,DATEPART(MONTH, [日期時間]))+CONVERT(NVARCHAR,DATEPART(DAY, [日期時間])) +CONVERT(NVARCHAR,DATEPART(HOUR, [日期時間]) )) AS 'DATETIMES'&#13;&#10;&#13;&#10;FROM [TK_FOOD].[dbo].[log_table]&#13;&#10;LEFT JOIN [TK_FOOD].[dbo].[Machine] ON [Machine].[機台名稱] = [log_table].[機台名稱]&#13;&#10;WHERE [Machine].[機台名稱] IN ( '溫濕度13', '溫濕度14')&#13;&#10;AND CONVERT(NVARCHAR,[日期時間],112)='20240824'&#13;&#10;GROUP BY &#13;&#10;[區域],&#13;&#10;DATEPART(YEAR, [日期時間]), &#13;&#10;DATEPART(MONTH, [日期時間]), &#13;&#10;DATEPART(DAY, [日期時間]), &#13;&#10;DATEPART(HOUR, [日期時間])&#13;&#10;ORDER BY &#13;&#10;[區域],&#13;&#10;DATEPART(HOUR, [日期時間])&#13;&#10;">
+        <Column Name="區域" DataType="System.String"/>
+        <Column Name="DATETIMES" DataType="System.String"/>
+        <Column Name="年" DataType="System.Int32"/>
+        <Column Name="月" DataType="System.Int32"/>
+        <Column Name="日" DataType="System.Int32"/>
+        <Column Name="時" DataType="System.Int32"/>
+        <Column Name="溫度" DataType="System.Decimal"/>
+        <Column Name="溼度" DataType="System.Decimal"/>
+      </TableDataSource>
+    </MsSqlDataConnection>
+  </Dictionary>
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210">
+    <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="37.8">
+      <TextObject Name="Text1" Width="94.5" Height="18.9" Text="溫溼度"/>
+      <TextObject Name="Text15" Left="567" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="溼度" VertAlign="Center"/>
+      <TextObject Name="Text3" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="區域" VertAlign="Center"/>
+      <TextObject Name="Text5" Left="94.5" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="年" VertAlign="Center"/>
+      <TextObject Name="Text7" Left="189" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="月" VertAlign="Center"/>
+      <TextObject Name="Text9" Left="283.5" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="日" VertAlign="Center"/>
+      <TextObject Name="Text11" Left="378" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="時" VertAlign="Center"/>
+      <TextObject Name="Text13" Left="472.5" Top="18.9" Width="94.5" Height="18.9" Border.Lines="All" Text="溫度" VertAlign="Center"/>
+    </ReportTitleBand>
+    <DataBand Name="Data1" Top="42.4" Width="1047.06" Height="18.9" DataSource="Table">
+      <TextObject Name="Text2" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.區域]" VertAlign="Center"/>
+      <TextObject Name="Text4" Left="94.5" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.年]" VertAlign="Center"/>
+      <TextObject Name="Text6" Left="189" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.月]" VertAlign="Center"/>
+      <TextObject Name="Text8" Left="283.5" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.日]" VertAlign="Center"/>
+      <TextObject Name="Text10" Left="378" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.時]" VertAlign="Center"/>
+      <TextObject Name="Text12" Left="472.5" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.溫度]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="4" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" WordWrap="false" Trimming="EllipsisCharacter"/>
+      <TextObject Name="Text14" Left="567" Width="94.5" Height="18.9" Border.Lines="All" Text="[Table.溼度]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="4" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" WordWrap="false" Trimming="EllipsisCharacter"/>
+    </DataBand>
+    <ReportSummaryBand Name="ReportSummary1" Top="65.9" Width="1047.06" Height="453.6">
+      <SparklineObject Name="Sparkline1" Left="-9.45" Top="18.9" Width="1048.95" Height="207.9" DataSource="Table" AutoSeriesColumn="[Table.區域]" AutoSeriesColor="[Table.區域]" ChartData="PENoYXJ0IEJvcmRlcmxpbmVDb2xvcj0iRGFya0dyYXkiIEJvcmRlcmxpbmVXaWR0aD0iMiI+DQogIDxTZXJpZXM+DQogICAgPFNlcmllcyBOYW1lPSJTZXJpZXMxIiBMZWdlbmQ9IkRlZmF1bHQiIFhWYWx1ZVR5cGU9IlN0cmluZyIgWVZhbHVlVHlwZT0iRG91YmxlIiBDaGFydFR5cGU9IkZhc3RMaW5lIiBDaGFydEFyZWE9IkRlZmF1bHQiIExhYmVsPSIjVkFMWCI+DQogICAgICA8UG9pbnRzPg0KICAgICAgICA8RGF0YVBvaW50IFlWYWx1ZXM9IjEiIEF4aXNMYWJlbD0iQSIgLz4NCiAgICAgICAgPERhdGFQb2ludCBZVmFsdWVzPSIzIiBBeGlzTGFiZWw9IkIiIC8+DQogICAgICAgIDxEYXRhUG9pbnQgWVZhbHVlcz0iMiIgQXhpc0xhYmVsPSJDIiAvPg0KICAgICAgICA8RGF0YVBvaW50IFlWYWx1ZXM9IjQiIEF4aXNMYWJlbD0iRCIgLz4NCiAgICAgIDwvUG9pbnRzPg0KICAgIDwvU2VyaWVzPg0KICA8L1Nlcmllcz4NCiAgPExlZ2VuZHM+DQogICAgPExlZ2VuZCBOYW1lPSJEZWZhdWx0IiBEb2NraW5nPSJMZWZ0Ij4NCiAgICA8L0xlZ2VuZD4NCiAgPC9MZWdlbmRzPg0KICA8VGl0bGVzPg0KICAgIDxUaXRsZSBOYW1lPSJUaXRsZTEiIFRleHQ9Iua6q+a6vOW6piI+DQogICAgPC9UaXRsZT4NCiAgPC9UaXRsZXM+DQogIDxDaGFydEFyZWFzPg0KICAgIDxDaGFydEFyZWEgTmFtZT0iRGVmYXVsdCI+DQogICAgICA8QXhpc1kgVGl0bGU9Iua6q+W6piI+DQogICAgICAgIDxNYWpvckdyaWQgTGluZUNvbG9yPSI2NCwgNjQsIDY0LCA2NCIgLz4NCiAgICAgIDwvQXhpc1k+DQogICAgICA8QXhpc1ggVGl0bGU9IuaZgumWkyIgSW50ZXJ2YWw9IjEiPg0KICAgICAgICA8TWFqb3JHcmlkIExpbmVDb2xvcj0iNjQsIDY0LCA2NCwgNjQiIC8+DQogICAgICA8L0F4aXNYPg0KICAgICAgPEF4aXNYMj4NCiAgICAgICAgPE1ham9yR3JpZCBMaW5lQ29sb3I9IjY0LCA2NCwgNjQsIDY0IiAvPg0KICAgICAgPC9BeGlzWDI+DQogICAgICA8QXhpc1kyPg0KICAgICAgICA8TWFqb3JHcmlkIExpbmVDb2xvcj0iNjQsIDY0LCA2NCwgNjQiIC8+DQogICAgICA8L0F4aXNZMj4NCiAgICA8L0NoYXJ0QXJlYT4NCiAgPC9DaGFydEFyZWFzPg0KPC9DaGFydD4=">
+        <MSChartSeries Name="Series1" XValue="[Table.DATETIMES]" YValue1="[Table.溫度]"/>
+      </SparklineObject>
+      <SparklineObject Name="Sparkline2" Top="217.35" Width="1048.95" Height="207.9" DataSource="Table" AutoSeriesColumn="[Table.區域]" AutoSeriesColor="[Table.區域]" ChartData="PENoYXJ0IEJvcmRlcmxpbmVDb2xvcj0iRGFya0dyYXkiIEJvcmRlcmxpbmVXaWR0aD0iMiI+DQogIDxTZXJpZXM+DQogICAgPFNlcmllcyBOYW1lPSJTZXJpZXMxIiBMZWdlbmQ9IkRlZmF1bHQiIFhWYWx1ZVR5cGU9IlN0cmluZyIgWVZhbHVlVHlwZT0iRG91YmxlIiBDaGFydFR5cGU9IkZhc3RMaW5lIiBDaGFydEFyZWE9IkRlZmF1bHQiIExhYmVsPSIjVkFMWCI+DQogICAgICA8UG9pbnRzPg0KICAgICAgICA8RGF0YVBvaW50IFlWYWx1ZXM9IjEiIEF4aXNMYWJlbD0iQSIgLz4NCiAgICAgICAgPERhdGFQb2ludCBZVmFsdWVzPSIzIiBBeGlzTGFiZWw9IkIiIC8+DQogICAgICAgIDxEYXRhUG9pbnQgWVZhbHVlcz0iMiIgQXhpc0xhYmVsPSJDIiAvPg0KICAgICAgICA8RGF0YVBvaW50IFlWYWx1ZXM9IjQiIEF4aXNMYWJlbD0iRCIgLz4NCiAgICAgIDwvUG9pbnRzPg0KICAgIDwvU2VyaWVzPg0KICA8L1Nlcmllcz4NCiAgPExlZ2VuZHM+DQogICAgPExlZ2VuZCBOYW1lPSJEZWZhdWx0IiBEb2NraW5nPSJMZWZ0Ij4NCiAgICA8L0xlZ2VuZD4NCiAgPC9MZWdlbmRzPg0KICA8VGl0bGVzPg0KICAgIDxUaXRsZSBOYW1lPSJUaXRsZTEiIFRleHQ9Iua6q+a6vOW6piI+DQogICAgPC9UaXRsZT4NCiAgPC9UaXRsZXM+DQogIDxDaGFydEFyZWFzPg0KICAgIDxDaGFydEFyZWEgTmFtZT0iRGVmYXVsdCI+DQogICAgICA8QXhpc1kgVGl0bGU9Iua6vOW6piI+DQogICAgICAgIDxNYWpvckdyaWQgTGluZUNvbG9yPSI2NCwgNjQsIDY0LCA2NCIgLz4NCiAgICAgIDwvQXhpc1k+DQogICAgICA8QXhpc1ggVGl0bGU9IuaZgumWkyIgSW50ZXJ2YWw9IjEiPg0KICAgICAgICA8TWFqb3JHcmlkIExpbmVDb2xvcj0iNjQsIDY0LCA2NCwgNjQiIC8+DQogICAgICA8L0F4aXNYPg0KICAgICAgPEF4aXNYMj4NCiAgICAgICAgPE1ham9yR3JpZCBMaW5lQ29sb3I9IjY0LCA2NCwgNjQsIDY0IiAvPg0KICAgICAgPC9BeGlzWDI+DQogICAgICA8QXhpc1kyPg0KICAgICAgICA8TWFqb3JHcmlkIExpbmVDb2xvcj0iNjQsIDY0LCA2NCwgNjQiIC8+DQogICAgICA8L0F4aXNZMj4NCiAgICA8L0NoYXJ0QXJlYT4NCiAgPC9DaGFydEFyZWFzPg0KPC9DaGFydD4=">
+        <MSChartSeries Name="Series2" XValue="[Table.DATETIMES]" YValue1="[Table.溼度]"/>
+      </SparklineObject>
+    </ReportSummaryBand>
+    <PageFooterBand Name="PageFooter1" Top="524.09" Width="1047.06" Height="37.8"/>
+  </ReportPage>
+</Report>

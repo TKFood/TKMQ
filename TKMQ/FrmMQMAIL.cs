@@ -308,7 +308,6 @@ namespace TKMQ
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
-
             try
             {
 
@@ -317,6 +316,20 @@ namespace TKMQ
             catch
             {
                 //MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                SENDEMAIL_DAILY_QC_TEMP_CHECK();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 溫濕度明細 失敗 ||");
             }
             finally
             {
@@ -13107,7 +13120,155 @@ namespace TKMQ
             return SB;
 
         }
-    
+
+        public void SENDEMAIL_DAILY_QC_TEMP_CHECK()
+        {
+            DataSet ds = new DataSet();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETPATH();
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".pdf";
+
+            //如果日期資料夾不存在就新增
+            if (!Directory.Exists(DirectoryNAME))
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+
+            SAVEREPORT_QC_TEMP_CHECK(pathFile_QC_TEMP_CHECK);
+
+            ds = SERACHMAIL_QC_CHECK();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日-每日溫溼度明細-" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear All, ");
+            BODY.AppendFormat(Environment.NewLine + "檢附每日溫溼度明細，請參考附件，謝謝");
+
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            Attachment attch = new Attachment(pathFile_QC_TEMP_CHECK);
+            MyMail.Attachments.Add(attch);
+
+
+            try
+            {
+                foreach (DataRow od in ds.Tables[0].Rows)
+                {
+
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                //ex.ToString();
+            }
+        }
+        public void SAVEREPORT_QC_TEMP_CHECK(string pathFile)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            DateTime now = DateTime.Now;
+            now = now.AddDays(-1);
+            string SDAYS = now.ToString("yyyyMMdd");
+
+
+
+            SQL1.AppendFormat(@"
+                            --20240828 查溫溼度
+
+                            SELECT 
+                            [區域],
+                            DATEPART(YEAR, [日期時間]) AS '年',
+                            DATEPART(MONTH, [日期時間]) AS '月',
+                            DATEPART(DAY, [日期時間]) AS '日',
+                            DATEPART(HOUR, [日期時間]) AS '時',
+                            AVG(CONVERT(decimal(16,4),[控項_1])) AS '溫度',
+                            AVG(CONVERT(decimal(16,4),[控項_4])) AS '溼度',
+                            (CONVERT(NVARCHAR,DATEPART(YEAR, [日期時間])) +CONVERT(NVARCHAR,DATEPART(MONTH, [日期時間]))+CONVERT(NVARCHAR,DATEPART(DAY, [日期時間])) +CONVERT(NVARCHAR,DATEPART(HOUR, [日期時間]) )) AS 'DATETIMES'
+
+                            FROM [TK_FOOD].[dbo].[log_table]
+                            LEFT JOIN [TK_FOOD].[dbo].[Machine] ON [Machine].[機台名稱] = [log_table].[機台名稱]
+                            WHERE [Machine].[機台名稱] IN ( '溫濕度13', '溫濕度14')
+                            AND CONVERT(NVARCHAR,[日期時間],112)='{0}'
+                            GROUP BY 
+                            [區域],
+                            DATEPART(YEAR, [日期時間]), 
+                            DATEPART(MONTH, [日期時間]), 
+                            DATEPART(DAY, [日期時間]), 
+                            DATEPART(HOUR, [日期時間])
+                            ORDER BY 
+                            [區域],
+                            DATEPART(HOUR, [日期時間])
+
+                            "
+                            , SDAYS);
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\溫溼度明細.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = TIMEOUT_LIMITS;
+            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
+
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+
+        }
+
+
         #endregion
 
         #region BUTTON
@@ -13380,6 +13541,12 @@ namespace TKMQ
         private void button39_Click(object sender, EventArgs e)
         {
             SENDEMAIL_TB_DEVE_NEWLISTS();
+            MessageBox.Show("完成");
+        }
+        private void button40_Click(object sender, EventArgs e)
+        {
+            SENDEMAIL_DAILY_QC_TEMP_CHECK();
+
             MessageBox.Show("完成");
         }
         #endregion
