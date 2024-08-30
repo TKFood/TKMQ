@@ -8177,7 +8177,7 @@ namespace TKMQ
                                   
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
-                                    AND TB_EB_USER.NAME='張健洲'
+                                    
 
                                     GROUP BY TB_EB_USER.NAME ,TB_EB_USER.EMAIL
                                     ORDER BY TB_EB_USER.NAME ,TB_EB_USER.EMAIL
