@@ -8723,6 +8723,7 @@ namespace TKMQ
         //交辨未完成meail
         public void CHECK_TB_EIP_SCH_DEVOLVE_MANAGER()
         {
+            //找出所有被交辨人的主管
             DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER();
 
             if (DT != null && DT.Rows.Count >= 1)
@@ -8773,6 +8774,8 @@ namespace TKMQ
                                     --AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
                                     AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND ISNULL(Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,'')<>''
+
                                     AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
                                     GROUP BY Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
                                     ORDER BY Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
@@ -8818,138 +8821,133 @@ namespace TKMQ
         public void SEND_EMAIL_TB_EIP_SCH_DEVOLVE_MANAGER(DataTable DT)
         {
             DataTable DTDETAILS = new DataTable();
+            DataTable DTDETAILS_ALL = new DataTable();
+            DTDETAILS_ALL = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER_ALL();
+
             foreach (DataRow DR in DT.Rows)
-            {             
+            {
+                string NAME_COMMIT = DR["被交辨人主管"].ToString();
+                // 如果被交辨人中有單引號，應該進行轉義
+                NAME_COMMIT = NAME_COMMIT.Replace("'", "''");
+                // 建立查詢字串
+                string filterExpression = $"被交辨人主管 = '{NAME_COMMIT}'";
+                // 使用 Select 方法查詢
+                DataRow[] result = DTDETAILS_ALL.Select(filterExpression);              
 
-                if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
+
+                if (result.Length > 0)
                 {
-                    DTDETAILS.Clear();
-                    DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
-
-                    if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
+                    try
                     {
-                        try
+                        StringBuilder SUBJEST = new StringBuilder();
+                        StringBuilder BODY = new StringBuilder();
+
+                        ////加上附圖
+                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                        //LinkedResource res = new LinkedResource(path);
+                        //res.ContentId = Guid.NewGuid().ToString();
+
+                        SUBJEST.Clear();
+                        BODY.Clear();
+
+
+                        SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                        //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                        //ERP 採購相關單別、單號未核準的明細
+                        //
+                        BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                            + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
+                            + "<br>"
+                            );
+
+
+
+
+
+                        if (result.Length > 0)
                         {
-                            StringBuilder SUBJEST = new StringBuilder();
-                            StringBuilder BODY = new StringBuilder();
+                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
-                            ////加上附圖
-                            //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                            //LinkedResource res = new LinkedResource(path);
-                            //res.ContentId = Guid.NewGuid().ToString();
-
-                            SUBJEST.Clear();
-                            BODY.Clear();
-
-
-                            SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-                            //ERP 採購相關單別、單號未核準的明細
-                            //
-                            BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                                + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
-                                + " <br>"
-                                );
+                            BODY.AppendFormat(@"<table> ");
+                            BODY.AppendFormat(@"<tr >");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
 
 
+                            BODY.AppendFormat(@"</tr> ");
 
-
-
-                            if (DTDETAILS.Rows.Count > 0)
+                            foreach (DataRow row in result)
                             {
-                                BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
-                                BODY.AppendFormat(@"<table> ");
                                 BODY.AppendFormat(@"<tr >");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
-                                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
-
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["逾時天數"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["被交辨人"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["交辨項目"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["交辨回覆狀況"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["交辨預計要求完成日期"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["交辨開始日期"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["交辨人"].ToString() + "</td>");
 
                                 BODY.AppendFormat(@"</tr> ");
 
-                                foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
-                                {
-
-                                    BODY.AppendFormat(@"<tr >");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
-                                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
-
-                                    BODY.AppendFormat(@"</tr> ");
-
-                                    //BODY.AppendFormat("<span></span>");
-                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-                                }
-                                BODY.AppendFormat(@"</table> ");
+                                //BODY.AppendFormat("<span></span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                             }
+                            BODY.AppendFormat(@"</table> ");
+                        }
+
+
+                        try
+                        {
+                            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                            string NAME = ConfigurationManager.AppSettings["NAME"];
+                            string PW = ConfigurationManager.AppSettings["PW"];
+
+                            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                            MyMail.Subject = SUBJEST.ToString();
+                            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                            MyMail.Body = BODY.ToString();
+                            MyMail.IsBodyHtml = true; //是否使用html格式
+
+                            //加上附圖
+                            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
 
                             try
                             {
-                                string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                                string NAME = ConfigurationManager.AppSettings["NAME"];
-                                string PW = ConfigurationManager.AppSettings["PW"];
 
-                                System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                                MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
+                                                                               //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                MySMTP.Send(MyMail);
 
-                                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                                MyMail.Subject = SUBJEST.ToString();
-                                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                                MyMail.Body = BODY.ToString();
-                                MyMail.IsBodyHtml = true; //是否使用html格式
-
-                                //加上附圖
-                                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+                                MyMail.Dispose(); //釋放資源
 
 
-                                try
-                                {
-
-                                    MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
-                                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                                    MySMTP.Send(MyMail);
-
-                                    MyMail.Dispose(); //釋放資源
-
-
-                                }
-                                catch (Exception ex)
-                                {
-                                    //MessageBox.Show("有錯誤");
-
-                                    //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                                    //ex.ToString();
-                                }
                             }
-                            catch
+                            catch (Exception ex)
                             {
+                                //MessageBox.Show("有錯誤");
 
+                                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                                //ex.ToString();
                             }
-                            finally
-                            {
-
-                            }
-
-
                         }
                         catch
                         {
@@ -8959,9 +8957,166 @@ namespace TKMQ
                         {
 
                         }
+
+
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+
                     }
                 }
+
+
+
             }
+            //foreach (DataRow DR in DT.Rows)
+            //{             
+
+                //    if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
+                //    {
+                //        DTDETAILS.Clear();
+                //        DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
+
+                //        if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
+                //        {
+                //            try
+                //            {
+                //                StringBuilder SUBJEST = new StringBuilder();
+                //                StringBuilder BODY = new StringBuilder();
+
+                //                ////加上附圖
+                //                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //                //LinkedResource res = new LinkedResource(path);
+                //                //res.ContentId = Guid.NewGuid().ToString();
+
+                //                SUBJEST.Clear();
+                //                BODY.Clear();
+
+
+                //                SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //                //ERP 採購相關單別、單號未核準的明細
+                //                //
+                //                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                //                    + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
+                //                    + " <br>"
+                //                    );
+
+
+
+
+
+                //                if (DTDETAILS.Rows.Count > 0)
+                //                {
+                //                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                //                    BODY.AppendFormat(@"<table> ");
+                //                    BODY.AppendFormat(@"<tr >");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
+                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
+
+
+                //                    BODY.AppendFormat(@"</tr> ");
+
+                //                    foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
+                //                    {
+
+                //                        BODY.AppendFormat(@"<tr >");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
+                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
+
+                //                        BODY.AppendFormat(@"</tr> ");
+
+                //                        //BODY.AppendFormat("<span></span>");
+                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                //                    }
+                //                    BODY.AppendFormat(@"</table> ");
+                //                }
+
+
+                //                try
+                //                {
+                //                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                //                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                //                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                //                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                //                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                //                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                //                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                //                    MyMail.Subject = SUBJEST.ToString();
+                //                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                //                    MyMail.Body = BODY.ToString();
+                //                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                //                    //加上附圖
+                //                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                //                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                //                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                //                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                //                    try
+                //                    {
+
+                //                        MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
+                //                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                //                        MySMTP.Send(MyMail);
+
+                //                        MyMail.Dispose(); //釋放資源
+
+
+                //                    }
+                //                    catch (Exception ex)
+                //                    {
+                //                        //MessageBox.Show("有錯誤");
+
+                //                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                //                        //ex.ToString();
+                //                    }
+                //                }
+                //                catch
+                //                {
+
+                //                }
+                //                finally
+                //                {
+
+                //                }
+
+
+                //            }
+                //            catch
+                //            {
+
+                //            }
+                //            finally
+                //            {
+
+                //            }
+                //        }
+                //    }
+                //}
         }
         //找出被交辨的所有未完成的交辨事項-經理
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(string NAME)
@@ -9030,6 +9185,108 @@ namespace TKMQ
                                     ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
 
                                    ", NAME);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
+                sqlConn.Close();
+
+
+
+                if (DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"].Rows.Count > 0)
+                {
+
+                    return DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
+
+        //找出被交辨的所有未完成的交辨事項-經理
+        public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER_ALL()
+        {
+
+            DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //   AND DOC_NBR = 'GA1005230100006'
+
+                sbSql.AppendFormat(@"                          
+                                    SELECT 
+                                    (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END) AS '逾時天數'
+                                    ,USER2.NAME AS '交辨人'
+                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) AS '交辨預計要求完成日期'
+                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始日期'
+                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
+                                    ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
+                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '被交辨人ID'
+                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
+                                    ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
+                                    ,TB_EB_USER.NAME AS '被交辨人'
+                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
+                                    ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
+                                    ,TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.*
+                                    ,TB_EB_USER.ACCOUNT
+                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
+                                    ,TB_EB_USER.EMAIL
+                                    ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER AS '被交辨人主管'
+                                    ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
+                                    ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
+
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
+                                    WHERE 1=1
+
+                                    AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
+                                    AND ISNULL(Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,'')<>''
+                                    ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
+
+                                   ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
 
