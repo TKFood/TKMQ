@@ -41,7 +41,7 @@ namespace TKMQ
     public partial class FrmMQMAIL : Form
     {
         int TIMEOUT_LIMITS = 240;
-        private System.Timers.Timer timer;   
+        private System.Timers.Timer timer;
 
         private ComponentResourceManager _ResourceManager = new ComponentResourceManager();
         SqlConnection sqlConn = new SqlConnection();
@@ -319,7 +319,7 @@ namespace TKMQ
             }
             finally
             {
-                 
+
             }
 
             try
@@ -1059,7 +1059,7 @@ namespace TKMQ
             //業務活動通知行銷-測試
             try
             {
-                SENDEMAIL_TB_SALES_PROMOTIONS();            }
+                SENDEMAIL_TB_SALES_PROMOTIONS(); }
 
             catch
             {
@@ -1114,7 +1114,7 @@ namespace TKMQ
 
             try
             {
-                
+
             }
             catch
             {
@@ -1156,7 +1156,7 @@ namespace TKMQ
         public void HRAUTORUN4()
         {
             StringBuilder MSG = new StringBuilder();
-                       
+
             try
             {
                 //採購今日未傳真
@@ -1172,7 +1172,7 @@ namespace TKMQ
             {
             }
 
-           
+
             try
             {
                 //預計採購未到貨
@@ -1381,7 +1381,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-               
+
                 sbSql.AppendFormat(@"  
                                     SELECT  MD002 AS '線別',TC053 AS '客戶',TD013 AS '預計交貨日',TD004 AS '訂單品號',TD005 AS '訂單品名',TD006 AS '規格',TD008 AS '訂單量',TD009 AS '出貨量',TD024 AS '贈品量',TD025 AS '贈品已交量',(TD008-TD009+TD024-TD025) AS '總未出貨量',TD010 AS '品號單位',TD001 AS '訂單單別',TD002 AS '訂單單號',TD003 AS '訂單序號',TD016 AS '訂單狀態',MOCTA.TA001 AS '批次轉製令單別',MOCTA.TA002 AS '批次轉製令單號',MOCTA.TA009 AS '製令預計開工日',MOCTA.TA012 AS '製令實際開工日',MOCTA.TA010 AS '製令預計完工日' ,MOCTA.TA014 AS '製令實際完工日',MOCTA.TA006 AS '生產品號',MOCTA.TA034 AS '生產品名',MOCTA.TA007 AS '生產單位',MOCTA.TA015 AS '製令預計產量',MOCTA.TA017 AS '實際入庫數量',COMMENT AS '備註'
                                     ,(CASE WHEN MOCTA.TA011='Y' THEN '已完工' ELSE CASE WHEN MOCTA.TA011='y' THEN '指定完工' ELSE  CASE WHEN MOCTA.TA011='1' THEN '未生產' ELSE CASE WHEN MOCTA.TA011='2' THEN '已發料' ELSE CASE WHEN MOCTA.TA011='3' THEN '生產中' ELSE '' END END END END END)AS '生產進度'
@@ -1461,7 +1461,7 @@ namespace TKMQ
 
             //Add a new worksheet to workbook with the Datatable name
             Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
-          
+
 
             foreach (DataTable table in ds.Tables)
             {
@@ -1512,7 +1512,7 @@ namespace TKMQ
                         //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
                         // Set the range to fill. pathFileMOCINVCHECK
 
-                        if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) >0)
+                        if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
@@ -1524,7 +1524,7 @@ namespace TKMQ
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
                         }
                         //pathFileMOCCOP
-                        if(TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+                        if (TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
                         {
                             wRange.Select();
                             wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
@@ -1901,7 +1901,7 @@ namespace TKMQ
             }
         }
 
-      
+
 
         public void SETFILEPURTA()
         {
@@ -1993,8 +1993,8 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-                
-                
+
+
                 sbSql.AppendFormat(@"  
                                     SELECT TB003 AS '品號',MB002 AS '品名' 
                                     ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
@@ -2078,7 +2078,7 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-                
+
                 sbSql.AppendFormat(@"  
                                     SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
                                     FROM (
@@ -2155,8 +2155,8 @@ namespace TKMQ
 
             }
             catch (Exception ex)
-            {                
-                INSERTLOG(pathFilePURTA,ex.ToString());
+            {
+                INSERTLOG(pathFilePURTA, ex.ToString());
             }
             finally
             {
@@ -2982,7 +2982,7 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-               
+
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
@@ -3335,8 +3335,8 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-               
-              
+
+
 
                 sbSql.AppendFormat(@"  
                                     SELECT TC053 AS '客戶',TA001 AS '製令單',TA002 AS '製令編號',TA006 AS '品號',TA034 AS '品名',TA007 AS '生產單位',TA009 AS '預計開工日',TA010 AS '預計完工日',TA014 AS '實際完工日',TA015 AS '預計產量',TA017 AS '已生產量',TA026 AS '訂單別',TA027 AS '訂單號',TA028 AS '訂單序',[OLDNUM] AS '訂單量'
@@ -3360,7 +3360,7 @@ namespace TKMQ
                 adapterMOCCOP = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilderMOCCOP = new SqlCommandBuilder(adapterMOCCOP);
-                
+
                 sqlConn.Open();
                 dsMOCCOP.Clear();
                 // 設置查詢的超時時間，以秒為單位
@@ -3549,7 +3549,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-               
+
                 sbSql.AppendFormat(@"  
                                     SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'
                                     ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'
@@ -3566,7 +3566,7 @@ namespace TKMQ
                 adapterINVMC.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
 
                 sqlCmdBuilderINVMC = new SqlCommandBuilder(adapterINVMC);
-                
+
 
                 sqlConn.Open();
                 dsINVMC.Clear();
@@ -3917,7 +3917,7 @@ namespace TKMQ
                 if (dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"].Rows.Count >= 1)
                 {
                     return dsMAILMOCMANULINE.Tables["dsMAILMOCMANULINE"];
-                }                
+                }
                 else
                 {
                     return null;
@@ -4152,7 +4152,7 @@ namespace TKMQ
                                     WHERE TA013='Y' AND TA011 NOT IN ('Y','y')
                                     AND TA001 IN ('A521')
                                     ");
-         
+
 
                 adapterMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
                 //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
@@ -4288,7 +4288,7 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
 
-               
+
                 sbSql.AppendFormat(@"  
                                     SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
                                     FROM 
@@ -4500,7 +4500,7 @@ namespace TKMQ
         }
 
 
-       
+
 
         public void SEARCHMOCMANULINE()
         {
@@ -4625,7 +4625,7 @@ namespace TKMQ
         }
 
 
-        public void ADDLOG(DateTime DATES,string SOURCE,string EX)
+        public void ADDLOG(DateTime DATES, string SOURCE, string EX)
         {
             Guid NEWGUID = new Guid();
             NEWGUID = Guid.NewGuid();
@@ -4714,19 +4714,19 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-             
+
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-ERP 採購相關單別、單號未核準的明細 及 本月該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量 及 請購變更單不在採購變更單 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-               
+
                 //ERP 採購相關單別、單號未核準的明細
                 //
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
                     + "<br>" + "ERP 採購相關單別、單號未核準的明細如下"
-                   
+
                     );
 
 
-                if (DSPURCHECK !=null && DSPURCHECK.Tables[0].Rows.Count > 0)
+                if (DSPURCHECK != null && DSPURCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -4781,7 +4781,7 @@ namespace TKMQ
                     );
 
 
-                if (DSTKPUR_PURTATBCHAGE_DCHECK != null &&  DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
+                if (DSTKPUR_PURTATBCHAGE_DCHECK != null && DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -4837,11 +4837,11 @@ namespace TKMQ
                 //
                 BODY.AppendFormat(" "
                     + "<br>" + "本月 該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量"
-                   
+
                     );
 
 
-                if (DSPURTDCHECK != null &&  DSPURTDCHECK.Tables[0].Rows.Count > 0)
+                if (DSPURTDCHECK != null && DSPURTDCHECK.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -4898,7 +4898,7 @@ namespace TKMQ
                     );
 
 
-                if (DS_PURTB_NOTIN_PURTD != null &&  DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
+                if (DS_PURTB_NOTIN_PURTD != null && DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -5059,7 +5059,7 @@ namespace TKMQ
                 adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
                 adapter.Fill(DSPURCHECK, "DSPURCHECK");
                 sqlConn.Close();
-           
+
 
 
                 if (DSPURCHECK.Tables["DSPURCHECK"].Rows.Count > 0)
@@ -5189,7 +5189,7 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
                 DateTime SDAYS = DateTime.Now.AddDays(-14);
-           
+
 
                 sbSql.AppendFormat(@"  
                                  
@@ -5406,13 +5406,13 @@ namespace TKMQ
 
             try
             {
-                if (DSFINDPURCHECKMAILTO.Tables[0].Rows.Count>0)
+                if (DSFINDPURCHECKMAILTO.Tables[0].Rows.Count > 0)
                 {
-                   
+
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
                     string PW = ConfigurationManager.AppSettings["PW"];
-                        
+
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
                     MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
@@ -5460,7 +5460,7 @@ namespace TKMQ
             {
 
             }
-           
+
 
         }
 
@@ -5537,11 +5537,11 @@ namespace TKMQ
         {
             DataTable DTWEBLINKS = SEARCHLINKS();
 
-            foreach(DataRow DR in DTWEBLINKS.Rows)
+            foreach (DataRow DR in DTWEBLINKS.Rows)
             {
-                if (CheckUrlVisit(DR["WEBLINKS"].ToString())!=true)
+                if (CheckUrlVisit(DR["WEBLINKS"].ToString()) != true)
                 {
-                    
+
                     //MessageBox.Show(DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString() + ":" + CheckUrlVisit(DR["WEBLINKS"].ToString()));
                 }
 
@@ -5673,7 +5673,7 @@ namespace TKMQ
                 foreach (DataRow DR in DTWEBLINKS.Rows)
                 {
                     if (CheckUrlVisit(DR["WEBLINKS"].ToString()) != true)
-                    {                      
+                    {
                         BODY.AppendFormat(" <br>"
                                  + "{0} 此網站不通，請檢查網站狀況"
                                    + " <br>"
@@ -5687,28 +5687,28 @@ namespace TKMQ
                     {
                         BODY.AppendFormat(" <br>"
                                  + "{0} 此網站正常"
-                                 +" <br>"
+                                 + " <br>"
                                   , DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString());
 
                         LINE_NOTIFY.AppendFormat(@"%0D%0A {0} %0D%0A 此網站正常%0D%0A {1}  %0D%0A {2}", DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"), DR["COMMENTS"].ToString(), DR["WEBLINKS"].ToString());
-                       
+
                     }
 
 
                 }
-               
 
 
-               BODY.AppendFormat(" "
-                             + "<br>" + "謝謝"
 
-                             + "</span><br>");
+                BODY.AppendFormat(" "
+                              + "<br>" + "謝謝"
+
+                              + "</span><br>");
 
 
-                if(ISCHECK.Equals("N"))
+                if (ISCHECK.Equals("N"))
                 {
                     SUBJEST.AppendFormat(@" 有異常");
-                 
+
                 }
                 else
                 {
@@ -5737,7 +5737,7 @@ namespace TKMQ
             {
                 if (DSFINDITCHECKMAILTO.Tables[0].Rows.Count > 0)
                 {
-                   
+
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
                     string PW = ConfigurationManager.AppSettings["PW"];
@@ -5769,7 +5769,7 @@ namespace TKMQ
                         }
                         catch (Exception ex)
                         {
-                           // MessageBox.Show("有錯誤");
+                            // MessageBox.Show("有錯誤");
 
                             //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
                             //ex.ToString();
@@ -5812,7 +5812,7 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-                
+
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-交辨未完成的項目及設計表單簽核未完成的項目 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
 
 
@@ -5885,7 +5885,7 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單編號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單申請日期</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單逾期天數</th>");
-                    
+
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -5938,7 +5938,7 @@ namespace TKMQ
             }
         }
 
-      
+
         public DataSet UOFPROOFREAD()
         {
             DataSet DSPROOFREAD = new DataSet();
@@ -6137,13 +6137,13 @@ namespace TKMQ
         /// </summary>
         public void SENDEMAILUOFPROOFEAD(StringBuilder Subject, StringBuilder Body)
         {
-            DataSet UOFPROOFEAD = FINDPURCHECKMAILTO("UOFPROOFEAD");     
+            DataSet UOFPROOFEAD = FINDPURCHECKMAILTO("UOFPROOFEAD");
 
             try
             {
                 if (UOFPROOFEAD.Tables[0].Rows.Count > 0)
                 {
-                  
+
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
                     string PW = ConfigurationManager.AppSettings["PW"];
@@ -6172,7 +6172,7 @@ namespace TKMQ
                         try
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                      
+
                         }
                         catch (Exception ex)
                         {
@@ -6206,10 +6206,10 @@ namespace TKMQ
         public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR()
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_DIRECTOR();
-            string MESS = null; 
-            
+            string MESS = null;
 
-            if(DTFIND_USER_GUID.Rows.Count>0)
+
+            if (DTFIND_USER_GUID.Rows.Count > 0)
             {
                 foreach (DataRow DR in DTFIND_USER_GUID.Rows)
                 {
@@ -6444,22 +6444,22 @@ namespace TKMQ
         }
 
 
-        public void ADD_TB_EIP_PRIV_MESS_DIRECTOR(string USER_GUID,string MESS)
+        public void ADD_TB_EIP_PRIV_MESS_DIRECTOR(string USER_GUID, string MESS)
         {
             Guid NEW = Guid.NewGuid();
-            string MESSAGE_GUID= NEW.ToString();
-            string TOPIC= "系統通知-每日校稿的被交辨人未回覆項目" + DateTime.Now.ToString("yyyyMMdd");
-            string MESSAGE_CONTENT= MESS;
-            string MESSAGE_TO= USER_GUID;
-            string MESSAGE_FROM= "916e213c-7b2e-46e3-8821-b7066378042b";
-            string REPLY_MESSAGE_GUID=null;
-            string CREATE_TIME= DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
+            string MESSAGE_GUID = NEW.ToString();
+            string TOPIC = "系統通知-每日校稿的被交辨人未回覆項目" + DateTime.Now.ToString("yyyyMMdd");
+            string MESSAGE_CONTENT = MESS;
+            string MESSAGE_TO = USER_GUID;
+            string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
+            string REPLY_MESSAGE_GUID = null;
+            string CREATE_TIME = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
             string READED_TIME = null;
             string REPLY_TIME = null;
-            string FROM_DELETED="0";
+            string FROM_DELETED = "0";
             string TO_DELETED = "0";
             string FILE_GROUP_ID = null;
-            string MASTER_GUID=NEW.ToString();
+            string MASTER_GUID = NEW.ToString();
             string EVENT_ID = null;
 
             //20210902密
@@ -6523,14 +6523,14 @@ namespace TKMQ
                                         , MASTER_GUID
 
                                         );
-                                       
+
 
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
 
-                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);                   
+                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);
 
                     command.Connection.Open();
 
@@ -6908,18 +6908,18 @@ namespace TKMQ
             DataTable DT_FIND_UOF_TASK_APPLICATION = FIND_UOF_TASK_APPLICATION();
             DataTable DT_FIND_UOF_TASK_APPLICATION_FORM = new DataTable();
 
-            if (DT_FIND_UOF_TASK_APPLICATION != null && DT_FIND_UOF_TASK_APPLICATION.Rows.Count>=1)
+            if (DT_FIND_UOF_TASK_APPLICATION != null && DT_FIND_UOF_TASK_APPLICATION.Rows.Count >= 1)
             {
-                foreach(DataRow DR in DT_FIND_UOF_TASK_APPLICATION.Rows)
+                foreach (DataRow DR in DT_FIND_UOF_TASK_APPLICATION.Rows)
                 {
                     DT_FIND_UOF_TASK_APPLICATION_FORM = FIND_UOF_TASK_APPLICATION_FORM(DR["APPLICANT_NAME"].ToString());
-                 
-                    if(DT_FIND_UOF_TASK_APPLICATION_FORM!=null && DT_FIND_UOF_TASK_APPLICATION_FORM.Rows.Count>=1)
+
+                    if (DT_FIND_UOF_TASK_APPLICATION_FORM != null && DT_FIND_UOF_TASK_APPLICATION_FORM.Rows.Count >= 1)
                     {
                         SEND_UOF_TASK_APPLICATION_FORM(DR["APPLICANT_NAME"].ToString(), DR["APPLICANT_EMAIL"].ToString(), DT_FIND_UOF_TASK_APPLICATION_FORM);
-                    } 
+                    }
                 }
-               
+
             }
         }
 
@@ -7036,7 +7036,7 @@ namespace TKMQ
             {
 
             }
-            
+
         }
 
         public DataTable FIND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME)
@@ -7157,7 +7157,7 @@ namespace TKMQ
             }
         }
 
-        public void SEND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME,string APPLICANT_EMAIL, DataTable DT)
+        public void SEND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME, string APPLICANT_EMAIL, DataTable DT)
         {
             try
             {
@@ -7183,7 +7183,7 @@ namespace TKMQ
                     + " <br>"
                     );
 
-          
+
 
 
 
@@ -7211,7 +7211,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["START_TIME"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["CURRENTNAME"].ToString() + "</td>");
-                      
+
                         BODY.AppendFormat(@"</tr> ");
 
                         //BODY.AppendFormat("<span></span>");
@@ -7296,9 +7296,9 @@ namespace TKMQ
         {
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005();
 
-            if(DTSEARCHUOF_GRAFFAIRS_1005!=null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count>=1)
+            if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
             {
-                foreach(DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+                foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
                 {
                     string USER_GUID = DR["USER_GUID"].ToString();
                     string EMAILTO = DR["EMAIL"].ToString();
@@ -7318,46 +7318,46 @@ namespace TKMQ
                     try
                     {
                         ID = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']").Attributes["fieldValue"].Value;
-                        
+
 
                     }
                     catch { }
                     try
                     {
                         GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
-                       
+
                     }
                     catch { }
                     try
                     {
                         GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
-                       
+
                     }
                     catch { }
                     try
                     {
                         GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
-                        
+
                     }
                     catch { }
                     try
                     {
                         GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
-                        
+
                     }
                     catch { }
                     try
                     {
-                        
+
                         GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
                     }
                     catch { }
 
 
-                    string MESSAGES = GA003 + " 申請的請購單:"+ GA002 + "，物品:"+ GA005+"，已由"+GA999+" 在"+ GA015+"購買完成。";
+                    string MESSAGES = GA003 + " 申請的請購單:" + GA002 + "，物品:" + GA005 + "，已由" + GA999 + " 在" + GA015 + "購買完成。";
 
-                 
-                    if(!string.IsNullOrEmpty(USER_GUID))
+
+                    if (!string.IsNullOrEmpty(USER_GUID))
                     {
                         SEND_MESSAGE_UOF_GRAFFAIRS_1005(USER_GUID, MESSAGES);
                     }
@@ -7366,7 +7366,7 @@ namespace TKMQ
                         SEND_EMAIL_UOF_GRAFFAIRS_1005(EMAILTO, MESSAGES, MESSAGES);
                     }
 
-                       
+
                 }
             }
 
@@ -7452,12 +7452,12 @@ namespace TKMQ
         /// <summary>
         /// 通知原請購人到貨了，用UOF訊息
         /// </summary>
-        public void SEND_MESSAGE_UOF_GRAFFAIRS_1005(string USER_GUID,string MESS)
+        public void SEND_MESSAGE_UOF_GRAFFAIRS_1005(string USER_GUID, string MESS)
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "系統通知 "+ MESS;
-            string MESSAGE_CONTENT="系統通知 " + MESS;
+            string TOPIC = "系統通知 " + MESS;
+            string MESSAGE_CONTENT = "系統通知 " + MESS;
             string MESSAGE_TO = USER_GUID;
             string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
             string REPLY_MESSAGE_GUID = null;
@@ -7561,7 +7561,7 @@ namespace TKMQ
         /// <summary>
         /// 通知原請購人到貨了, 用EMAIL
         /// </summary>
-        public void SEND_EMAIL_UOF_GRAFFAIRS_1005(string EMAILTO,string Subject,string Body)
+        public void SEND_EMAIL_UOF_GRAFFAIRS_1005(string EMAILTO, string Subject, string Body)
         {
             try
             {
@@ -7592,7 +7592,7 @@ namespace TKMQ
                 try
                 {
                     MyMail.To.Add(EMAILTO); //設定收件者Email，多筆mail
-                                                          //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                            //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                     MySMTP.Send(MyMail);
 
                     MyMail.Dispose(); //釋放資源
@@ -7628,7 +7628,7 @@ namespace TKMQ
 
             try
             {
-                if (DT_OF_TASK_TASK_GRAFFIR!=null && DT_OF_TASK_TASK_GRAFFIR.Rows.Count>0&& GRAFFIR_TO_EMAIL!=null && GRAFFIR_TO_EMAIL.Rows.Count>0)
+                if (DT_OF_TASK_TASK_GRAFFIR != null && DT_OF_TASK_TASK_GRAFFIR.Rows.Count > 0 && GRAFFIR_TO_EMAIL != null && GRAFFIR_TO_EMAIL.Rows.Count > 0)
                 {
                     SEND_UOF_TASK_FORM_GRAFFIR(GRAFFIR_TO_EMAIL, DT_OF_TASK_TASK_GRAFFIR);
                 }
@@ -7637,20 +7637,20 @@ namespace TKMQ
             {
 
             }
-         
+
 
 
         }
 
         public DataTable FIND_OF_TASK_TASK_GRAFFIR()
         {
-            
+
             DataSet DS_FIND_OF_TASK_TASK_GRAFFIR = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-           
+
 
             try
             {
@@ -7832,7 +7832,7 @@ namespace TKMQ
             }
         }
 
-        public void SEND_UOF_TASK_FORM_GRAFFIR(DataTable TO_EMAIL,DataTable DT)
+        public void SEND_UOF_TASK_FORM_GRAFFIR(DataTable TO_EMAIL, DataTable DT)
         {
             try
             {
@@ -7927,7 +7927,7 @@ namespace TKMQ
 
                     try
                     {
-                        foreach(DataRow DR in TO_EMAIL.Rows)
+                        foreach (DataRow DR in TO_EMAIL.Rows)
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                         }
@@ -7976,7 +7976,7 @@ namespace TKMQ
 
             string token = dt.Rows[0]["TOKEN"].ToString();
 
-            string url = "https://notify-api.line.me/api/notify";       
+            string url = "https://notify-api.line.me/api/notify";
             try
             {
                 ServicePointManager.Expect100Continue = true;
@@ -8017,7 +8017,7 @@ namespace TKMQ
             sqlsb.Password = TKID.Decryption(sqlsb.Password);
             sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
 
-          
+
             try
             {
                 // 建立資料庫連線物件
@@ -8045,10 +8045,10 @@ namespace TKMQ
             {
                 return null;
             }
-            
+
         }
 
-        public void  SEND_TEST_MAIL()
+        public void SEND_TEST_MAIL()
         {
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -8070,7 +8070,7 @@ namespace TKMQ
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
             MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-            
+
 
             try
             {
@@ -8120,14 +8120,14 @@ namespace TKMQ
             }
 
         }
-      
+
         //交辨未完成meail
         public void CHECK_TB_EIP_SCH_DEVOLVE()
-        {          
+        {
             //找出所有被交辨人  
             DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES();
 
-            if(DT != null && DT.Rows.Count>=1)
+            if (DT != null && DT.Rows.Count >= 1)
             {
                 SEND_EMAIL_TB_EIP_SCH_DEVOLVE(DT);
             }
@@ -8216,7 +8216,7 @@ namespace TKMQ
 
             }
 
-           
+
         }
         //寄送mail給被交辨人
         public void SEND_EMAIL_TB_EIP_SCH_DEVOLVE(DataTable DT)
@@ -8303,7 +8303,7 @@ namespace TKMQ
 
                             }
                             BODY.AppendFormat(@"</table> ");
-                           
+
                         }
 
 
@@ -8370,13 +8370,13 @@ namespace TKMQ
 
                     }
 
-                    
-                }
-                                    
-            }
-                
 
-            
+                }
+
+            }
+
+
+
 
             //foreach (DataRow DR in DT.Rows)
             //{
@@ -8522,7 +8522,7 @@ namespace TKMQ
         //找出被交辨的所有未完成的交辨事項
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS(string NAME)
         {
-           
+
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -8617,7 +8617,7 @@ namespace TKMQ
             {
 
             }
-           
+
         }
 
         //找出被交辨的所有未完成的交辨事項
@@ -8759,7 +8759,7 @@ namespace TKMQ
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-           
+
                 sbSql.AppendFormat(@"                                     
                                     SELECT 
                                     Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER AS '被交辨人主管'
@@ -8832,7 +8832,7 @@ namespace TKMQ
                 // 建立查詢字串
                 string filterExpression = $"被交辨人主管 = '{NAME_COMMIT}'";
                 // 使用 Select 方法查詢
-                DataRow[] result = DTDETAILS_ALL.Select(filterExpression);              
+                DataRow[] result = DTDETAILS_ALL.Select(filterExpression);
 
 
                 if (result.Length > 0)
@@ -8976,147 +8976,147 @@ namespace TKMQ
             //foreach (DataRow DR in DT.Rows)
             //{             
 
-                //    if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
-                //    {
-                //        DTDETAILS.Clear();
-                //        DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
+            //    if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
+            //    {
+            //        DTDETAILS.Clear();
+            //        DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
 
-                //        if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
-                //        {
-                //            try
-                //            {
-                //                StringBuilder SUBJEST = new StringBuilder();
-                //                StringBuilder BODY = new StringBuilder();
+            //        if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
+            //        {
+            //            try
+            //            {
+            //                StringBuilder SUBJEST = new StringBuilder();
+            //                StringBuilder BODY = new StringBuilder();
 
-                //                ////加上附圖
-                //                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //                //LinkedResource res = new LinkedResource(path);
-                //                //res.ContentId = Guid.NewGuid().ToString();
+            //                ////加上附圖
+            //                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+            //                //LinkedResource res = new LinkedResource(path);
+            //                //res.ContentId = Guid.NewGuid().ToString();
 
-                //                SUBJEST.Clear();
-                //                BODY.Clear();
-
-
-                //                SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                //                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-                //                //ERP 採購相關單別、單號未核準的明細
-                //                //
-                //                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                //                    + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
-                //                    + " <br>"
-                //                    );
+            //                SUBJEST.Clear();
+            //                BODY.Clear();
 
 
+            //                SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+            //                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+            //                //ERP 採購相關單別、單號未核準的明細
+            //                //
+            //                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+            //                    + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
+            //                    + " <br>"
+            //                    );
 
 
 
-                //                if (DTDETAILS.Rows.Count > 0)
-                //                {
-                //                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-                //                    BODY.AppendFormat(@"<table> ");
-                //                    BODY.AppendFormat(@"<tr >");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
-                //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
 
 
-                //                    BODY.AppendFormat(@"</tr> ");
+            //                if (DTDETAILS.Rows.Count > 0)
+            //                {
+            //                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
-                //                    foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
-                //                    {
-
-                //                        BODY.AppendFormat(@"<tr >");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
-                //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
-
-                //                        BODY.AppendFormat(@"</tr> ");
-
-                //                        //BODY.AppendFormat("<span></span>");
-                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-                //                    }
-                //                    BODY.AppendFormat(@"</table> ");
-                //                }
+            //                    BODY.AppendFormat(@"<table> ");
+            //                    BODY.AppendFormat(@"<tr >");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
+            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
 
 
-                //                try
-                //                {
-                //                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                //                    string NAME = ConfigurationManager.AppSettings["NAME"];
-                //                    string PW = ConfigurationManager.AppSettings["PW"];
+            //                    BODY.AppendFormat(@"</tr> ");
 
-                //                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                //                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            //                    foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
+            //                    {
 
-                //                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                //                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                //                    MyMail.Subject = SUBJEST.ToString();
-                //                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                //                    MyMail.Body = BODY.ToString();
-                //                    MyMail.IsBodyHtml = true; //是否使用html格式
+            //                        BODY.AppendFormat(@"<tr >");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
+            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
 
-                //                    //加上附圖
-                //                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                //                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+            //                        BODY.AppendFormat(@"</tr> ");
 
-                //                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                //                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-                //                    try
-                //                    {
-
-                //                        MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
-                //                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                //                        MySMTP.Send(MyMail);
-
-                //                        MyMail.Dispose(); //釋放資源
+            //                        //BODY.AppendFormat("<span></span>");
+            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+            //                    }
+            //                    BODY.AppendFormat(@"</table> ");
+            //                }
 
 
-                //                    }
-                //                    catch (Exception ex)
-                //                    {
-                //                        //MessageBox.Show("有錯誤");
+            //                try
+            //                {
+            //                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            //                    string NAME = ConfigurationManager.AppSettings["NAME"];
+            //                    string PW = ConfigurationManager.AppSettings["PW"];
 
-                //                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                //                        //ex.ToString();
-                //                    }
-                //                }
-                //                catch
-                //                {
+            //                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            //                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
-                //                }
-                //                finally
-                //                {
+            //                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            //                    MyMail.Subject = SUBJEST.ToString();
+            //                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            //                    MyMail.Body = BODY.ToString();
+            //                    MyMail.IsBodyHtml = true; //是否使用html格式
 
-                //                }
+            //                    //加上附圖
+            //                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+            //                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+            //                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            //                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
 
 
-                //            }
-                //            catch
-                //            {
+            //                    try
+            //                    {
 
-                //            }
-                //            finally
-                //            {
+            //                        MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
+            //                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+            //                        MySMTP.Send(MyMail);
 
-                //            }
-                //        }
-                //    }
-                //}
+            //                        MyMail.Dispose(); //釋放資源
+
+
+            //                    }
+            //                    catch (Exception ex)
+            //                    {
+            //                        //MessageBox.Show("有錯誤");
+
+            //                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+            //                        //ex.ToString();
+            //                    }
+            //                }
+            //                catch
+            //                {
+
+            //                }
+            //                finally
+            //                {
+
+            //                }
+
+
+            //            }
+            //            catch
+            //            {
+
+            //            }
+            //            finally
+            //            {
+
+            //            }
+            //        }
+            //    }
+            //}
         }
         //找出被交辨的所有未完成的交辨事項-經理
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(string NAME)
@@ -9325,10 +9325,10 @@ namespace TKMQ
         /// 本年新品的銷售報表
         /// </summary>
         public void PREPARESENDEMAIL_NEWSLAES(string path_File)
-        {           
+        {
             SETPATH();
 
-            path_File= path_File + ".xlsx";
+            path_File = path_File + ".xlsx";
             //DATES = DateTime.Now.ToString("yyyyMMdd");
             //DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
             //path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString() + ".pdf";
@@ -9342,7 +9342,7 @@ namespace TKMQ
             }
 
 
-           // SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
+            // SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
 
             DataSet DS_NEWSLAES = ERP_NEWSLAES();
 
@@ -9424,7 +9424,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["總成本"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["總毛利"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["毛利率"].ToString() + "</td>");
-                        
+
                         BODY.AppendFormat(@"</tr> ");
 
                         //BODY.AppendFormat("<span></span>");
@@ -9465,8 +9465,8 @@ namespace TKMQ
         /// </summary>
         /// <param name="Subject"></param>
         /// <param name="Body"></param>
-        public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body,string Attachments)
-        {   
+        public void SENDEMAIL_NEWSALES(StringBuilder Subject, StringBuilder Body, string Attachments)
+        {
             try
             {
 
@@ -9498,15 +9498,15 @@ namespace TKMQ
                 if (DSFINDPURCHECKMAILTO.Tables[0].Rows.Count > 0)
                 {
                     foreach (DataRow DR in DSFINDPURCHECKMAILTO.Tables[0].Rows)
-                    {                       
+                    {
                         try
-                        { 
+                        {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                                   //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email                          
                         }
                         catch (Exception ex)
                         {
-                            
+
                         }
                     }
                 }
@@ -10150,7 +10150,7 @@ namespace TKMQ
             {
                 if (DSMAILTO.Tables[0].Rows.Count > 0)
                 {
-                    
+
 
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -10172,7 +10172,7 @@ namespace TKMQ
 
                     System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
                     MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-                    
+
 
                     try
                     {
@@ -10189,7 +10189,7 @@ namespace TKMQ
                         {
                             MyMail.CC.Add(DR["MAIL"].ToString());
                         }
-                       
+
                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         MySMTP.Send(MyMail);
 
@@ -10647,7 +10647,7 @@ namespace TKMQ
 
 
 
-           SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
+            SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
 
             //DataSet DS = ERP_COPTCD();
 
@@ -10764,7 +10764,7 @@ namespace TKMQ
         /// <param name="Body"></param>
         public void SENDEMAIL_COPTCD(StringBuilder Subject, StringBuilder Body, string Attachments)
         {
-            DataSet DSMAILTO = FINDPURCHECKMAILTO("COPTCD");       
+            DataSet DSMAILTO = FINDPURCHECKMAILTO("COPTCD");
 
             try
             {
@@ -10804,7 +10804,7 @@ namespace TKMQ
                         {
                             MyMail.To.Add(DR["MAIL"].ToString());
                         }
-                      
+
 
                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         MySMTP.Send(MyMail);
@@ -11095,7 +11095,7 @@ namespace TKMQ
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
             report1.Preview = previewControl1;
-            report1.Show(); 
+            report1.Show();
         }
 
         public StringBuilder SETSQL()
@@ -11205,8 +11205,8 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日-國內外業務業績日報-" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, ");
             BODY.AppendFormat(Environment.NewLine + "檢附截至目前各業務每日業績，請參考附件，謝謝");
-            BODY.AppendFormat(Environment.NewLine );
-            BODY.AppendFormat(Environment.NewLine );
+            BODY.AppendFormat(Environment.NewLine);
+            BODY.AppendFormat(Environment.NewLine);
             BODY.AppendFormat(Environment.NewLine + "--");
             BODY.AppendFormat(Environment.NewLine + "業務部 ｜ 連佳瑋");
             BODY.AppendFormat(Environment.NewLine + "");
@@ -11287,7 +11287,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout =300;
+            table.Connection.CommandTimeout = 300;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
@@ -11427,7 +11427,7 @@ namespace TKMQ
 
         public void SENDEMAIL_DAILY_QC_CHECK()
         {
-            DataSet ds= new DataSet();
+            DataSet ds = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
@@ -11435,7 +11435,7 @@ namespace TKMQ
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
             DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile_QC_CHECK= @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -11454,7 +11454,7 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日-每日溫溼度警報-" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, ");
             BODY.AppendFormat(Environment.NewLine + "檢附每日溫溼度警報，請參考附件，謝謝");
-            
+
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -11611,7 +11611,7 @@ namespace TKMQ
             StringBuilder SQL1 = new StringBuilder();
 
             StringBuilder SB = new StringBuilder();
-            string SDAYS= DateTime.Now.ToString("yyyy") + "0101";
+            string SDAYS = DateTime.Now.ToString("yyyy") + "0101";
             string EDAYS = DateTime.Now.ToString("yyyyMMdd");
             string ADDYEARSs = DateTime.Now.ToString("yyyy");
             string ADD_DAYS = DateTime.Now.ToString("yyyy") + "0101";
@@ -11803,7 +11803,7 @@ namespace TKMQ
 
             }
             finally { }
-            
+
         }
 
         public DataTable SEARCH_PURVERSIONSNUMS()
@@ -11870,13 +11870,13 @@ namespace TKMQ
             {
 
             }
-            
+
         }
 
         public void SEND_PURVERSIONSNUMS(DataTable DT)
         {
             try
-            {             
+            {
                 if (DT != null && DT.Rows.Count >= 1)
                 {
                     try
@@ -11917,7 +11917,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目標進貨量</th>");
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已進貨量</th>");
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否結案</th>");
-                            
+
                             BODY.AppendFormat(@"</tr> ");
 
                             foreach (DataRow DR in DT.Rows)
@@ -11946,7 +11946,7 @@ namespace TKMQ
                         {
                             BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
                         }
-                                            
+
 
                         BODY.AppendFormat(" "
                                      + "<br>" + "謝謝"
@@ -11988,7 +11988,7 @@ namespace TKMQ
             DATES = DateTime.Now.ToString("yyyyMMdd");
 
             DS_EMAIL_CALENDAR = SERACH_MAIL_CALENDAR();
-            
+
             SUBJEST.Clear();
             BODY.Clear();
 
@@ -12019,7 +12019,7 @@ namespace TKMQ
             // 获取指定月份的第一天和最后一天
             for (int MONTHSCOUNT = 0; MONTHSCOUNT <= 1; MONTHSCOUNT++)
             {
-                DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month+ MONTHSCOUNT, 1);
+                DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month + MONTHSCOUNT, 1);
                 DateTime lastDayOfMonth1 = firstDayOfMonth1.AddMonths(1).AddDays(-1);
 
                 //第1個月
@@ -12029,7 +12029,7 @@ namespace TKMQ
                 // 确定第一个星期一的日期
                 DateTime firstMonday = firstDayOfMonth1.AddDays((7 - (int)firstDayOfMonth1.DayOfWeek + (int)DayOfWeek.Monday) % 7);
 
-              
+
                 htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
                 // 添加固定的表头，从星期一到星期日
@@ -12088,9 +12088,9 @@ namespace TKMQ
 
                 htmlBody.Append("<br><br>");
             }
-           
 
-        
+
+
 
             htmlBody.Append("</body></html>");
 
@@ -12127,7 +12127,7 @@ namespace TKMQ
 
                     MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
-                
+
                 MySMTP.Send(MyMail);
 
                 MyMail.Dispose(); //釋放資源
@@ -12141,7 +12141,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_DT_CALENDAR(string SDAYS,string EDAYS)
+        public DataTable SERACH_DT_CALENDAR(string SDAYS, string EDAYS)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -12279,16 +12279,16 @@ namespace TKMQ
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_TB_SALES_PROMOTIONS = new DataTable();
-    
+
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TB_SALES_PROMOTIONS();
-                DT_TB_SALES_PROMOTIONS = SERACH_TB_SALES_PROMOTIONS(); 
+                DT_TB_SALES_PROMOTIONS = SERACH_TB_SALES_PROMOTIONS();
 
-                if(DT_TB_SALES_PROMOTIONS != null && DT_TB_SALES_PROMOTIONS.Rows.Count>=1)
+                if (DT_TB_SALES_PROMOTIONS != null && DT_TB_SALES_PROMOTIONS.Rows.Count >= 1)
                 {
                     SUBJEST.Clear();
                     BODY.Clear();
@@ -12337,7 +12337,7 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-                          
+
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -12365,7 +12365,7 @@ namespace TKMQ
 
                         System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
                         MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-                        
+
 
                         try
                         {
@@ -12397,7 +12397,7 @@ namespace TKMQ
 
                     }
                 }
-                
+
 
 
             }
@@ -12594,7 +12594,7 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"<table> ");
                         BODY.AppendFormat(@"<tr >");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");                        
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購單別</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購單號</th>");
@@ -12855,7 +12855,7 @@ namespace TKMQ
         public void SENDEMAIL_TBPURCHECKFAX()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
-            DataTable DT_DATAS= new DataTable();
+            DataTable DT_DATAS = new DataTable();
 
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
@@ -13210,7 +13210,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["差異特色"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["打樣日期"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["F9FieldValue"].ToString() + "</td>");                            
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["F9FieldValue"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
 
@@ -13480,7 +13480,7 @@ namespace TKMQ
             BODY.Clear();
             SUBJEST.AppendFormat(@"系統通知-每日預排製令表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日預排製令表，請查收" + Environment.NewLine + " ");
-        
+
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -13565,7 +13565,7 @@ namespace TKMQ
 
         }
 
-        public StringBuilder SETSQL_DAILY_MOCMANULINE()        
+        public StringBuilder SETSQL_DAILY_MOCMANULINE()
         {
             DateTime now = DateTime.Now;
             // 取得本月第一天日期
@@ -13783,10 +13783,138 @@ namespace TKMQ
 
         }
 
+        //針對昨天核單的 總務採購單，給申請人發出公告
+        public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN()
+        {
+            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW();
+
+            if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
+            {
+                foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+                {
+                }
+            }
+        }
+
+        public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW()
+        {
+            StringBuilder MESS = new StringBuilder();
+            DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+            string END_TIME = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //   AND DOC_NBR = 'GA1005230100006'
+
+                sbSql.AppendFormat(@"                                    
+                                
+                                    SELECT 
+                                    TEMPALL.KINDS
+                                    ,TEMPALL.DOC_NBR AS '總務採購單'
+                                    ,TEMPALL.GG002 AS '請購物品'
+                                    ,TEMPALL.EXTERNAL_FORM_NBR AS '總務請購單'
+                                    ,TB_WKF_TASK1.END_TIME AS '總務採購單結案時間'
+                                    ,TB_EB_USER.NAME AS '請購人'
+                                    ,TB_EB_USER.USER_GUID 
+                                    ,TB_WKF_TASK1.TASK_RESULT
+                                    ,TB_WKF_TASK1.TASK_STATUS
+                                    FROM (
+                                    SELECT 
+	                                    '合併' AS 'KINDS',
+	                                    DOC_NBR,
+                                        C.value('(Cell[@fieldId=""GG002""]/@fieldValue)[1]', 'VARCHAR(100)') AS GG002,
+                                        C.value('(Cell[@fieldId=""EXTERNAL_FORM_NBR""]/@fieldValue)[1]', 'VARCHAR(100)') AS EXTERNAL_FORM_NBR
+                                    FROM
+                                        [UOF].[dbo].TB_WKF_TASK
+                                    CROSS APPLY
+                                        CURRENT_DOC.nodes('//Row') AS T(C)
+                                    WHERE 1 = 1
+                                    AND TB_WKF_TASK.CURRENT_DOC.exist('//Row') = 1
+
+                                    UNION ALL
+                                    SELECT
+
+                                        '單筆' AS 'KINDS',
+                                        TB_WKF_TASK.DOC_NBR,
+                                        MAX(CASE WHEN x1.field_id.value('@fieldId', 'VARCHAR(50)') = 'GA005'
+                                                 THEN x1.field_id.value('@fieldValue', 'VARCHAR(200)') END) AS GA005_value,
+                                        MAX(CASE WHEN x1.field_id.value('@fieldId', 'VARCHAR(50)') = 'GA002'
+                                                 THEN x1.field_id.value('@fieldValue', 'VARCHAR(200)') END) AS GA002_value
+                                    FROM
+                                        [UOF].[dbo].TB_WKF_TASK
+                                    CROSS APPLY
+                                        TB_WKF_TASK.CURRENT_DOC.nodes('/Form/FormFieldValue/FieldItem') AS x1(field_id)
+                                    WHERE 1 = 1
+                                    AND TB_WKF_TASK.CURRENT_DOC.exist('//Row') = 0
+                                    GROUP BY TB_WKF_TASK.DOC_NBR
+                                    ) AS TEMPALL
+                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK1 ON TB_WKF_TASK1.DOC_NBR=TEMPALL.DOC_NBR
+                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK2 ON TB_WKF_TASK2.DOC_NBR= TEMPALL.EXTERNAL_FORM_NBR
+                                    LEFT JOIN [UOF].[dbo].TB_EB_USER ON TB_EB_USER.USER_GUID= TB_WKF_TASK2.USER_GUID
+                                    WHERE 1=1
+                                    AND TB_WKF_TASK1.TASK_RESULT= '0' AND TB_WKF_TASK1.TASK_STATUS= '2'
+                                    AND TEMPALL.DOC_NBR LIKE 'GA1005%'
+                                    AND ISNULL(TEMPALL.EXTERNAL_FORM_NBR ,'')<>''
+                                    AND CONVERT(NVARCHAR,TB_WKF_TASK1.END_TIME,112)='{0}'
+                                    ORDER BY TB_EB_USER.NAME
+
+                                 
+
+                                   ", END_TIME);
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS_FIND_UOF_TASK_APPLICATION_FORM.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
+                sqlConn.Close();
+
+                if (DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"].Rows.Count > 0)
+                {
+
+                    return DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+    
 
         #endregion
 
-        #region BUTTON
+            #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
             SETPATH();
@@ -14066,7 +14194,10 @@ namespace TKMQ
         }
         private void button41_Click(object sender, EventArgs e)
         {
+            //針對昨天核單的 總務採購單，給申請人發出公告
+            NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
 
+            MessageBox.Show("完成");
         }
         #endregion
 
