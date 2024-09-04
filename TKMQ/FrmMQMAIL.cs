@@ -35,6 +35,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace TKMQ
 {
@@ -13788,12 +13789,110 @@ namespace TKMQ
         {
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW();
 
-            if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
+            // 創建 <UserSet> 標籤
+            XElement userSetElement = new XElement("UserSet");
+            // 創建 XDocument 並添加 <UserSet>
+            XDocument xmlDoc = new XDocument(userSetElement);
+            // 使用 StringWriter 和 XmlTextWriter 將 XmlDocument 轉換為字串
+            string xmlString = "";
+            using (StringWriter stringWriter = new StringWriter())
             {
-                foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+                using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
                 {
+                    xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
+                    xmlDoc.WriteTo(xmlTextWriter);
+                    xmlTextWriter.Flush();
+
+                    // 取得 XML 的字串表示
+                    xmlString = stringWriter.GetStringBuilder().ToString();
+
+                    // 輸出字串
+                   // Console.WriteLine(xmlString);
                 }
             }
+
+            string BULLETIN_GUID = Guid.NewGuid().ToString();
+            string ANNOUNCER = "b6f50a95-17ec-47f2-b842-4ad12512b431";
+            string CLASS_GUID = "2e6d7f89-abcb-426b-afd6-8191fff9a668"; //01.行政類公告
+            string TOPIC = "測試公告";
+            string CONTEXT = "測試公告";
+            string EXPIRE_DATE = DateTime.Now.AddDays(7).ToString("yyyyMMdd");
+            string RM_ID = Guid.NewGuid().ToString();
+            string FILE_GROUP_ID = "";
+            string CREATE_DATE = DateTime.Now.ToString("yyyyMMdd");
+            string MODIFY_USER = "";
+            string MODIFY_DATE = DateTime.Now.ToString("yyyyMMdd");
+            string PRINT = "N";
+            string PRINT_USER_SET = xmlString;
+            string MARQUEE = "N";
+            string SYNCMSG = "Y";
+            string STATUS = "Publish";
+            string ATTACHMENT = "N";
+            string CREATE_USER = "b6f50a95-17ec-47f2-b842-4ad12512b431";
+            string PUBLISH_DATE = DateTime.Now.ToString("yyyyMMdd");
+            string IS_CLONE = "0";
+            string OUTER_BULLETION_ID = "";
+            string OUTER_CLASS_GUID = "";
+            string ANNOUNCER_DEP = "0a700146-6015-4cc6-8aca-055a45e6a766";
+            string OUTER_BULLETION_READER = xmlString;
+            string OUTER_BULLETION_ALLOW_PRINT = "0";
+            string OUTER_BULLETION_PRINT_USER = xmlString;
+            string AUTO_PUBLISH_CONTROL = "0";
+            string AUTO_PUBLISH_DATE = "";
+            string IS_DELETE_OUTER_BULL = "0";
+            string IS_DISPLAY_READER = "1";
+            string IS_DISPLAY_OUTER_READER = "1";
+            string UPDATE_TASK_ID = "";
+            string IS_READER_IN_INNER = "0";
+            string IS_STICKY = "";
+            string RECOMMEND_NUM = "";
+
+            //if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
+            //{
+            //    BULLETIN_GUID = new Guid().ToString();
+
+            //    foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+            //    {
+            //    }
+            //}
+
+            ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER(
+             BULLETIN_GUID,
+             ANNOUNCER,
+             CLASS_GUID,
+             TOPIC,
+             CONTEXT,
+             EXPIRE_DATE,
+             RM_ID,
+             FILE_GROUP_ID,
+             CREATE_DATE,
+             MODIFY_USER,
+             MODIFY_DATE,
+             PRINT,
+             PRINT_USER_SET,
+             MARQUEE,
+             SYNCMSG,
+             STATUS,
+             ATTACHMENT,
+             CREATE_USER,
+             PUBLISH_DATE,
+             IS_CLONE,
+             OUTER_BULLETION_ID,
+             OUTER_CLASS_GUID,
+             ANNOUNCER_DEP,
+             OUTER_BULLETION_READER,
+             OUTER_BULLETION_ALLOW_PRINT,
+             OUTER_BULLETION_PRINT_USER,
+             AUTO_PUBLISH_CONTROL,
+             AUTO_PUBLISH_DATE,
+             IS_DELETE_OUTER_BULL,
+             IS_DISPLAY_READER,
+             IS_DISPLAY_OUTER_READER,
+             UPDATE_TASK_ID,
+             IS_READER_IN_INNER,
+             IS_STICKY,
+             RECOMMEND_NUM
+            );
         }
 
         public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW()
@@ -13911,7 +14010,43 @@ namespace TKMQ
             }
         }
 
-        public void ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER()
+        public void ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER(
+            string BULLETIN_GUID,
+            string ANNOUNCER,
+            string CLASS_GUID,
+            string TOPIC,
+            string CONTEXT,
+            string EXPIRE_DATE,
+            string RM_ID,
+            string FILE_GROUP_ID,
+            string CREATE_DATE,
+            string MODIFY_USER,
+            string MODIFY_DATE,
+            string PRINT,
+            string PRINT_USER_SET,
+            string MARQUEE,
+            string SYNCMSG,
+            string STATUS,
+            string ATTACHMENT,
+            string CREATE_USER,
+            string PUBLISH_DATE,
+            string IS_CLONE,
+            string OUTER_BULLETION_ID,
+            string OUTER_CLASS_GUID,
+            string ANNOUNCER_DEP,
+            string OUTER_BULLETION_READER,
+            string OUTER_BULLETION_ALLOW_PRINT,
+            string OUTER_BULLETION_PRINT_USER,
+            string AUTO_PUBLISH_CONTROL,
+            string AUTO_PUBLISH_DATE,
+            string IS_DELETE_OUTER_BULL,
+            string IS_DISPLAY_READER,
+            string IS_DISPLAY_OUTER_READER,
+            string UPDATE_TASK_ID,
+            string IS_READER_IN_INNER,
+            string IS_STICKY,
+            string RECOMMEND_NUM
+            )
         {
             try
             {
@@ -13931,29 +14066,132 @@ namespace TKMQ
 
                 sqlConn.Close();
                 sqlConn.Open();
-                tran = sqlConn.BeginTransaction();
 
-                sbSql.Clear();
 
-                sbSql.AppendFormat(@" 
-
-                                    ");
-
-                cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
-                cmd.CommandText = sbSql.ToString();
-                cmd.Transaction = tran;
-                result = cmd.ExecuteNonQuery();
-
-                if (result == 0)
+                using (SqlConnection conn = new SqlConnection(sqlsb.ConnectionString))
                 {
-                    tran.Rollback();    //交易取消
-                }
-                else
-                {
-                    tran.Commit();      //執行交易  
-                    //Console.WriteLine("ADDTOUOFTB_EIP_SCH_MEMO_MOC OK");
+                    string query = @"
+                                    INSERT INTO [UOF].dbo.[TB_EIP_BULLETIN]
+                                    (
+                                        [BULLETIN_GUID],
+                                        [ANNOUNCER],
+                                        [CLASS_GUID],
+                                        [TOPIC],
+                                        [CONTEXT],
+                                        [EXPIRE_DATE],
+                                        [RM_ID],
+                                        [FILE_GROUP_ID],
+                                        [CREATE_DATE],
+                                        [MODIFY_USER],
+                                        [MODIFY_DATE],
+                                        [PRINT],
+                                        [PRINT_USER_SET],
+                                        [MARQUEE],
+                                        [SYNCMSG],
+                                        [STATUS],
+                                        [ATTACHMENT],
+                                        [CREATE_USER],
+                                        [PUBLISH_DATE],
+                                        [IS_CLONE],
+                                        [OUTER_BULLETION_ID],
+                                        [OUTER_CLASS_GUID],
+                                        [ANNOUNCER_DEP],
+                                        [OUTER_BULLETION_READER],
+                                        [OUTER_BULLETION_ALLOW_PRINT],
+                                        [OUTER_BULLETION_PRINT_USER],
+                                        [AUTO_PUBLISH_CONTROL],
+                                        [AUTO_PUBLISH_DATE],
+                                        [IS_DELETE_OUTER_BULL],
+                                        [IS_DISPLAY_READER],
+                                        [IS_DISPLAY_OUTER_READER],
+                                        [UPDATE_TASK_ID],
+                                        [IS_READER_IN_INNER],
+                                        [IS_STICKY],
+                                        [RECOMMEND_NUM]
+                                    )
+                                    VALUES
+                                    (
+                                        @BULLETIN_GUID,
+                                        @ANNOUNCER,
+                                        @CLASS_GUID,
+                                        @TOPIC,
+                                        @CONTEXT,
+                                        @EXPIRE_DATE,
+                                        @RM_ID,
+                                        @FILE_GROUP_ID,
+                                        @CREATE_DATE,
+                                        @MODIFY_USER,
+                                        @MODIFY_DATE,
+                                        @PRINT,
+                                        @PRINT_USER_SET,
+                                        @MARQUEE,
+                                        @SYNCMSG,
+                                        @STATUS,
+                                        @ATTACHMENT,
+                                        @CREATE_USER,
+                                        @PUBLISH_DATE,
+                                        @IS_CLONE,
+                                        @OUTER_BULLETION_ID,
+                                        @OUTER_CLASS_GUID,
+                                        @ANNOUNCER_DEP,
+                                        @OUTER_BULLETION_READER,
+                                        @OUTER_BULLETION_ALLOW_PRINT,
+                                        @OUTER_BULLETION_PRINT_USER,
+                                        @AUTO_PUBLISH_CONTROL,
+                                        @AUTO_PUBLISH_DATE,
+                                        @IS_DELETE_OUTER_BULL,
+                                        @IS_DISPLAY_READER,
+                                        @IS_DISPLAY_OUTER_READER,
+                                        @UPDATE_TASK_ID,
+                                        @IS_READER_IN_INNER,
+                                        @IS_STICKY,
+                                        @RECOMMEND_NUM
+                                    )
+                                    ";
 
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        // 使用參數化的方式傳遞值
+                        cmd.Parameters.AddWithValue("@BULLETIN_GUID", BULLETIN_GUID);
+                        cmd.Parameters.AddWithValue("@ANNOUNCER", ANNOUNCER);
+                        cmd.Parameters.AddWithValue("@CLASS_GUID", CLASS_GUID);
+                        cmd.Parameters.AddWithValue("@TOPIC", TOPIC);
+                        cmd.Parameters.AddWithValue("@CONTEXT", CONTEXT);
+                        cmd.Parameters.AddWithValue("@EXPIRE_DATE", EXPIRE_DATE);
+                        cmd.Parameters.AddWithValue("@RM_ID", RM_ID);
+                        cmd.Parameters.AddWithValue("@FILE_GROUP_ID", FILE_GROUP_ID);
+                        cmd.Parameters.AddWithValue("@CREATE_DATE", CREATE_DATE);
+                        cmd.Parameters.AddWithValue("@MODIFY_USER", MODIFY_USER);
+                        cmd.Parameters.AddWithValue("@MODIFY_DATE", MODIFY_DATE);
+                        cmd.Parameters.AddWithValue("@PRINT", PRINT);
+                        cmd.Parameters.AddWithValue("@PRINT_USER_SET", PRINT_USER_SET);
+                        cmd.Parameters.AddWithValue("@MARQUEE", MARQUEE);
+                        cmd.Parameters.AddWithValue("@SYNCMSG", SYNCMSG);
+                        cmd.Parameters.AddWithValue("@STATUS", STATUS);
+                        cmd.Parameters.AddWithValue("@ATTACHMENT", ATTACHMENT);
+                        cmd.Parameters.AddWithValue("@CREATE_USER", CREATE_USER);
+                        cmd.Parameters.AddWithValue("@PUBLISH_DATE", PUBLISH_DATE);
+                        cmd.Parameters.AddWithValue("@IS_CLONE", IS_CLONE);
+                        cmd.Parameters.AddWithValue("@OUTER_BULLETION_ID", OUTER_BULLETION_ID);
+                        cmd.Parameters.AddWithValue("@OUTER_CLASS_GUID", OUTER_CLASS_GUID);
+                        cmd.Parameters.AddWithValue("@ANNOUNCER_DEP", ANNOUNCER_DEP);
+                        cmd.Parameters.AddWithValue("@OUTER_BULLETION_READER", OUTER_BULLETION_READER);
+                        cmd.Parameters.AddWithValue("@OUTER_BULLETION_ALLOW_PRINT", OUTER_BULLETION_ALLOW_PRINT);
+                        cmd.Parameters.AddWithValue("@OUTER_BULLETION_PRINT_USER", OUTER_BULLETION_PRINT_USER);
+                        cmd.Parameters.AddWithValue("@AUTO_PUBLISH_CONTROL", AUTO_PUBLISH_CONTROL);
+                        cmd.Parameters.AddWithValue("@AUTO_PUBLISH_DATE", AUTO_PUBLISH_DATE);
+                        cmd.Parameters.AddWithValue("@IS_DELETE_OUTER_BULL", IS_DELETE_OUTER_BULL);
+                        cmd.Parameters.AddWithValue("@IS_DISPLAY_READER", IS_DISPLAY_READER);
+                        cmd.Parameters.AddWithValue("@IS_DISPLAY_OUTER_READER", IS_DISPLAY_OUTER_READER);
+                        cmd.Parameters.AddWithValue("@UPDATE_TASK_ID", UPDATE_TASK_ID);
+                        cmd.Parameters.AddWithValue("@IS_READER_IN_INNER", IS_READER_IN_INNER);
+                        cmd.Parameters.AddWithValue("@IS_STICKY", IS_STICKY);
+                        cmd.Parameters.AddWithValue("@RECOMMEND_NUM", RECOMMEND_NUM);
+
+                        // 開啟連接並執行命令
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
             catch
