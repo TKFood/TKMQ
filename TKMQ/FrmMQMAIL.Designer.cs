@@ -65,11 +65,12 @@
             this.button21 = new System.Windows.Forms.Button();
             this.button17 = new System.Windows.Forms.Button();
             this.button34 = new System.Windows.Forms.Button();
-            this.button35 = new System.Windows.Forms.Button();
-            this.button36 = new System.Windows.Forms.Button();
             this.button37 = new System.Windows.Forms.Button();
             this.button38 = new System.Windows.Forms.Button();
             this.button39 = new System.Windows.Forms.Button();
+            this.button36 = new System.Windows.Forms.Button();
+            this.button35 = new System.Windows.Forms.Button();
+            this.button40 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -82,7 +83,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button40 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -161,9 +161,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button20, 0, 9);
             this.tableLayoutPanel1.Controls.Add(this.button33, 6, 1);
             this.tableLayoutPanel1.Controls.Add(this.button25, 0, 12);
-            this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
             this.tableLayoutPanel1.Controls.Add(this.button26, 0, 8);
-            this.tableLayoutPanel1.Controls.Add(this.button21, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 5);
             this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
             this.tableLayoutPanel1.Controls.Add(this.button37, 4, 7);
@@ -172,6 +170,8 @@
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button40, 6, 2);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 2, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button22, 2, 9);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -503,9 +503,9 @@
             // button22
             // 
             this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button22.Location = new System.Drawing.Point(3, 243);
+            this.button22.Location = new System.Drawing.Point(243, 363);
             this.button22.Name = "button22";
-            this.button22.Size = new System.Drawing.Size(168, 34);
+            this.button22.Size = new System.Drawing.Size(137, 34);
             this.button22.TabIndex = 24;
             this.button22.Text = "總務未核單-副總";
             this.button22.UseVisualStyleBackColor = true;
@@ -523,9 +523,9 @@
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(3, 283);
+            this.button21.Location = new System.Drawing.Point(243, 403);
             this.button21.Name = "button21";
-            this.button21.Size = new System.Drawing.Size(168, 34);
+            this.button21.Size = new System.Drawing.Size(137, 34);
             this.button21.TabIndex = 23;
             this.button21.Text = "測試UOF總務採購完成";
             this.button21.UseVisualStyleBackColor = true;
@@ -551,26 +551,6 @@
             this.button34.Text = "版費提醒退費";
             this.button34.UseVisualStyleBackColor = true;
             this.button34.Click += new System.EventHandler(this.button34_Click);
-            // 
-            // button35
-            // 
-            this.button35.Location = new System.Drawing.Point(723, 163);
-            this.button35.Name = "button35";
-            this.button35.Size = new System.Drawing.Size(145, 34);
-            this.button35.TabIndex = 34;
-            this.button35.Text = "派車-測試";
-            this.button35.UseVisualStyleBackColor = true;
-            this.button35.Click += new System.EventHandler(this.button35_Click);
-            // 
-            // button36
-            // 
-            this.button36.Location = new System.Drawing.Point(723, 203);
-            this.button36.Name = "button36";
-            this.button36.Size = new System.Drawing.Size(145, 34);
-            this.button36.TabIndex = 35;
-            this.button36.Text = "業務活動通知行銷-測試";
-            this.button36.UseVisualStyleBackColor = true;
-            this.button36.Click += new System.EventHandler(this.button36_Click);
             // 
             // button37
             // 
@@ -601,6 +581,36 @@
             this.button39.Text = "研發每週通知該月樣品";
             this.button39.UseVisualStyleBackColor = true;
             this.button39.Click += new System.EventHandler(this.button39_Click);
+            // 
+            // button36
+            // 
+            this.button36.Location = new System.Drawing.Point(723, 203);
+            this.button36.Name = "button36";
+            this.button36.Size = new System.Drawing.Size(145, 34);
+            this.button36.TabIndex = 35;
+            this.button36.Text = "業務活動通知行銷-測試";
+            this.button36.UseVisualStyleBackColor = true;
+            this.button36.Click += new System.EventHandler(this.button36_Click);
+            // 
+            // button35
+            // 
+            this.button35.Location = new System.Drawing.Point(723, 163);
+            this.button35.Name = "button35";
+            this.button35.Size = new System.Drawing.Size(145, 34);
+            this.button35.TabIndex = 34;
+            this.button35.Text = "派車-測試";
+            this.button35.UseVisualStyleBackColor = true;
+            this.button35.Click += new System.EventHandler(this.button35_Click);
+            // 
+            // button40
+            // 
+            this.button40.Location = new System.Drawing.Point(723, 83);
+            this.button40.Name = "button40";
+            this.button40.Size = new System.Drawing.Size(145, 34);
+            this.button40.TabIndex = 39;
+            this.button40.Text = "溫濕度明細-測試";
+            this.button40.UseVisualStyleBackColor = true;
+            this.button40.Click += new System.EventHandler(this.button40_Click);
             // 
             // tabPage2
             // 
@@ -759,16 +769,6 @@
             // timer3
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
-            // 
-            // button40
-            // 
-            this.button40.Location = new System.Drawing.Point(723, 83);
-            this.button40.Name = "button40";
-            this.button40.Size = new System.Drawing.Size(145, 34);
-            this.button40.TabIndex = 39;
-            this.button40.Text = "溫濕度明細-測試";
-            this.button40.UseVisualStyleBackColor = true;
-            this.button40.Click += new System.EventHandler(this.button40_Click);
             // 
             // FrmMQMAIL
             // 
