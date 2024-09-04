@@ -83,6 +83,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button41 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -170,8 +171,9 @@
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button40, 6, 2);
-            this.tableLayoutPanel1.Controls.Add(this.button21, 2, 10);
-            this.tableLayoutPanel1.Controls.Add(this.button22, 2, 9);
+            this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button41, 6, 11);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -503,9 +505,9 @@
             // button22
             // 
             this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button22.Location = new System.Drawing.Point(243, 363);
+            this.button22.Location = new System.Drawing.Point(723, 363);
             this.button22.Name = "button22";
-            this.button22.Size = new System.Drawing.Size(137, 34);
+            this.button22.Size = new System.Drawing.Size(197, 34);
             this.button22.TabIndex = 24;
             this.button22.Text = "總務未核單-副總";
             this.button22.UseVisualStyleBackColor = true;
@@ -523,9 +525,9 @@
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(243, 403);
+            this.button21.Location = new System.Drawing.Point(723, 403);
             this.button21.Name = "button21";
-            this.button21.Size = new System.Drawing.Size(137, 34);
+            this.button21.Size = new System.Drawing.Size(197, 34);
             this.button21.TabIndex = 23;
             this.button21.Text = "測試UOF總務採購完成";
             this.button21.UseVisualStyleBackColor = true;
@@ -770,6 +772,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
+            // button41
+            // 
+            this.button41.Location = new System.Drawing.Point(723, 443);
+            this.button41.Name = "button41";
+            this.button41.Size = new System.Drawing.Size(197, 34);
+            this.button41.TabIndex = 40;
+            this.button41.Text = "測試UOF總務採購公告";
+            this.button41.UseVisualStyleBackColor = true;
+            this.button41.Click += new System.EventHandler(this.button41_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -852,5 +864,6 @@
         private System.Windows.Forms.Button button38;
         private System.Windows.Forms.Button button39;
         private System.Windows.Forms.Button button40;
+        private System.Windows.Forms.Button button41;
     }
 }
