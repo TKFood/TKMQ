@@ -13788,13 +13788,16 @@ namespace TKMQ
         public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN()
         {
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW();
+            string xmlString = "";
+            string xmlString_UserSet = "";
 
+            //空的UserSet
             // 創建 <UserSet> 標籤
             XElement userSetElement = new XElement("UserSet");
             // 創建 XDocument 並添加 <UserSet>
             XDocument xmlDoc = new XDocument(userSetElement);
-            // 使用 StringWriter 和 XmlTextWriter 將 XmlDocument 轉換為字串
-            string xmlString = "";
+
+            // 使用 StringWriter 和 XmlTextWriter 將 XmlDocument 轉換為字串            
             using (StringWriter stringWriter = new StringWriter())
             {
                 using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
@@ -13808,6 +13811,33 @@ namespace TKMQ
 
                     // 輸出字串
                    // Console.WriteLine(xmlString);
+                }
+            }
+
+
+            //申請人的UserSet
+            // 創建 <UserSet> 標籤
+            XElement userSetElement_UserSet = new XElement("UserSet",
+                new XElement("Element",
+                    new XAttribute("type", "user"),
+                    new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
+                )
+            );
+            // 創建 XDocument 並添加 <UserSet>
+            XDocument xmlDoc_UserSet = new XDocument(userSetElement_UserSet);           
+            using (StringWriter stringWriter = new StringWriter())
+            {
+                using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
+                {
+                    xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
+                    xmlDoc_UserSet.WriteTo(xmlTextWriter);
+                    xmlTextWriter.Flush();
+
+                    // 取得 XML 的字串表示
+                    xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
+
+                    // 輸出字串
+                    // Console.WriteLine(xmlString);
                 }
             }
 
@@ -13847,6 +13877,9 @@ namespace TKMQ
             string IS_STICKY = "";
             string RECOMMEND_NUM = "";
 
+           
+            string ROLE_ID = "BulletinBrowser";
+            string USER_SET = xmlString_UserSet;
             //if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
             //{
             //    BULLETIN_GUID = new Guid().ToString();
@@ -13856,7 +13889,8 @@ namespace TKMQ
             //    }
             //}
 
-            ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER(
+            //新增公告
+            ADD_UOF_TB_EIP_BULLETIN(
              BULLETIN_GUID,
              ANNOUNCER,
              CLASS_GUID,
@@ -13893,6 +13927,14 @@ namespace TKMQ
              IS_STICKY,
              RECOMMEND_NUM
             );
+
+            //新增公告對象=申請人
+            ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
+                RM_ID,
+                ROLE_ID,
+                USER_SET
+                );
+
         }
 
         public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW()
@@ -14010,7 +14052,7 @@ namespace TKMQ
             }
         }
 
-        public void ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER(
+        public void ADD_UOF_TB_EIP_BULLETIN(
             string BULLETIN_GUID,
             string ANNOUNCER,
             string CLASS_GUID,
@@ -14188,6 +14230,72 @@ namespace TKMQ
                         cmd.Parameters.AddWithValue("@IS_STICKY", IS_STICKY);
                         cmd.Parameters.AddWithValue("@RECOMMEND_NUM", RECOMMEND_NUM);
 
+                        // 開啟連接並執行命令
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
+            string RM_ID,
+            string ROLE_ID,
+            string USER_SET            
+            )
+        {
+            try
+            {
+                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
+                //sqlConn = new SqlConnection(connectionString);
+
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sqlConn.Close();
+                sqlConn.Open();
+
+
+                using (SqlConnection conn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    string query = @"
+                                    INSERT INTO  [UOF].[dbo].[TB_EB_SEC_ROLE_MEMBER]
+                                    (
+                                        [RM_ID]
+                                        ,[ROLE_ID]
+                                        ,[USER_SET]
+                                    )
+                                    VALUES
+                                    (
+                                        @RM_ID,
+                                        @ROLE_ID,
+                                        @USER_SET                                       
+                                    )
+                                    ";
+
+                    using (SqlCommand cmd = new SqlCommand(query, conn))
+                    {
+                        // 使用參數化的方式傳遞值
+                        cmd.Parameters.AddWithValue("@RM_ID", RM_ID);
+                        cmd.Parameters.AddWithValue("@ROLE_ID", ROLE_ID);
+                        cmd.Parameters.AddWithValue("@USER_SET", USER_SET);
+                       
                         // 開啟連接並執行命令
                         conn.Open();
                         cmd.ExecuteNonQuery();
