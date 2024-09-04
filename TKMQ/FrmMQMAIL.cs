@@ -13911,10 +13911,14 @@ namespace TKMQ
             }
         }
     
+        public void ADD_UOF_TB_EIP_BULLETIN_TB_EB_SEC_ROLE_MEMBER()
+        {
+
+        }
 
         #endregion
 
-            #region BUTTON
+        #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
             SETPATH();
