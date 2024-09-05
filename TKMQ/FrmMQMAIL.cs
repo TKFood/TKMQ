@@ -13817,10 +13817,11 @@ namespace TKMQ
 
             //申請人的UserSet
             // 創建 <UserSet> 標籤
+            //何翔鈞 192f1ddd-f6ef-4725-81e0-dc15c15a10cf
             XElement userSetElement_UserSet = new XElement("UserSet",
                 new XElement("Element",
                     new XAttribute("type", "user"),
-                    new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
+                    new XElement("userId", "192f1ddd-f6ef-4725-81e0-dc15c15a10cf")
                 )
             );
             // 創建 XDocument 並添加 <UserSet>
