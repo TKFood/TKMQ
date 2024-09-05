@@ -13821,7 +13821,7 @@ namespace TKMQ
             XElement userSetElement_UserSet = new XElement("UserSet",
                 new XElement("Element",
                     new XAttribute("type", "user"),
-                    new XElement("userId", "192f1ddd-f6ef-4725-81e0-dc15c15a10cf")
+                    new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
                 )
             );
             // 創建 XDocument 並添加 <UserSet>
@@ -13843,7 +13843,7 @@ namespace TKMQ
             }
 
             string BULLETIN_GUID = Guid.NewGuid().ToString();
-            string ANNOUNCER = "b6f50a95-17ec-47f2-b842-4ad12512b431";
+            string ANNOUNCER = "192f1ddd-f6ef-4725-81e0-dc15c15a10cf";
             string CLASS_GUID = "2e6d7f89-abcb-426b-afd6-8191fff9a668"; //01.行政類公告
             string TOPIC = "測試公告";
             string CONTEXT = "測試公告";
@@ -13864,7 +13864,7 @@ namespace TKMQ
             string IS_CLONE = "0";
             string OUTER_BULLETION_ID = "";
             string OUTER_CLASS_GUID = "";
-            string ANNOUNCER_DEP = "0a700146-6015-4cc6-8aca-055a45e6a766";
+            string ANNOUNCER_DEP = "1577d8f3-a244-4af7-8ba5-b29c5f92e7d0";
             string OUTER_BULLETION_READER = xmlString;
             string OUTER_BULLETION_ALLOW_PRINT = "0";
             string OUTER_BULLETION_PRINT_USER = xmlString;
