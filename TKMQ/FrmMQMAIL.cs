@@ -311,7 +311,7 @@ namespace TKMQ
 
             try
             {
-
+               
                 //Thread.Sleep(5000);
             }
             catch
@@ -325,6 +325,22 @@ namespace TKMQ
 
             try
             {
+                //針對昨天核單的 總務採購單，給申請人發出公告
+                NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 針對昨天核單的 總務採購單，給申請人發出公告 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //溫濕度明細
                 SENDEMAIL_DAILY_QC_TEMP_CHECK();
                 Thread.Sleep(5000);
             }
@@ -13815,32 +13831,32 @@ namespace TKMQ
             }
 
 
-            //申請人的UserSet
-            // 創建 <UserSet> 標籤
-            //何翔鈞 192f1ddd-f6ef-4725-81e0-dc15c15a10cf
-            XElement userSetElement_UserSet = new XElement("UserSet",
-                new XElement("Element",
-                    new XAttribute("type", "user"),
-                    new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
-                )
-            );
-            // 創建 XDocument 並添加 <UserSet>
-            XDocument xmlDoc_UserSet = new XDocument(userSetElement_UserSet);           
-            using (StringWriter stringWriter = new StringWriter())
-            {
-                using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
-                {
-                    xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
-                    xmlDoc_UserSet.WriteTo(xmlTextWriter);
-                    xmlTextWriter.Flush();
+            ////申請人的UserSet
+            //// 創建 <UserSet> 標籤
+            ////何翔鈞 192f1ddd-f6ef-4725-81e0-dc15c15a10cf
+            //XElement userSetElement_UserSet = new XElement("UserSet",
+            //    new XElement("Element",
+            //        new XAttribute("type", "user"),
+            //        new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
+            //    )
+            //);
+            //// 創建 XDocument 並添加 <UserSet>
+            //XDocument xmlDoc_UserSet = new XDocument(userSetElement_UserSet);
+            //using (StringWriter stringWriter = new StringWriter())
+            //{
+            //    using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
+            //    {
+            //        xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
+            //        xmlDoc_UserSet.WriteTo(xmlTextWriter);
+            //        xmlTextWriter.Flush();
 
-                    // 取得 XML 的字串表示
-                    xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
+            //        // 取得 XML 的字串表示
+            //        xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
 
-                    // 輸出字串
-                    // Console.WriteLine(xmlString);
-                }
-            }
+            //        // 輸出字串
+            //        // Console.WriteLine(xmlString);
+            //    }
+            //}
 
             string BULLETIN_GUID = Guid.NewGuid().ToString();
             string ANNOUNCER = "192f1ddd-f6ef-4725-81e0-dc15c15a10cf";
@@ -13881,60 +13897,140 @@ namespace TKMQ
            
             string ROLE_ID = "BulletinBrowser";
             string USER_SET = xmlString_UserSet;
-            //if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
-            //{
-            //    BULLETIN_GUID = new Guid().ToString();
 
-            //    foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
-            //    {
-            //    }
-            //}
+            if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
+            {
+                BULLETIN_GUID = new Guid().ToString();
 
-            //新增公告
-            ADD_UOF_TB_EIP_BULLETIN(
-             BULLETIN_GUID,
-             ANNOUNCER,
-             CLASS_GUID,
-             TOPIC,
-             CONTEXT,
-             EXPIRE_DATE,
-             RM_ID,
-             FILE_GROUP_ID,
-             CREATE_DATE,
-             MODIFY_USER,
-             MODIFY_DATE,
-             PRINT,
-             PRINT_USER_SET,
-             MARQUEE,
-             SYNCMSG,
-             STATUS,
-             ATTACHMENT,
-             CREATE_USER,
-             PUBLISH_DATE,
-             IS_CLONE,
-             OUTER_BULLETION_ID,
-             OUTER_CLASS_GUID,
-             ANNOUNCER_DEP,
-             OUTER_BULLETION_READER,
-             OUTER_BULLETION_ALLOW_PRINT,
-             OUTER_BULLETION_PRINT_USER,
-             AUTO_PUBLISH_CONTROL,
-             AUTO_PUBLISH_DATE,
-             IS_DELETE_OUTER_BULL,
-             IS_DISPLAY_READER,
-             IS_DISPLAY_OUTER_READER,
-             UPDATE_TASK_ID,
-             IS_READER_IN_INNER,
-             IS_STICKY,
-             RECOMMEND_NUM
-            );
+                foreach (DataRow DR in DTSEARCHUOF_GRAFFAIRS_1005.Rows)
+                {
+                    //申請人的UserSet
+                    // 創建 <UserSet> 標籤                   
+                    XElement userSetElement_UserSet = new XElement("UserSet",
+                        new XElement("Element",
+                            new XAttribute("type", "user"),
+                            new XElement("userId", DR["USER_GUID"].ToString())
+                            //new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
+                        )
+                    );
+                    // 創建 XDocument 並添加 <UserSet>
+                    XDocument xmlDoc_UserSet = new XDocument(userSetElement_UserSet);
+                    using (StringWriter stringWriter = new StringWriter())
+                    {
+                        using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
+                        {
+                            xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
+                            xmlDoc_UserSet.WriteTo(xmlTextWriter);
+                            xmlTextWriter.Flush();
 
-            //新增公告對象=申請人
-            ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
-                RM_ID,
-                ROLE_ID,
-                USER_SET
-                );
+                            // 取得 XML 的字串表示
+                            xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
+
+                            // 輸出字串
+                            // Console.WriteLine(xmlString);
+                        }
+                    }
+
+                    //每筆總務採購單，都發1張公告
+                    BULLETIN_GUID = Guid.NewGuid().ToString();
+                    RM_ID = Guid.NewGuid().ToString();
+                    TOPIC = "請購物品: "+DR["請購物品"].ToString()+" ，已採購";
+                    CONTEXT = "請購物品: " + DR["請購物品"].ToString() + " ，已採購" + ", 總務請購單:" + DR["總務請購單"].ToString() + ", 總務採購單:" + DR["總務採購單"].ToString();
+                    USER_SET = xmlString_UserSet;
+
+                    //新增公告
+                    ADD_UOF_TB_EIP_BULLETIN(
+                     BULLETIN_GUID,
+                     ANNOUNCER,
+                     CLASS_GUID,
+                     TOPIC,
+                     CONTEXT,
+                     EXPIRE_DATE,
+                     RM_ID,
+                     FILE_GROUP_ID,
+                     CREATE_DATE,
+                     MODIFY_USER,
+                     MODIFY_DATE,
+                     PRINT,
+                     PRINT_USER_SET,
+                     MARQUEE,
+                     SYNCMSG,
+                     STATUS,
+                     ATTACHMENT,
+                     CREATE_USER,
+                     PUBLISH_DATE,
+                     IS_CLONE,
+                     OUTER_BULLETION_ID,
+                     OUTER_CLASS_GUID,
+                     ANNOUNCER_DEP,
+                     OUTER_BULLETION_READER,
+                     OUTER_BULLETION_ALLOW_PRINT,
+                     OUTER_BULLETION_PRINT_USER,
+                     AUTO_PUBLISH_CONTROL,
+                     AUTO_PUBLISH_DATE,
+                     IS_DELETE_OUTER_BULL,
+                     IS_DISPLAY_READER,
+                     IS_DISPLAY_OUTER_READER,
+                     UPDATE_TASK_ID,
+                     IS_READER_IN_INNER,
+                     IS_STICKY,
+                     RECOMMEND_NUM
+                    );
+
+                    //新增公告對象=申請人
+                    ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
+                        RM_ID,
+                        ROLE_ID,
+                        USER_SET
+                        );
+                }
+            }
+
+            ////新增公告
+            //ADD_UOF_TB_EIP_BULLETIN(
+            // BULLETIN_GUID,
+            // ANNOUNCER,
+            // CLASS_GUID,
+            // TOPIC,
+            // CONTEXT,
+            // EXPIRE_DATE,
+            // RM_ID,
+            // FILE_GROUP_ID,
+            // CREATE_DATE,
+            // MODIFY_USER,
+            // MODIFY_DATE,
+            // PRINT,
+            // PRINT_USER_SET,
+            // MARQUEE,
+            // SYNCMSG,
+            // STATUS,
+            // ATTACHMENT,
+            // CREATE_USER,
+            // PUBLISH_DATE,
+            // IS_CLONE,
+            // OUTER_BULLETION_ID,
+            // OUTER_CLASS_GUID,
+            // ANNOUNCER_DEP,
+            // OUTER_BULLETION_READER,
+            // OUTER_BULLETION_ALLOW_PRINT,
+            // OUTER_BULLETION_PRINT_USER,
+            // AUTO_PUBLISH_CONTROL,
+            // AUTO_PUBLISH_DATE,
+            // IS_DELETE_OUTER_BULL,
+            // IS_DISPLAY_READER,
+            // IS_DISPLAY_OUTER_READER,
+            // UPDATE_TASK_ID,
+            // IS_READER_IN_INNER,
+            // IS_STICKY,
+            // RECOMMEND_NUM
+            //);
+
+            ////新增公告對象=申請人
+            //ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
+            //    RM_ID,
+            //    ROLE_ID,
+            //    USER_SET
+            //    );
 
         }
 
