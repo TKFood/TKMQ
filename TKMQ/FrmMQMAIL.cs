@@ -11205,6 +11205,7 @@ namespace TKMQ
             DATES = DateTime.Now.ToString("yyyyMMdd");
             DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
             pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
+            //pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".jpg";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -11232,6 +11233,25 @@ namespace TKMQ
             BODY.AppendFormat(Environment.NewLine + "No. 3, Dapumeiyuanqu 5th Rd., Dalin Township, Chiayi County 622 011, Taiwan");
             BODY.AppendFormat(Environment.NewLine + "TEL/ 05-295 6520 #4011    FAX/ 05-295 6519    E-MAIL/ tk660@tkfood.com.tw");
             BODY.AppendFormat(Environment.NewLine + "官網/ www.tkfood.com.tw    FB/ www.facebook.com/tkfood");
+
+            //BODY.AppendFormat("<br /><br />");
+            //BODY.AppendFormat("<img src=\"cid:image001\" alt=\"图片描述\" style=\"width:400px;\" />");
+            //BODY.AppendFormat("<br /><br />Thank you for your attention.");
+
+            //string emailBody = BODY.ToString();
+            //// 创建 HTML 视图
+            //AlternateView htmlView = AlternateView.CreateAlternateViewFromString(emailBody, null, MediaTypeNames.Text.Html);
+
+            //// 使用本地图片路径添加图片附件
+            //string imagePath = pathFile_SALES_MONEYS;  // 本地图片路径
+            //LinkedResource imageResource = new LinkedResource(imagePath, MediaTypeNames.Image.Jpeg);
+            //imageResource.ContentId = "image001";  // 设置 Content-ID
+            //imageResource.TransferEncoding = TransferEncoding.Base64;
+            //htmlView.LinkedResources.Add(imageResource);
+
+            //// 将 HTML 视图添加到邮件
+            //System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            //MyMail.AlternateViews.Add(htmlView);
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -11305,7 +11325,7 @@ namespace TKMQ
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout = 300;
+            table.Connection.CommandTimeout = TIMEOUT_LIMITS;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
@@ -11313,6 +11333,7 @@ namespace TKMQ
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
             // show the export options dialog and do the export
             report1.Export(export, FILENAME);
 
@@ -14679,7 +14700,8 @@ namespace TKMQ
 
         private void button31_Click(object sender, EventArgs e)
         {
-            SETFASTREPORT();
+            //SETFASTREPORT();
+            SENDEMAIL_DAILY_SALES_MONEY();
         }
 
         private void button32_Click(object sender, EventArgs e)
