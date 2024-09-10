@@ -11453,7 +11453,8 @@ namespace TKMQ
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
             DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+            //pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".jpg";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -11472,12 +11473,30 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日-每日溫溼度警報-" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, ");
             BODY.AppendFormat(Environment.NewLine + "檢附每日溫溼度警報，請參考附件，謝謝");
+            BODY.AppendFormat("<br /><br />");
+            BODY.AppendFormat("<img src=\"cid:image001\" alt=\"图片描述\" style=\"width:400px;\" />");
+            BODY.AppendFormat("<br /><br />Thank you for your attention.");
+
+            string emailBody = BODY.ToString();
+            // 创建 HTML 视图
+            AlternateView htmlView = AlternateView.CreateAlternateViewFromString(emailBody, null, MediaTypeNames.Text.Html);
+
+            // 使用本地图片路径添加图片附件
+            string imagePath = pathFile_QC_CHECK;  // 本地图片路径
+            LinkedResource imageResource = new LinkedResource(imagePath, MediaTypeNames.Image.Jpeg);
+            imageResource.ContentId = "image001";  // 设置 Content-ID
+            imageResource.TransferEncoding = TransferEncoding.Base64;
+            htmlView.LinkedResources.Add(imageResource);
+
+            // 将 HTML 视图添加到邮件
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.AlternateViews.Add(htmlView);
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
-            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+           
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
@@ -11552,9 +11571,10 @@ namespace TKMQ
             // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
-            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
             // show the export options dialog and do the export
-            report1.Export(export, FILENAME);
+            report1.Export(ImageExport, FILENAME);
 
         }
 
@@ -14664,7 +14684,8 @@ namespace TKMQ
 
         private void button32_Click(object sender, EventArgs e)
         {
-            SETFASTREPORT_QC_CHECK();
+            //SETFASTREPORT_QC_CHECK();
+            SENDEMAIL_DAILY_QC_CHECK();
         }
         private void button33_Click(object sender, EventArgs e)
         {
