@@ -68,7 +68,6 @@
             this.button39 = new System.Windows.Forms.Button();
             this.button36 = new System.Windows.Forms.Button();
             this.button35 = new System.Windows.Forms.Button();
-            this.button40 = new System.Windows.Forms.Button();
             this.button22 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
@@ -79,6 +78,7 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.button31 = new System.Windows.Forms.Button();
             this.button32 = new System.Windows.Forms.Button();
+            this.button40 = new System.Windows.Forms.Button();
             this.previewControl1 = new FastReport.Preview.PreviewControl();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
@@ -175,7 +175,6 @@
             this.tableLayoutPanel1.Controls.Add(this.button39, 6, 6);
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
-            this.tableLayoutPanel1.Controls.Add(this.button40, 6, 2);
             this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -587,16 +586,6 @@
             this.button35.UseVisualStyleBackColor = true;
             this.button35.Click += new System.EventHandler(this.button35_Click);
             // 
-            // button40
-            // 
-            this.button40.Location = new System.Drawing.Point(723, 83);
-            this.button40.Name = "button40";
-            this.button40.Size = new System.Drawing.Size(145, 34);
-            this.button40.TabIndex = 39;
-            this.button40.Text = "溫濕度明細-測試";
-            this.button40.UseVisualStyleBackColor = true;
-            this.button40.Click += new System.EventHandler(this.button40_Click);
-            // 
             // button22
             // 
             this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
@@ -716,6 +705,7 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 132F));
             this.tableLayoutPanel3.Controls.Add(this.button31, 1, 1);
             this.tableLayoutPanel3.Controls.Add(this.button32, 1, 3);
+            this.tableLayoutPanel3.Controls.Add(this.button40, 1, 4);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -750,6 +740,16 @@
             this.button32.Text = "溫濕度-測試";
             this.button32.UseVisualStyleBackColor = true;
             this.button32.Click += new System.EventHandler(this.button32_Click);
+            // 
+            // button40
+            // 
+            this.button40.Location = new System.Drawing.Point(48, 163);
+            this.button40.Name = "button40";
+            this.button40.Size = new System.Drawing.Size(189, 34);
+            this.button40.TabIndex = 40;
+            this.button40.Text = "溫濕度明細-測試";
+            this.button40.UseVisualStyleBackColor = true;
+            this.button40.Click += new System.EventHandler(this.button40_Click);
             // 
             // previewControl1
             // 
@@ -913,9 +913,9 @@
         private System.Windows.Forms.Button button37;
         private System.Windows.Forms.Button button38;
         private System.Windows.Forms.Button button39;
-        private System.Windows.Forms.Button button40;
         private System.Windows.Forms.TabPage tabPage4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private System.Windows.Forms.Button button41;
+        private System.Windows.Forms.Button button40;
     }
 }
