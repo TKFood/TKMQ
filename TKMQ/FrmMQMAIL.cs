@@ -36,6 +36,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
+using System.Net.Mime;
 
 namespace TKMQ
 {
@@ -13678,17 +13679,37 @@ namespace TKMQ
 
             ds = SERACHMAIL_QC_CHECK();
 
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+
             SUBJEST.Clear();
             BODY.Clear();
             SUBJEST.AppendFormat(@"每日-每日溫溼度明細-" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, ");
             BODY.AppendFormat(Environment.NewLine + "檢附每日溫溼度明細，請參考附件，謝謝");
+            BODY.AppendFormat("<br /><br />");
+            BODY.AppendFormat("<img src=\"cid:image001\" alt=\"图片描述\" style=\"width:400px;\" />");
+            BODY.AppendFormat("<br /><br />Thank you for your attention.");
+
+            string emailBody = BODY.ToString();
+            // 创建 HTML 视图
+            AlternateView htmlView = AlternateView.CreateAlternateViewFromString(emailBody, null, MediaTypeNames.Text.Html);
+
+            // 使用本地图片路径添加图片附件
+            string imagePath = pathFile_QC_TEMP_CHECK;  // 本地图片路径
+            LinkedResource imageResource = new LinkedResource(imagePath, MediaTypeNames.Image.Jpeg);
+            imageResource.ContentId = "image001";  // 设置 Content-ID
+            imageResource.TransferEncoding = TransferEncoding.Base64;
+            htmlView.LinkedResources.Add(imageResource);
+
+            // 将 HTML 视图添加到邮件
+            MyMail.AlternateViews.Add(htmlView);
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
-            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+           
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
