@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report ScriptLanguage="CSharp" ReportInfo.Created="08/29/2024 10:15:02" ReportInfo.Modified="08/29/2024 14:32:57" ReportInfo.CreatorVersion="2016.4.4.0">
+<Report ScriptLanguage="CSharp" ReportInfo.Created="08/29/2024 10:15:02" ReportInfo.Modified="09/10/2024 09:32:41" ReportInfo.CreatorVersion="2016.4.4.0">
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8XFLSiUrWaFM7x3NVrsOr0DBDTlvyuIz7OvrQKeAL8dLKvzKs9Afre5Gut+lAvmgJxax03QSXcGpyyod48uRA2MWvNhpWpVf7gd4ui/Lp0hkjkkn90s4MNmUEo9sr8wXC5Pn8jmSBDkUBFBC1WxPW8FAqRQIFsMmhWigijzzRYz74ERR4tTZuV0AbfBI9D1gJ5dXybqCovmIGmhVAjX7T6I=">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8XFLSiUrWaFM7x3NVrsOr0DBDTlvyuIz7OvrQKeAL8dLKvzKs9Afre5Gut+lAvmgJxax03QSXcGpyyod48uRA2MWvNhpWpVf7gd4ui/Lp0hkjkkn90s4MNmUEo9sr8wXC5Pn8jmSBDkUBFBC1WxPW8FAqRQIFsMmhWigijzzRYz74ERR4tTZuV0AbfBI9D1gJ4pt5dsrn5aETf3YWJUGvkU=">
       <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="--20240828 查溫溼度&#13;&#10;&#13;&#10;SELECT &#13;&#10;[區域],&#13;&#10;DATEPART(YEAR, [日期時間]) AS '年',&#13;&#10;DATEPART(MONTH, [日期時間]) AS '月',&#13;&#10;DATEPART(DAY, [日期時間]) AS '日',&#13;&#10;DATEPART(HOUR, [日期時間]) AS '時',&#13;&#10;AVG(CONVERT(decimal(16,4),[控項_1])) AS '溫度',&#13;&#10;AVG(CONVERT(decimal(16,4),[控項_4])) AS '溼度',&#13;&#10;(CONVERT(NVARCHAR,DATEPART(YEAR, [日期時間])) +CONVERT(NVARCHAR,DATEPART(MONTH, [日期時間]))+CONVERT(NVARCHAR,DATEPART(DAY, [日期時間])) +CONVERT(NVARCHAR,DATEPART(HOUR, [日期時間]) )) AS 'DATETIMES'&#13;&#10;&#13;&#10;FROM [TK_FOOD].[dbo].[log_table]&#13;&#10;LEFT JOIN [TK_FOOD].[dbo].[Machine] ON [Machine].[機台名稱] = [log_table].[機台名稱]&#13;&#10;WHERE [Machine].[機台名稱] IN ( '溫濕度13', '溫濕度14')&#13;&#10;AND CONVERT(NVARCHAR,[日期時間],112)='20240824'&#13;&#10;GROUP BY &#13;&#10;[區域],&#13;&#10;DATEPART(YEAR, [日期時間]), &#13;&#10;DATEPART(MONTH, [日期時間]), &#13;&#10;DATEPART(DAY, [日期時間]), &#13;&#10;DATEPART(HOUR, [日期時間])&#13;&#10;ORDER BY &#13;&#10;[區域],&#13;&#10;DATEPART(HOUR, [日期時間])&#13;&#10;">
         <Column Name="區域" DataType="System.String"/>
         <Column Name="DATETIMES" DataType="System.String"/>
@@ -14,7 +14,7 @@
       </TableDataSource>
     </MsSqlDataConnection>
   </Dictionary>
-  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="210">
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="297" PaperHeight="500">
     <ReportTitleBand Name="ReportTitle1" Width="1047.06" Height="491.4">
       <TextObject Name="Text1" Width="94.5" Height="18.9" Text="溫溼度"/>
       <TextObject Name="Text15" Left="567" Top="472.5" Width="94.5" Height="18.9" Border.Lines="All" Text="溼度" VertAlign="Center"/>

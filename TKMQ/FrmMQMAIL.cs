@@ -13663,7 +13663,8 @@ namespace TKMQ
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
             DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".pdf";
+            //string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".pdf";
+            string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".jpg";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -13791,12 +13792,14 @@ namespace TKMQ
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
 
-            // prepare a report
+            // prepare a report 
             report1.Prepare();
             // create an instance of HTML export filter
-            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+
             // show the export options dialog and do the export
-            report1.Export(export, FILENAME);
+            report1.Export(ImageExport, FILENAME);
 
         }
 
