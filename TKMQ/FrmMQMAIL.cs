@@ -7987,6 +7987,8 @@ namespace TKMQ
 
         public void SEND_LINE(string message)
         {
+            //2025年3月31日結束本服務
+            //LINE向用戶傳送通知的商品服務，建議可改用功能更豐富的Messaging API。
             //string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
             //string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
 
