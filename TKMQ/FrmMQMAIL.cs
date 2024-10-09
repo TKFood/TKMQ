@@ -276,6 +276,8 @@ namespace TKMQ
                 //每日寄送               
                 HRAUTORUN();
 
+                //每日LINE通知
+                ASYNC_HRAUTORUN5();
             }
 
 
@@ -323,6 +325,7 @@ namespace TKMQ
             {
 
             }
+
 
             try
             {
@@ -1212,6 +1215,32 @@ namespace TKMQ
             }
 
         }
+
+        public async void ASYNC_HRAUTORUN5()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                //LINE通知
+                await SEND_LINE_CALL_MESSAGE_API("CHECK");
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"LINE通知  失敗 ||");
+            }
+            finally
+            {
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+        }
+
         public void SETPATH()
         {
 
@@ -5735,7 +5764,7 @@ namespace TKMQ
 
                 SENDEMAILITCHECK(SUBJEST, BODY);
 
-                SEND_LINE(LINE_NOTIFY.ToString());
+                //SEND_LINE(LINE_NOTIFY.ToString());
 
             }
             catch
@@ -7992,7 +8021,7 @@ namespace TKMQ
             //string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
             //string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
 
-            DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='IT'");
+            DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='NOTIFY'");
 
             string token = dt.Rows[0]["TOKEN"].ToString();
 
@@ -8025,7 +8054,97 @@ namespace TKMQ
             }
         }
 
+       
+        public async Task SEND_LINE_CALL_MESSAGE_API(string message)
+        {
+            //2025年3月31日結束本服務
+            //LINE向用戶傳送通知的商品服務，建議可改用功能更豐富的Messaging API。          
 
+            DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='MESSAGEAPI'");
+            string accessToken = dt.Rows[0]["TOKEN"].ToString();
+    
+            //message是CHECK，就檢查網站
+            //message不是CHECK，就傳送訊息
+
+            if (!string.IsNullOrEmpty(message)&&message.Equals("CHECK"))
+            {
+                message = CHECK_DTWEBLINKS();
+            }
+            else
+            {
+                message = message;               
+
+            }
+            // 發送訊息
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                await SendBroadcastMessage(message, accessToken);
+            }
+            
+        }
+
+        public string CHECK_DTWEBLINKS()
+        {
+            DataTable DTWEBLINKS = SEARCHLINKS();
+            string ISCHECK = "Y";
+
+            StringBuilder LINE_NESSAGE = new StringBuilder();
+
+            foreach (DataRow DR in DTWEBLINKS.Rows)
+            {
+                if (CheckUrlVisit(DR["WEBLINKS"].ToString()) != true)
+                {
+                    LINE_NESSAGE.AppendFormat(@"{0}\n此網站不通，請檢查網站狀況\n{1}\n{2}",
+                        DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"),
+                        DR["COMMENTS"].ToString(),
+                        DR["WEBLINKS"].ToString());
+                }
+                else
+                {                    
+                    LINE_NESSAGE.AppendFormat(@"{0}\n此網站正常\n{1}\n{2}",
+                        DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"),
+                        DR["COMMENTS"].ToString(),
+                        DR["WEBLINKS"].ToString());
+
+                }
+
+            }
+
+            return LINE_NESSAGE.ToString();
+        }
+
+        public static async Task SendBroadcastMessage(string message, string accessToken)
+        {
+            // 強制使用 TLS 1.2
+            System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
+
+            string apiUrl = "https://api.line.me/v2/bot/message/broadcast";
+
+            using (HttpClient client = new HttpClient())
+            {
+                // 設定 Authorization header
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+
+                // 建立要傳送的訊息
+                var jsonPayload = $"{{\"messages\":[{{\"type\":\"text\",\"text\":\"{message}\"}}]}}";
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                // 發送 POST 請求到 LINE API
+                HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    //Console.WriteLine("Message sent successfully!");
+                    //MessageBox.Show("successfully");
+                }
+                else
+                {
+                    string result = await response.Content.ReadAsStringAsync();
+                    //Console.WriteLine($"Error: {response.StatusCode}, Details: {result}");
+                    //MessageBox.Show(result.ToString());
+                }
+            }
+        }
 
         public DataTable GetDataFromMSSQL(string sql)
         {
@@ -14641,9 +14760,13 @@ namespace TKMQ
 
 
         }
-        private void button23_Click(object sender, EventArgs e)
+        private async  void button23_Click(object sender, EventArgs e)
         {
-            SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
+            //用notify
+            //2025/3月停止
+            //SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
+
+           
         }
         private void button24_Click(object sender, EventArgs e)
         {
@@ -14764,6 +14887,16 @@ namespace TKMQ
             NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
 
             MessageBox.Show("完成");
+        }
+        private async void button42_Click(object sender, EventArgs e)
+        {
+            //message是CHECK，就檢查網站
+            //message不是CHECK，就傳送訊息
+
+            //await SEND_LINE_CALL_MESSAGE_API("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
+            await SEND_LINE_CALL_MESSAGE_API("CHECK");
+
+            MessageBox.Show("successfully");
         }
         #endregion
 
