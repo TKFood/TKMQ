@@ -15039,15 +15039,16 @@ namespace TKMQ
                             //}
 
                             //申請人=部門主管
-                            if(APPLY_EMAIL.Equals(MANAGERS_EMAIL))
+                            if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
                             {
-                                MyMail.To.Add(MANAGERS_EMAIL); 
+                                MyMail.To.Add(MANAGERS_EMAIL);
                             }
                             else
                             {
-                                MyMail.To.Add(MANAGERS_EMAIL); 
-                                MyMail.To.Add(APPLY_EMAIL); 
+                                MyMail.To.Add(MANAGERS_EMAIL);
+                                MyMail.To.Add(APPLY_EMAIL);
                             }
+
                             MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                             MySMTP.Send(MyMail);
 
@@ -15141,6 +15142,67 @@ namespace TKMQ
             {
                 return null;
             }
+            finally
+            {
+                sqlConn.Close();
+            }
+        }
+
+        public void UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL()
+        {
+            StringBuilder EXE_SQL = new StringBuilder();
+            try
+            {
+                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
+                //sqlConn = new SqlConnection(connectionString);
+
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+                EXE_SQL.Clear();
+
+                EXE_SQL.AppendFormat(@"
+                                      UPDATE  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
+                                      SET [ISEMAIL]='Y'
+                                      WHERE [ISEMAIL]='N'
+                                    ");
+
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = 60;
+                cmd.CommandText = EXE_SQL.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+                    //Console.WriteLine("ADDTOUOFTB_EIP_SCH_MEMO_MOC OK");
+
+                }
+
+            }
+            catch
+            {
+
+            }
+
             finally
             {
                 sqlConn.Close();
@@ -15460,6 +15522,8 @@ namespace TKMQ
             UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
             //寄送通知
             SEND_UOF_Z_UOF_FORMS_COMMENTS();
+            //已寄EAMIL，更新
+            UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
 
             MessageBox.Show("OK");
         }
