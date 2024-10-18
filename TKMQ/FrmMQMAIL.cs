@@ -14621,12 +14621,13 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSql.AppendFormat(@"
-                                    INSERT INTO  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
+                                   INSERT INTO  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
                                     (
                                     [DOC_NBR]
                                     ,[FORM_NAME]
                                     ,[CURRENT_DOC]
                                     ,[START_TIME]
+                                    ,[SIGNER]
                                     ,[COMMENT]
                                     ,[APPLY_USER_GUID]
                                     ,[APPLY_NAME]
@@ -14640,6 +14641,7 @@ namespace TKMQ
                                     TB_WKF_FORM.FORM_NAME AS 'FORM_NAME',
                                     TB_WKF_TASK.CURRENT_DOC,
                                     CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112) AS 'START_TIME' ,
+                                    USER2.NAME+' '+TB_EB_JOB_TITLE.TITLE_NAME AS 'SIGNER',
                                     TB_WKF_TASK_NODE.COMMENT AS 'COMMENT',
                                     TB_EB_USER.USER_GUID AS 'APPLY_USER_GUID',
                                     TB_EB_USER.NAME AS 'APPLY_NAME',
@@ -14654,6 +14656,9 @@ namespace TKMQ
                                     LEFT JOIN [UOF].[dbo].TB_EB_USER ON TB_EB_USER.USER_GUID=TB_WKF_TASK.USER_GUID
                                     LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP ON TB_EB_EMPL_DEP.USER_GUID=TB_EB_USER.USER_GUID AND ORDERS=0
                                     LEFT JOIN [UOF].[dbo].TB_EB_GROUP ON TB_EB_GROUP.GROUP_ID=TB_EB_EMPL_DEP.GROUP_ID
+                                    LEFT JOIN [UOF].[dbo].TB_EB_USER USER2 ON USER2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
+                                    LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP DEP2 ON DEP2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
+                                    LEFT JOIN [UOF].[dbo].TB_EB_JOB_TITLE ON TB_EB_JOB_TITLE.TITLE_ID=DEP2.TITLE_ID
 
                                     WHERE START_TIME>='2024/1/1'
                                     AND ACTUAL_SIGNER IN 
@@ -14910,7 +14915,236 @@ namespace TKMQ
 
         public void SEND_UOF_Z_UOF_FORMS_COMMENTS()
         {
+            DataTable DT_DATAS = new DataTable();
 
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {                
+                DT_DATAS = FIND_Z_UOF_FORMS_COMMENTS_ISEMAIL();
+
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                {
+                    string DOC_NBR = "";
+                    string FORM_NAME = "";
+                    string START_TIME = "";
+                    string SIGNER = "";
+                    string COMMENT = "";
+                    string APPLY_NAME = "";
+                    string APPLY_EMAIL = "";
+                    string MANAGERS_NAME = "";
+                    string MANAGERS_EMAIL = "";
+
+                
+
+                    if (DT_DATAS.Rows.Count > 0)
+                    {
+                        
+                        SUBJEST.Clear();
+                        BODY.Clear();
+
+
+                        //SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                        SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收 " );
+                        //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                        //ERP 採購相關單別、單號未核準的明細
+                        //
+                        BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                            + "<br>" + "系統通知-表單的主管簽核意見-請查收，謝謝"
+                            + " <br>"
+                            );
+                        
+                  
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                        BODY.AppendFormat(@"<table> ");
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">主管</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單名稱</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單編號</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">主管簽核意見</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">簽核時間</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門主管</th>");
+
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        foreach (DataRow DR in DT_DATAS.Rows)
+                        {
+                            DOC_NBR = DR["DOC_NBR"].ToString();
+                            FORM_NAME = DR["FORM_NAME"].ToString();
+                            START_TIME = DR["START_TIME"].ToString();
+                            SIGNER = DR["SIGNER"].ToString();
+                            COMMENT = DR["COMMENT"].ToString();
+                            APPLY_NAME = DR["APPLY_NAME"].ToString();
+                            APPLY_EMAIL = DR["APPLY_EMAIL"].ToString();
+                            MANAGERS_NAME = DR["MANAGERS_NAME"].ToString();
+                            MANAGERS_EMAIL = DR["MANAGERS_EMAIL"].ToString();
+
+                            //MAIL的主旨
+                            SUBJEST.Append(@" 表單: "+ FORM_NAME+"  表單編號: "+ DOC_NBR+ " ，謝謝。" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+
+                            BODY.AppendFormat(@"<tr >");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + SIGNER + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + FORM_NAME + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DOC_NBR + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + COMMENT + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + START_TIME + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + APPLY_NAME + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + MANAGERS_NAME + "</td>");
+
+                            BODY.AppendFormat(@"</tr> ");
+
+
+                        }
+                        BODY.AppendFormat(@"</table> ");
+                    }
+                    else
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                    }
+
+                    try
+                    {
+                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                        string NAME = ConfigurationManager.AppSettings["NAME"];
+                        string PW = ConfigurationManager.AppSettings["PW"];
+
+                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                        MyMail.Subject = SUBJEST.ToString();
+                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                        MyMail.Body = BODY.ToString();
+                        MyMail.IsBodyHtml = true; //是否使用html格式
+
+                        //加上附圖
+                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                        try
+                        {
+                            //foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                            //{
+                            //    MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                            //}
+
+                            //申請人=部門主管
+                            if(APPLY_EMAIL.Equals(MANAGERS_EMAIL))
+                            {
+                                MyMail.To.Add(MANAGERS_EMAIL); 
+                            }
+                            else
+                            {
+                                MyMail.To.Add(MANAGERS_EMAIL); 
+                                MyMail.To.Add(APPLY_EMAIL); 
+                            }
+                            MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MySMTP.Send(MyMail);
+
+                            MyMail.Dispose(); //釋放資源
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //MessageBox.Show("有錯誤");
+
+                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+
+                    }
+                }
+
+
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable FIND_Z_UOF_FORMS_COMMENTS_ISEMAIL()
+        {
+            try
+            {
+                // Decrypt connection string information
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@" 
+                                     SELECT 
+                                    [DOC_NBR]
+                                    ,[FORM_NAME]
+                                    ,[CURRENT_DOC]
+                                    ,[START_TIME]
+                                    ,[SIGNER]
+                                    ,[COMMENT]
+                                    ,[APPLY_USER_GUID]
+                                    ,[APPLY_NAME]
+                                    ,[APPLY_EMAIL]
+                                    ,[APPLY_GROUP_ID]
+                                    ,[APPLY_GROUP_NAME]
+                                    ,[MANAGERS_NAME]
+                                    ,[MANAGERS_EMAIL]
+                                    ,[ISEMAIL]
+                                    FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
+                                    WHERE [ISEMAIL] IN ('N')
+                            ");
+
+                SqlDataAdapter adapter1 = new SqlDataAdapter(sbSql.ToString(), sqlConn);
+                SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "ds1");
+
+                if (ds1 != null && ds1.Tables["ds1"].Rows.Count >= 1)
+                {
+                    return ds1.Tables["ds1"];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                sqlConn.Close();
+            }
         }
 
         #endregion
@@ -15226,6 +15460,8 @@ namespace TKMQ
             UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
             //寄送通知
             SEND_UOF_Z_UOF_FORMS_COMMENTS();
+
+            MessageBox.Show("OK");
         }
 
         #endregion
