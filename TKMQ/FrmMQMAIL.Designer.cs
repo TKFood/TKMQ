@@ -70,9 +70,11 @@
             this.button35 = new System.Windows.Forms.Button();
             this.button22 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
+            this.button43 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
+            this.button42 = new System.Windows.Forms.Button();
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
@@ -86,7 +88,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button42 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -178,6 +179,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button43, 0, 6);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -608,6 +610,17 @@
             this.button21.UseVisualStyleBackColor = true;
             this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
+            // button43
+            // 
+            this.button43.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button43.Location = new System.Drawing.Point(3, 243);
+            this.button43.Name = "button43";
+            this.button43.Size = new System.Drawing.Size(168, 34);
+            this.button43.TabIndex = 94;
+            this.button43.Text = "總經理-簽核意見寄給主管";
+            this.button43.UseVisualStyleBackColor = true;
+            this.button43.Click += new System.EventHandler(this.button43_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -663,6 +676,16 @@
             this.button23.Text = "測試LINE";
             this.button23.UseVisualStyleBackColor = true;
             this.button23.Click += new System.EventHandler(this.button23_Click);
+            // 
+            // button42
+            // 
+            this.button42.Location = new System.Drawing.Point(123, 123);
+            this.button42.Name = "button42";
+            this.button42.Size = new System.Drawing.Size(217, 34);
+            this.button42.TabIndex = 5;
+            this.button42.Text = "測試LINE-資訊-來客WEB";
+            this.button42.UseVisualStyleBackColor = true;
+            this.button42.Click += new System.EventHandler(this.button42_Click);
             // 
             // tabPage3
             // 
@@ -832,16 +855,6 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button42
-            // 
-            this.button42.Location = new System.Drawing.Point(123, 123);
-            this.button42.Name = "button42";
-            this.button42.Size = new System.Drawing.Size(217, 34);
-            this.button42.TabIndex = 5;
-            this.button42.Text = "測試LINE-資訊-來客WEB";
-            this.button42.UseVisualStyleBackColor = true;
-            this.button42.Click += new System.EventHandler(this.button42_Click);
-            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -930,5 +943,6 @@
         private System.Windows.Forms.Button button41;
         private System.Windows.Forms.Button button40;
         private System.Windows.Forms.Button button42;
+        private System.Windows.Forms.Button button43;
     }
 }
