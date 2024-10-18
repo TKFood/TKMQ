@@ -14624,6 +14624,7 @@ namespace TKMQ
                                    INSERT INTO  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
                                     (
                                     [DOC_NBR]
+                                    ,[TASKID]
                                     ,[FORM_NAME]
                                     ,[CURRENT_DOC]
                                     ,[START_TIME]
@@ -14638,6 +14639,7 @@ namespace TKMQ
 
                                     SELECT 
                                     TB_WKF_TASK.DOC_NBR AS 'DOC_NBR',
+                                    TB_WKF_TASK.TASK_ID AS 'TASKID',
                                     TB_WKF_FORM.FORM_NAME AS 'FORM_NAME',
                                     TB_WKF_TASK.CURRENT_DOC,
                                     CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112) AS 'START_TIME' ,
@@ -14663,7 +14665,7 @@ namespace TKMQ
                                     WHERE START_TIME>='2024/1/1'
                                     AND ACTUAL_SIGNER IN 
                                     (
-	                                    SELECT [ACTUAL_SIGNER] FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS_ACTUAL_SIGNER]
+                                    SELECT [ACTUAL_SIGNER] FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS_ACTUAL_SIGNER]
                                     )
                                     AND ISNULL(CONVERT(NVARCHAR(MAX), COMMENT),'')<>''
                                     AND TB_WKF_TASK.DOC_NBR NOT IN 
@@ -14673,7 +14675,7 @@ namespace TKMQ
                                     FROM  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
                                     )
                                     ORDER BY 
-                                    CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
+CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
 
 
                                     ");
@@ -14927,6 +14929,7 @@ namespace TKMQ
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
                     string DOC_NBR = "";
+                    string TASKID = "";
                     string FORM_NAME = "";
                     string START_TIME = "";
                     string SIGNER = "";
@@ -14934,8 +14937,8 @@ namespace TKMQ
                     string APPLY_NAME = "";
                     string APPLY_EMAIL = "";
                     string MANAGERS_NAME = "";
-                    string MANAGERS_EMAIL = "";
-
+                    string MANAGERS_EMAIL = "";                    
+                    string LINK = "";
                 
 
                     if (DT_DATAS.Rows.Count > 0)
@@ -14983,7 +14986,9 @@ namespace TKMQ
                             APPLY_EMAIL = DR["APPLY_EMAIL"].ToString();
                             MANAGERS_NAME = DR["MANAGERS_NAME"].ToString();
                             MANAGERS_EMAIL = DR["MANAGERS_EMAIL"].ToString();
-
+                            TASKID = DR["TASKID"].ToString();
+                            LINK = "https://eip.tkfood.com.tw/UOF/WKF/FormUse/PersonalBox/MyFormList.aspx?item=SignSelf&formNumber="+ DOC_NBR + "&taskId="+ TASKID;
+                            
                             //MAIL的主旨
                             SUBJEST.Append(@" 表單: "+ FORM_NAME+"  表單編號: "+ DOC_NBR+ " ，謝謝。" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
 
@@ -14995,6 +15000,9 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + START_TIME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + APPLY_NAME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + MANAGERS_NAME + "</td>");
+
+                            // 加入超連結
+                            BODY.AppendFormat(@"<a href='{0}'>點我開表單!</a>",LINK);
 
                             BODY.AppendFormat(@"</tr> ");
 
@@ -15038,16 +15046,16 @@ namespace TKMQ
                             //    MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                             //}
 
-                            //申請人=部門主管
-                            if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
-                            {
-                                MyMail.To.Add(MANAGERS_EMAIL);
-                            }
-                            else
-                            {
-                                MyMail.To.Add(MANAGERS_EMAIL);
-                                MyMail.To.Add(APPLY_EMAIL);
-                            }
+                            ////申請人=部門主管
+                            //if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
+                            //{
+                            //    MyMail.To.Add(MANAGERS_EMAIL);
+                            //}
+                            //else
+                            //{
+                            //    MyMail.To.Add(MANAGERS_EMAIL);
+                            //    MyMail.To.Add(APPLY_EMAIL);
+                            //}
 
                             MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                             MySMTP.Send(MyMail);
@@ -15105,6 +15113,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@" 
                                      SELECT 
                                     [DOC_NBR]
+                                    ,[TASKID]
                                     ,[FORM_NAME]
                                     ,[CURRENT_DOC]
                                     ,[START_TIME]
@@ -15523,7 +15532,7 @@ namespace TKMQ
             //寄送通知
             SEND_UOF_Z_UOF_FORMS_COMMENTS();
             //已寄EAMIL，更新
-            UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
+            //UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
 
             MessageBox.Show("OK");
         }
