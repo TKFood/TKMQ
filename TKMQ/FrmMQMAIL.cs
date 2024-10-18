@@ -15000,15 +15000,15 @@ CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + START_TIME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + APPLY_NAME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + MANAGERS_NAME + "</td>");
-
-                            // 加入超連結
-                            BODY.AppendFormat(@"<a href='{0}'>點我開表單!</a>",LINK);
-
+                            
                             BODY.AppendFormat(@"</tr> ");
 
 
                         }
                         BODY.AppendFormat(@"</table> ");
+
+                        // 加入超連結
+                        BODY.AppendFormat(@"<a href='{0}'>點我開表單!</a>", LINK);
                     }
                     else
                     {
