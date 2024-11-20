@@ -282,6 +282,7 @@ namespace TKMQ
 
 
             //採購用-15:00
+            //品保驗收
             if (currentTime3 == targetTime3)
             {
                 //每星期一~星期五寄送
@@ -296,7 +297,7 @@ namespace TKMQ
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                    HRAUTORUN4();
+                    HRAUTORUN5();
                 }
             }
 
@@ -1195,13 +1196,76 @@ namespace TKMQ
 
         }
         /// <summary>
+        /// HRAUTORUN4
         /// 每日提醒用
         /// 採購
         /// </summary>
         public void HRAUTORUN4()
         {
             StringBuilder MSG = new StringBuilder();
+            
+            
+            try
+            {
+                //進貨單，還未核準+品保驗收
+                SENDEMAIL_TK_PUR_QC_CHECK();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"進貨單，還未核準+品保驗收  失敗 ||");
+            }
+            finally
+            {
+            }
 
+            try
+            {
+                //採購今日未傳真
+                SENDEMAIL_TBPURCHECKFAX();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
+            }
+            finally
+            {
+            }
+
+
+            try
+            {
+                //預計採購未到貨
+                SENDEMAIL_PURNOTIN();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"預計採購未到貨  失敗 ||");
+            }
+            finally
+            {
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
+        }
+
+        /// <summary>
+        /// HRAUTORUN5
+        /// 每日提醒用
+        /// 採購
+        /// </summary>
+        public void HRAUTORUN5()
+        {
+            StringBuilder MSG = new StringBuilder();
+           
             try
             {
                 //採購今日未傳真
