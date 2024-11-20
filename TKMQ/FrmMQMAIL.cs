@@ -314,12 +314,36 @@ namespace TKMQ
 
             try
             {
-               
+
                 //Thread.Sleep(5000);
             }
             catch
             {
                 //MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+           
+            try
+            {
+                //總經理簽核意見，轉MAIL給申請者及部門主管
+                //新增總經理簽核意見
+                ADD_TO_UOF_Z_UOF_FORMS_COMMENTS();
+                //更新上層主管
+                UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
+                //寄送通知
+                SEND_UOF_Z_UOF_FORMS_COMMENTS();
+                //已寄EAMIL，更新
+                UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 總經理簽核意見，轉MAIL給申請者及部門主管 失敗 ||");
             }
             finally
             {
@@ -14675,7 +14699,7 @@ namespace TKMQ
                                     FROM  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
                                     )
                                     ORDER BY 
-CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
+                                    CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
 
 
                                     ");
@@ -15217,6 +15241,356 @@ CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
                 sqlConn.Close();
             }
         }
+        public void SENDEMAIL_TK_PUR_QC_CHECK()
+        {
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_DATAS = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_PUR_QC_CHECK();
+                DT_DATAS = SERACH_TK_PUR_QC_CHECK();
+
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                {
+                    SUBJEST.Clear();
+                    BODY.Clear();
+
+
+                    SUBJEST.AppendFormat(@"系統通知-請查收-每日-進貨未核準及待品保驗收的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                    //ERP 採購相關單別、單號未核準的明細
+                    //
+                    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                        + "<br>" + "系統通知-請查收-每日-進貨未核準及待品保驗收的明細，謝謝"
+                        + " <br>"
+                        );
+
+
+
+
+
+                    if (DT_DATAS.Rows.Count > 0)
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                        BODY.AppendFormat(@"<table> ");
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">類別</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單號碼</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF停留時間(未核小時)</th>");
+
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        foreach (DataRow DR in DT_DATAS.Rows)
+                        {
+
+                            BODY.AppendFormat(@"<tr >");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["類別"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單號"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF表單號碼"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF停留時間(未核小時)"].ToString() + "</td>");
+
+                            BODY.AppendFormat(@"</tr> ");
+
+
+                        }
+                        BODY.AppendFormat(@"</table> ");
+                    }
+                    else
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                    }
+
+                    try
+                    {
+                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                        string NAME = ConfigurationManager.AppSettings["NAME"];
+                        string PW = ConfigurationManager.AppSettings["PW"];
+
+                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                        MyMail.Subject = SUBJEST.ToString();
+                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                        MyMail.Body = BODY.ToString();
+                        MyMail.IsBodyHtml = true; //是否使用html格式
+
+                        //加上附圖
+                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                        try
+                        {
+                            foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                            {
+                                MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                            }
+
+                            //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MySMTP.Send(MyMail);
+
+                            MyMail.Dispose(); //釋放資源
+
+                        }
+                        catch (Exception ex)
+                        {
+                            //MessageBox.Show("有錯誤");
+
+                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
+                    }
+                    catch
+                    {
+
+                    }
+                    finally
+                    {
+
+                    }
+                }
+
+
+
+            }
+            catch
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_TK_PUR_QC_CHECK()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"                                      
+                                  --20241120  查進貨+未驗收單
+
+                                    WITH TEMP AS (
+                                    SELECT 
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
+                                        [BEGIN_TIME],
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        WHERE[FORM_NAME] = 'PURA0.進貨-進貨品質驗收單'
+                                        AND TASK_STATUS = '1'
+
+
+                                    UNION ALL
+                                    SELECT
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
+                                        [BEGIN_TIME],
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        WHERE[FORM_NAME] = 'PURMOCA2.進貨-託外進貨品質驗收單'
+                                        AND TASK_STATUS = '1'
+
+                                    UNION ALL
+                                    SELECT
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
+                                        [BEGIN_TIME],
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        WHERE[FORM_NAME] = 'PURA1.客供進貨-進貨品質驗收單'
+                                        AND TASK_STATUS = '1')
+
+
+
+
+                                    SELECT '進貨單' AS 類別, TG001 AS '單別' ,TG002 AS '單號', MA002 AS '廠商',TH001_FieldValue,TH002_FieldValue,DOC_NBR AS 'UOF表單號碼', BEGIN_TIME,(DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'UOF停留時間(未核小時)'
+                                      FROM[192.168.1.105].[TK].dbo.PURMA,[192.168.1.105].[TK].dbo.PURTG
+                                      LEFT JOIN TEMP ON TH001_FieldValue = TG001 AND TH002_FieldValue = TG002
+                                      WHERE TG005 = MA001
+                                      AND TG013 IN('N')
+                                      AND TG001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+  
+
+                                      UNION ALL
+                                      SELECT '託外進貨單' AS KINDS, TH001, TH002, MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
+                                      FROM[192.168.1.105].[TK].dbo.PURMA,[192.168.1.105].[TK].dbo.MOCTH
+                                      LEFT JOIN TEMP ON TH001_FieldValue = TH001 AND TH002_FieldValue = TH002
+                                      WHERE TH005 = MA001
+                                      AND TH023 IN('N')
+                                      AND TH001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+  
+
+                                      UNION ALL
+                                      SELECT '客供入料單' AS KINDS, TA001, TA002, ''MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
+                                      FROM[192.168.1.105].[TK].dbo.INVTA
+                                      LEFT JOIN TEMP ON TH001_FieldValue = TA001 AND TH002_FieldValue = TA002
+                                      WHERE TA006 IN('N')
+                                      AND TA001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+  
+
+                                      ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_MAIL_TK_PUR_QC_CHECK()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='PUR_QC_CHECK'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
 
         #endregion
 
@@ -15532,11 +15906,18 @@ CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
             //寄送通知
             SEND_UOF_Z_UOF_FORMS_COMMENTS();
             //已寄EAMIL，更新
-            //UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
+            UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
 
             MessageBox.Show("OK");
         }
 
+        private void button44_Click(object sender, EventArgs e)
+        {
+            //進貨單，還未核準+品保驗收
+            SENDEMAIL_TK_PUR_QC_CHECK();
+
+            MessageBox.Show("OK");
+        }
         #endregion
 
 

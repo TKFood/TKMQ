@@ -88,6 +88,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button44 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -180,6 +181,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
             this.tableLayoutPanel1.Controls.Add(this.button43, 0, 6);
+            this.tableLayoutPanel1.Controls.Add(this.button44, 4, 10);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -855,6 +857,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
+            // button44
+            // 
+            this.button44.Location = new System.Drawing.Point(540, 403);
+            this.button44.Name = "button44";
+            this.button44.Size = new System.Drawing.Size(145, 34);
+            this.button44.TabIndex = 95;
+            this.button44.Text = "進貨單還未核準+品保驗收";
+            this.button44.UseVisualStyleBackColor = true;
+            this.button44.Click += new System.EventHandler(this.button44_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -944,5 +956,6 @@
         private System.Windows.Forms.Button button40;
         private System.Windows.Forms.Button button42;
         private System.Windows.Forms.Button button43;
+        private System.Windows.Forms.Button button44;
     }
 }
