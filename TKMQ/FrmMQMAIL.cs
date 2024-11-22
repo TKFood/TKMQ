@@ -9844,12 +9844,14 @@ namespace TKMQ
                                     ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
                                     FROM [TK].dbo.INVMB
                                     WHERE 1=1
-                                    AND MB001 LIKE '4%'
+                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
+
                                     AND MB002 NOT LIKE '%試吃%'
                                     AND CREATE_DATE>='{0}'
                                     ) AS TEMP
                                     ) AS TEMP2
-                                    ORDER BY (SUMTH037+SUMTB031) DESC
+                                    WHERE 1=1
+                                    ORDER BY 品號 DESC
 
 
 
@@ -10036,13 +10038,14 @@ namespace TKMQ
                                     ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
                                     FROM [TK].dbo.INVMB
                                     WHERE 1=1
-                                    AND MB001 LIKE '4%'
+                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
                                     AND MB002 NOT LIKE '%試吃%'
                                     AND ISNULL(MB002,'')<>''
                                     AND CREATE_DATE>='{0}'
                                     ) AS TEMP
                                     ) AS TEMP2
-                                    ORDER BY (SUMTH037+SUMTB031) DESC
+                                    WHERE 1=1
+                                    ORDER BY 品號 DESC
                                     ", firstDay.ToString("yyyyMMdd"), lastDay.ToString("yyyyMMdd"));
 
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
