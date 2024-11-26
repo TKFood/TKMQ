@@ -853,6 +853,8 @@ namespace TKMQ
             //系統通知-每日批號檢查表         
             try
             {
+                SETPATH();
+                SETFILELOTCHECK();
                 SERACHMAILLOTCHECK();
                 SUBJEST.Clear();
                 BODY.Clear();
