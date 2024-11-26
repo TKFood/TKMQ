@@ -337,6 +337,8 @@ namespace TKMQ
                 UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
                 //寄送通知
                 SEND_UOF_Z_UOF_FORMS_COMMENTS();
+
+                Thread.Sleep(5000);
                 //已寄EAMIL，更新
                 UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
 
@@ -15137,16 +15139,16 @@ namespace TKMQ
                             //    MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                             //}
 
-                            ////申請人=部門主管
-                            //if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
-                            //{
-                            //    MyMail.To.Add(MANAGERS_EMAIL);
-                            //}
-                            //else
-                            //{
-                            //    MyMail.To.Add(MANAGERS_EMAIL);
-                            //    MyMail.To.Add(APPLY_EMAIL);
-                            //}
+                            //申請人=部門主管
+                            if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
+                            {
+                                MyMail.To.Add(MANAGERS_EMAIL);
+                            }
+                            else
+                            {
+                                MyMail.To.Add(MANAGERS_EMAIL);
+                                MyMail.To.Add(APPLY_EMAIL);
+                            }
 
                             MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                             MySMTP.Send(MyMail);
