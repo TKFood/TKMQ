@@ -337,8 +337,7 @@ namespace TKMQ
                 UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
                 //寄送通知
                 SEND_UOF_Z_UOF_FORMS_COMMENTS();
-
-                Thread.Sleep(5000);
+               
                 //已寄EAMIL，更新
                 UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
 
