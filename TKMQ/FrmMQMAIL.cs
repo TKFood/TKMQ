@@ -12293,7 +12293,20 @@ namespace TKMQ
             // 获取指定月份的第一天和最后一天
             for (int MONTHSCOUNT = 0; MONTHSCOUNT <= 1; MONTHSCOUNT++)
             {
-                DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month + MONTHSCOUNT, 1);
+                DateTime firstDayOfMonth1 = new DateTime();
+
+                //月份超過12，要改成下年度
+                if (DateTime.Now.Month + MONTHSCOUNT <= 12)
+                {
+                    firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month + MONTHSCOUNT, 1);
+                }
+                else
+                {
+                    int newMonth = (DateTime.Now.Month + MONTHSCOUNT) % 12;
+                    int additionalYears = (DateTime.Now.Month + MONTHSCOUNT - 1) / 12;
+                    firstDayOfMonth1 = new DateTime(DateTime.Now.Year + additionalYears, newMonth == 0 ? 12 : newMonth, 1);
+                }
+                //DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month + MONTHSCOUNT, 1);
                 DateTime lastDayOfMonth1 = firstDayOfMonth1.AddMonths(1).AddDays(-1);
 
                 //第1個月
