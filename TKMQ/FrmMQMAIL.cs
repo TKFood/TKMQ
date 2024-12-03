@@ -3130,6 +3130,7 @@ namespace TKMQ
                                     AND  TA007 IN ('Y','N')
                                     AND  TB039='N'
                                     AND  TB025 NOT IN ('V')
+                                    AND TB009>0
                                     AND  TA003<='{0}'
                                     ORDER BY MA002,TB011
                                     ", SEARCHDATE.ToString("yyyyMMdd"));
