@@ -15515,7 +15515,7 @@ namespace TKMQ
                                         [FORM_NAME],
                                         [DOC_NBR],
                                         [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
                                         [BEGIN_TIME],
                                         TASK_ID,
                                         TASK_STATUS,
