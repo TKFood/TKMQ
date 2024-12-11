@@ -326,8 +326,22 @@ namespace TKMQ
             {
 
             }
+            
+            try
+            {
+                //查離職人員的未結案表單
+                SENDEMAIL_TK_IT_CHECK_FORMS();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 查離職人員的未結案表單 失敗 ||");
+            }
+            finally
+            {
 
-           
+            }
+
             try
             {
                 //總經理簽核意見，轉MAIL給申請者及部門主管
