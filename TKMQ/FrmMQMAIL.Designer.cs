@@ -71,6 +71,7 @@
             this.button22 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
             this.button43 = new System.Windows.Forms.Button();
+            this.button44 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -88,7 +89,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button44 = new System.Windows.Forms.Button();
+            this.button45 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -165,12 +166,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button30, 6, 0);
             this.tableLayoutPanel1.Controls.Add(this.button29, 2, 2);
             this.tableLayoutPanel1.Controls.Add(this.button13, 3, 7);
-            this.tableLayoutPanel1.Controls.Add(this.button18, 0, 11);
-            this.tableLayoutPanel1.Controls.Add(this.button19, 0, 10);
-            this.tableLayoutPanel1.Controls.Add(this.button20, 0, 9);
             this.tableLayoutPanel1.Controls.Add(this.button33, 6, 1);
-            this.tableLayoutPanel1.Controls.Add(this.button25, 0, 12);
-            this.tableLayoutPanel1.Controls.Add(this.button26, 0, 8);
             this.tableLayoutPanel1.Controls.Add(this.button17, 0, 5);
             this.tableLayoutPanel1.Controls.Add(this.button34, 4, 6);
             this.tableLayoutPanel1.Controls.Add(this.button37, 4, 7);
@@ -180,8 +176,14 @@
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
             this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
-            this.tableLayoutPanel1.Controls.Add(this.button43, 0, 6);
             this.tableLayoutPanel1.Controls.Add(this.button44, 4, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button25, 0, 13);
+            this.tableLayoutPanel1.Controls.Add(this.button18, 0, 12);
+            this.tableLayoutPanel1.Controls.Add(this.button19, 0, 11);
+            this.tableLayoutPanel1.Controls.Add(this.button20, 0, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button26, 0, 9);
+            this.tableLayoutPanel1.Controls.Add(this.button43, 0, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button45, 0, 8);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -461,7 +463,7 @@
             // 
             // button18
             // 
-            this.button18.Location = new System.Drawing.Point(3, 443);
+            this.button18.Location = new System.Drawing.Point(3, 483);
             this.button18.Name = "button18";
             this.button18.Size = new System.Drawing.Size(168, 34);
             this.button18.TabIndex = 20;
@@ -471,7 +473,7 @@
             // 
             // button19
             // 
-            this.button19.Location = new System.Drawing.Point(3, 403);
+            this.button19.Location = new System.Drawing.Point(3, 443);
             this.button19.Name = "button19";
             this.button19.Size = new System.Drawing.Size(168, 34);
             this.button19.TabIndex = 21;
@@ -482,7 +484,7 @@
             // button20
             // 
             this.button20.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button20.Location = new System.Drawing.Point(3, 363);
+            this.button20.Location = new System.Drawing.Point(3, 403);
             this.button20.Name = "button20";
             this.button20.Size = new System.Drawing.Size(168, 34);
             this.button20.TabIndex = 22;
@@ -502,7 +504,7 @@
             // 
             // button25
             // 
-            this.button25.Location = new System.Drawing.Point(3, 483);
+            this.button25.Location = new System.Drawing.Point(3, 523);
             this.button25.Name = "button25";
             this.button25.Size = new System.Drawing.Size(168, 34);
             this.button25.TabIndex = 26;
@@ -512,7 +514,7 @@
             // 
             // button26
             // 
-            this.button26.Location = new System.Drawing.Point(3, 323);
+            this.button26.Location = new System.Drawing.Point(3, 363);
             this.button26.Name = "button26";
             this.button26.Size = new System.Drawing.Size(168, 34);
             this.button26.TabIndex = 27;
@@ -615,13 +617,23 @@
             // button43
             // 
             this.button43.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button43.Location = new System.Drawing.Point(3, 243);
+            this.button43.Location = new System.Drawing.Point(3, 283);
             this.button43.Name = "button43";
             this.button43.Size = new System.Drawing.Size(168, 34);
             this.button43.TabIndex = 94;
             this.button43.Text = "總經理-簽核意見寄給主管";
             this.button43.UseVisualStyleBackColor = true;
             this.button43.Click += new System.EventHandler(this.button43_Click);
+            // 
+            // button44
+            // 
+            this.button44.Location = new System.Drawing.Point(540, 403);
+            this.button44.Name = "button44";
+            this.button44.Size = new System.Drawing.Size(145, 34);
+            this.button44.TabIndex = 95;
+            this.button44.Text = "進貨單還未核準+品保驗收";
+            this.button44.UseVisualStyleBackColor = true;
+            this.button44.Click += new System.EventHandler(this.button44_Click);
             // 
             // tabPage2
             // 
@@ -857,15 +869,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button44
+            // button45
             // 
-            this.button44.Location = new System.Drawing.Point(540, 403);
-            this.button44.Name = "button44";
-            this.button44.Size = new System.Drawing.Size(145, 34);
-            this.button44.TabIndex = 95;
-            this.button44.Text = "進貨單還未核準+品保驗收";
-            this.button44.UseVisualStyleBackColor = true;
-            this.button44.Click += new System.EventHandler(this.button44_Click);
+            this.button45.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button45.Location = new System.Drawing.Point(3, 323);
+            this.button45.Name = "button45";
+            this.button45.Size = new System.Drawing.Size(168, 34);
+            this.button45.TabIndex = 96;
+            this.button45.Text = "查離職人員的未結案表單";
+            this.button45.UseVisualStyleBackColor = true;
+            this.button45.Click += new System.EventHandler(this.button45_Click);
             // 
             // FrmMQMAIL
             // 
@@ -957,5 +970,6 @@
         private System.Windows.Forms.Button button42;
         private System.Windows.Forms.Button button43;
         private System.Windows.Forms.Button button44;
+        private System.Windows.Forms.Button button45;
     }
 }
