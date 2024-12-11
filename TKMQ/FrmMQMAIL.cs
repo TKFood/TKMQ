@@ -15719,7 +15719,8 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">員工</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF單號</th>");
-                        
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單日期</th>");
+
 
 
                         BODY.AppendFormat(@"</tr> ");
@@ -15732,6 +15733,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["員工"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF表單"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF單號"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF表單日期"].ToString() + "</td>");
 
                             BODY.AppendFormat(@"</tr> ");
 
@@ -15850,6 +15852,8 @@ namespace TKMQ
                                     ,NAME AS '員工'
                                     ,TB_WKF_FORM.FORM_NAME AS 'UOF表單'
                                     ,TB_WKF_TASK.DOC_NBR AS 'UOF單號'
+                                    ,CONVERT(NVARCHAR,TB_WKF_TASK.BEGIN_TIME,112) AS 'UOF表單日期'
+
                                     FROM [UOF].dbo.TB_EB_USER
                                     LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE ON ORIGINAL_SIGNER=USER_GUID
                                     LEFT JOIN [UOF].[dbo].TB_WKF_TASK  WITH(NOLOCK) ON TB_WKF_TASK.TASK_ID=TB_WKF_TASK_NODE.TASK_ID AND TASK_STATUS NOT  IN ('2')
