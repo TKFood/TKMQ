@@ -9841,8 +9841,8 @@ namespace TKMQ
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '總成本'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '總毛利'
                                     ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '毛利率'
-                                    ,MB047 AS '標準售價'
-                                    ,MB050 AS '最近進價'
+                                    ,CONVERT(INT,MB047) AS '標準售價'
+                                    ,CONVERT(INT,MB050) AS '最近進價'
 
                                     FROM 
                                     (
@@ -10041,8 +10041,8 @@ namespace TKMQ
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '總成本'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '總毛利'
                                     ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '毛利率'
-                                    ,MB047 AS '標準售價'
-                                    ,MB050 AS '最近進價'
+                                    ,CONVERT(INT,MB047) AS '標準售價'
+                                    ,CONVERT(INT,MB050) AS '最近進價'
 
                                     FROM 
                                     (
