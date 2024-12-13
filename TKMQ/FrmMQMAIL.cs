@@ -303,7 +303,7 @@ namespace TKMQ
                     HRAUTORUN5();
                 }
             }
-
+            //採購用-18:00
             //targetTime5 = "18:00";
             if (currentTime5 == targetTime5)
             {
