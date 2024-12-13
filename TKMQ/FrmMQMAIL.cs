@@ -246,6 +246,9 @@ namespace TKMQ
             string targetTime4 = "17:00";
             string currentTime4 = DateTime.Now.ToString("HH:mm");
 
+            string targetTime5 = "18:00";
+            string currentTime5 = DateTime.Now.ToString("HH:mm");
+
             label1.Text = "每日執行時間為: " + targetTime2;
             label2.Text = DateTime.Now.ToString();
 
@@ -301,7 +304,21 @@ namespace TKMQ
                 }
             }
 
+            //targetTime5 = "18:00";
+            if (currentTime5 == targetTime5)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN6();
+                }
+
+
+            }
+
         }
+
+
         /// <summary>
         ///  //每日寄送
         /// </summary>
@@ -1282,23 +1299,7 @@ namespace TKMQ
         public void HRAUTORUN5()
         {
             StringBuilder MSG = new StringBuilder();
-           
-            try
-            {
-                //採購今日未傳真
-                SENDEMAIL_TBPURCHECKFAX();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
-            }
-            finally
-            {
-            }
-
-
+                    
             try
             {
                 //預計採購未到貨
@@ -1321,6 +1322,35 @@ namespace TKMQ
 
         }
 
+        /// <summary>
+        /// HRAUTORUN6
+        /// 18:00
+        /// 每日提醒用
+        /// 採購
+        /// </summary>
+        public void HRAUTORUN6()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                //採購今日未傳真
+                SENDEMAIL_TBPURCHECKFAX();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
+            }
+            finally
+            {
+            }
+
+            
+        }
+
+        //ASYNC_HRAUTORUN5
         public async void ASYNC_HRAUTORUN5()
         {
             StringBuilder MSG = new StringBuilder();
