@@ -285,6 +285,7 @@ namespace TKMQ
 
 
             //採購用-15:00
+            //currentTime3=15:00
             //品保驗收
             if (currentTime3 == targetTime3)
             {
@@ -294,7 +295,9 @@ namespace TKMQ
                     HRAUTORUN4();
                 }
             }
+
             //採購用-17:00
+            //currentTime4=17:00
             if (currentTime4 == targetTime4)
             {
                 //每星期一~星期五寄送
@@ -303,6 +306,7 @@ namespace TKMQ
                     HRAUTORUN5();
                 }
             }
+
             //採購用-18:00
             //targetTime5 = "18:00";
             if (currentTime5 == targetTime5)
