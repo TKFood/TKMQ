@@ -1149,6 +1149,7 @@ namespace TKMQ
         }
         /// <summary>
         /// //每星期一寄送
+        /// 08:50
         /// </summary>
         public void HRAUTORUN_targetTime2()
         {
@@ -1220,6 +1221,7 @@ namespace TKMQ
         }
         /// <summary>
         /// //每星期一~星期五寄送
+        /// 一般用08:30
         /// </summary>
         public void HRAUTORUN_currentTime1()
         {
@@ -1264,6 +1266,7 @@ namespace TKMQ
         }
         /// <summary>
         /// HRAUTORUN_currentTime3
+        /// 15:00
         /// 每日提醒用
         /// 採購
         /// </summary>
@@ -1339,6 +1342,7 @@ namespace TKMQ
 
         /// <summary>
         /// HRAUTORUN_currentTime4
+        /// 17:00
         /// 每日提醒用
         /// 採購
         /// </summary>
