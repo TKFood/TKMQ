@@ -240,6 +240,12 @@ namespace TKMQ
             string targetTime2 = "08:50";
             string currentTime2 = DateTime.Now.ToString("HH:mm");
 
+            string targetTime6 = "11:00";
+            string currentTime6 = DateTime.Now.ToString("HH:mm");
+
+            string targetTime7 = "14:00";
+            string currentTime7 = DateTime.Now.ToString("HH:mm");
+
             string targetTime3 = "15:00";
             string currentTime3 = DateTime.Now.ToString("HH:mm");
 
@@ -256,24 +262,27 @@ namespace TKMQ
             //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
             //string date = "1";
 
+            //targetTime1
             //一般用08:30
             if (currentTime1 == targetTime1)
             {
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                    HRAUTORUN3();
+                    HRAUTORUN_currentTime1();
                 }
 
 
             }
+
+            //targetTime2
             //一般用08:50
             if (currentTime2 == targetTime2)
             {
                 //每星期一寄送
                 if (now.DayOfWeek == DayOfWeek.Monday)
                 {
-                    HRAUTORUN2();
+                    HRAUTORUN_targetTime2();
                 }
 
                 //每日寄送               
@@ -292,7 +301,7 @@ namespace TKMQ
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                    HRAUTORUN4();
+                    HRAUTORUN_currentTime3();
                 }
             }
 
@@ -303,7 +312,7 @@ namespace TKMQ
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                    HRAUTORUN5();
+                    HRAUTORUN_currentTime4();
                 }
             }
 
@@ -314,10 +323,30 @@ namespace TKMQ
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
                 {
-                    HRAUTORUN6();
+                    HRAUTORUN_currentTime5();
                 }
+            }
 
+            //採購用-11:00
+            //targetTime6 = "11:00";
+            if (currentTime6 == targetTime6)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN_targetTime6();
+                }
+            }
 
+            //採購用-14:00
+            //targetTime7 = "14:00";
+            if (currentTime7 == targetTime7)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN_currentTime7();
+                }
             }
 
         }
@@ -1121,7 +1150,7 @@ namespace TKMQ
         /// <summary>
         /// //每星期一寄送
         /// </summary>
-        public void HRAUTORUN2()
+        public void HRAUTORUN_targetTime2()
         {
             StringBuilder MSG = new StringBuilder();
 
@@ -1192,7 +1221,7 @@ namespace TKMQ
         /// <summary>
         /// //每星期一~星期五寄送
         /// </summary>
-        public void HRAUTORUN3()
+        public void HRAUTORUN_currentTime1()
         {
             StringBuilder MSG = new StringBuilder();
 
@@ -1234,15 +1263,28 @@ namespace TKMQ
 
         }
         /// <summary>
-        /// HRAUTORUN4
+        /// HRAUTORUN_currentTime3
         /// 每日提醒用
         /// 採購
         /// </summary>
-        public void HRAUTORUN4()
+        public void HRAUTORUN_currentTime3()
         {
             StringBuilder MSG = new StringBuilder();
-            
-            
+
+            try
+            {
+                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」  失敗 ||");
+            }
+            finally
+            {
+            }
+
             try
             {
                 //進貨單，還未核準+品保驗收
@@ -1296,14 +1338,27 @@ namespace TKMQ
         }
 
         /// <summary>
-        /// HRAUTORUN5
+        /// HRAUTORUN_currentTime4
         /// 每日提醒用
         /// 採購
         /// </summary>
-        public void HRAUTORUN5()
+        public void HRAUTORUN_currentTime4()
         {
             StringBuilder MSG = new StringBuilder();
-                    
+
+            try
+            {
+                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」  失敗 ||");
+            }
+            finally
+            {
+            }
             try
             {
                 //預計採購未到貨
@@ -1327,12 +1382,12 @@ namespace TKMQ
         }
 
         /// <summary>
-        /// HRAUTORUN6
+        /// HRAUTORUN_currentTime5
         /// 18:00
         /// 每日提醒用
         /// 採購
         /// </summary>
-        public void HRAUTORUN6()
+        public void HRAUTORUN_currentTime5()
         {
             StringBuilder MSG = new StringBuilder();
 
@@ -1352,6 +1407,63 @@ namespace TKMQ
             }
 
             
+        }
+
+        /// <summary>
+        /// HRAUTORUN_targetTime6
+        /// 11:00
+        /// 每日提醒用
+        /// 採購
+        /// </summary>
+        public void HRAUTORUN_targetTime6()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」失敗 ||");
+            }
+            finally
+            {
+            }
+
+
+        }
+
+        /// <summary>
+        /// HRAUTORUN_currentTime7
+        /// 14:00
+        /// 每日提醒用
+        /// 採購
+        /// </summary>
+        public void HRAUTORUN_currentTime7()
+        {
+            StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」失敗 ||");
+            }
+            finally
+            {
+            }
+
+
         }
 
         //ASYNC_HRAUTORUN5
