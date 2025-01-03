@@ -73,6 +73,7 @@
             this.button26 = new System.Windows.Forms.Button();
             this.button43 = new System.Windows.Forms.Button();
             this.button45 = new System.Windows.Forms.Button();
+            this.button46 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -90,7 +91,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button46 = new System.Windows.Forms.Button();
+            this.button47 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -186,6 +187,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button43, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button45, 0, 8);
             this.tableLayoutPanel1.Controls.Add(this.button46, 4, 11);
+            this.tableLayoutPanel1.Controls.Add(this.button47, 6, 7);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -648,6 +650,16 @@
             this.button45.UseVisualStyleBackColor = true;
             this.button45.Click += new System.EventHandler(this.button45_Click);
             // 
+            // button46
+            // 
+            this.button46.Location = new System.Drawing.Point(540, 443);
+            this.button46.Name = "button46";
+            this.button46.Size = new System.Drawing.Size(145, 34);
+            this.button46.TabIndex = 97;
+            this.button46.Text = "當日UOF簽核的「採購單」";
+            this.button46.UseVisualStyleBackColor = true;
+            this.button46.Click += new System.EventHandler(this.button46_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -882,15 +894,15 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button46
+            // button47
             // 
-            this.button46.Location = new System.Drawing.Point(540, 443);
-            this.button46.Name = "button46";
-            this.button46.Size = new System.Drawing.Size(145, 34);
-            this.button46.TabIndex = 97;
-            this.button46.Text = "當日UOF簽核的「採購單」";
-            this.button46.UseVisualStyleBackColor = true;
-            this.button46.Click += new System.EventHandler(this.button46_Click);
+            this.button47.Location = new System.Drawing.Point(723, 283);
+            this.button47.Name = "button47";
+            this.button47.Size = new System.Drawing.Size(197, 34);
+            this.button47.TabIndex = 98;
+            this.button47.Text = "研發每日通知「1006.樣品試吃回覆單」";
+            this.button47.UseVisualStyleBackColor = true;
+            this.button47.Click += new System.EventHandler(this.button47_Click);
             // 
             // FrmMQMAIL
             // 
@@ -984,5 +996,6 @@
         private System.Windows.Forms.Button button44;
         private System.Windows.Forms.Button button45;
         private System.Windows.Forms.Button button46;
+        private System.Windows.Forms.Button button47;
     }
 }
