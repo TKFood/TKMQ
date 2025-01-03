@@ -1155,6 +1155,19 @@ namespace TKMQ
         {
             StringBuilder MSG = new StringBuilder();
 
+            //每週通知，1006.樣品試吃回覆單，還未回覆的明細    
+            try
+            {
+                SENDMAIL_TK_UOF_DEV_NEW_SALES();
+            }
+
+            catch
+            {
+                MSG.AppendFormat(@" 每週通知，1006.樣品試吃回覆單，還未回覆的明細 失敗 ||");
+            }
+            finally
+            {
+            }
             //研發每週通知該月樣品
             try
             {
@@ -16551,7 +16564,7 @@ namespace TKMQ
             }
         }
 
-        ////每日通知，1006.樣品試吃回覆單，還未回覆的明細
+        ////每週通知，1006.樣品試吃回覆單，還未回覆的明細
         public void SENDMAIL_TK_UOF_DEV_NEW_SALES()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -16571,13 +16584,13 @@ namespace TKMQ
                     BODY.Clear();
 
 
-                    SUBJEST.AppendFormat(@"系統通知-每日通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                    SUBJEST.AppendFormat(@"系統通知-通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                     //ERP 採購相關單別、單號未核準的明細
                     //
                     BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                        + "<br>" + "系統通知-每日通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝"
+                        + "<br>" + "系統通知-通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝"
                         + " <br>"
                         );
 
@@ -17205,7 +17218,7 @@ namespace TKMQ
         }
         private void button47_Click(object sender, EventArgs e)
         {
-            //每日通知，1006.樣品試吃回覆單，還未回覆的明細
+            //每週通知，1006.樣品試吃回覆單，還未回覆的明細
             SENDMAIL_TK_UOF_DEV_NEW_SALES();
 
             MessageBox.Show("OK");

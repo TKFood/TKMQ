@@ -900,7 +900,7 @@
             this.button47.Name = "button47";
             this.button47.Size = new System.Drawing.Size(197, 34);
             this.button47.TabIndex = 98;
-            this.button47.Text = "研發每日通知「1006.樣品試吃回覆單」";
+            this.button47.Text = "研發每週通知「1006.樣品試吃回覆單」";
             this.button47.UseVisualStyleBackColor = true;
             this.button47.Click += new System.EventHandler(this.button47_Click);
             // 
