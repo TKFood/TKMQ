@@ -376,7 +376,24 @@ namespace TKMQ
             {
 
             }
-            
+
+            try
+            {
+                //UOF請購相關未核準明細
+                //PUR10.請購單申請+PUR20.請購單變更單
+                SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" PUR10.請購單申請+PUR20.請購單變更單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
             try
             {
                 //查離職人員的未結案表單
@@ -1241,17 +1258,17 @@ namespace TKMQ
             StringBuilder MSG = new StringBuilder();
 
             try
-            {
-
+            {                
+                //Thread.Sleep(5000);
             }
             catch
             {
-
+                //MSG.AppendFormat(@" PUR10.請購單申請+PUR20.請購單變更單  失敗 ||");
             }
             finally
             {
 
-            }
+            }           
 
             //
             try
