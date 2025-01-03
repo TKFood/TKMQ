@@ -16874,6 +16874,440 @@ namespace TKMQ
 
             }
         }
+        //UOF請購相關未核準明細
+        //PUR10.請購單申請+PUR20.請購單變更單
+        public void SENDMAIL_TK_UOF_PUR_NOT_APPROVED()
+        {
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+            DataTable DT_TK_UOF_PUR_NOT_APPROVED_MAIN = new DataTable();
+            DataTable DT_TK_UOF_PUR_NOT_APPROVED_DETAILS = new DataTable();
+
+            //先找出「還沒有核準」的「PUR10.請購單申請」、「PUR20.請購單變更單」主檔
+            DT_TK_UOF_PUR_NOT_APPROVED_MAIN = FIND_TK_UOF_PUR_NOT_APPROVED_MAIN();
+
+            //如果有主檔，再用[DOC_NBR]找明細，寄給該申請人
+            if(DT_TK_UOF_PUR_NOT_APPROVED_MAIN!=null && DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows.Count>=1)
+            {
+                foreach(DataRow DR_MAIN in DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows)
+                {
+                    //找明細
+                    DT_TK_UOF_PUR_NOT_APPROVED_DETAILS = FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS(DR_MAIN["DOC_NBR"].ToString());
+
+                    if(DT_TK_UOF_PUR_NOT_APPROVED_DETAILS!=null && DT_TK_UOF_PUR_NOT_APPROVED_DETAILS.Rows.Count>=1)
+                    {
+                        try
+                        {                           
+                            DataTable DT_DATAS = DT_TK_UOF_PUR_NOT_APPROVED_DETAILS;
+
+                            if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                            {
+                                SUBJEST.Clear();
+                                BODY.Clear();
+
+
+                                SUBJEST.AppendFormat(@"系統通知-每日通知，UOF簽核的「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                                //ERP 採購相關單別、單號未核準的明細
+                                //
+                                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                                    + "<br>" + "系統通知-每日通知，UOF簽核的「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝"
+                                    + " <br>"
+                                    );
+
+
+
+
+
+                                if (DT_DATAS.Rows.Count > 0)
+                                {
+                                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                                    BODY.AppendFormat(@"<table> ");
+                                    BODY.AppendFormat(@"<tr >");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單名稱</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單編號</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請日期</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購單別</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購單號</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購品名</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求日</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人名</th>");                                    
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人還未核</th>");
+
+
+                                    BODY.AppendFormat(@"</tr> ");
+
+                                    foreach (DataRow DR in DT_DATAS.Rows)
+                                    {
+
+                                        BODY.AppendFormat(@"<tr >");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["FORM_NAME"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["BEGIN_TIME"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DEPNO_FieldValue"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TA001_FieldValue"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TA002_FieldValue"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TB005"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TB011"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["SUMLA011"].ToString() + "</td>");
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請人名"].ToString() + "</td>");                                        
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核人還未核"].ToString() + "</td>");
+
+                                        BODY.AppendFormat(@"</tr> ");
+
+
+                                    }
+                                    BODY.AppendFormat(@"</table> ");
+                                }
+                                else
+                                {
+                                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                                }
+
+                                try
+                                {
+                                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                                    MyMail.Subject = SUBJEST.ToString();
+                                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                                    MyMail.Body = BODY.ToString();
+                                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                                    //加上附圖
+                                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                                    try
+                                    {
+                                        
+                                       //MyMail.To.Add(DR_MAIN["EMAIL"].ToString()); //設定收件者Email，多筆mail
+                                        
+
+                                        MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                                        MySMTP.Send(MyMail);
+
+                                        MyMail.Dispose(); //釋放資源
+
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        //MessageBox.Show("有錯誤");
+
+                                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
+                                        //ex.ToString();
+                                    }
+                                }
+                                catch
+                                {
+
+                                }
+                                finally
+                                {
+
+                                }
+                            }
+
+
+
+                        }
+                        catch
+                        {
+
+                        }
+                        finally
+                        {
+
+                        }
+
+
+                    }
+                }
+              
+            }
+
+        }
+
+        public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_MAIN()
+        {           
+            string SDATES = DateTime.Now.ToString("yyyyMMdd");
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"   
+                                    
+                                    WITH TEMP AS (
+                                    SELECT 
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""DEPNO""]/@fieldValue)[1]', 'NVARCHAR(100)') AS DEPNO_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA001_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA002_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""MV002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS MV002_FieldValue,
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT,
+                                        CONVERT(NVARCHAR, BEGIN_TIME, 112) BEGIN_TIME,
+                                        USER_GUID
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+
+                                        WHERE[FORM_NAME] = 'PUR10.請購單申請'
+                                        AND TASK_STATUS = '1'
+
+
+                                        UNION ALL
+                                    SELECT
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""DEPNO""]/@fieldValue)[1]', 'NVARCHAR(100)') AS DEPNO_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA001_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA002_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""MV002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS MV002_FieldValue,
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT,
+                                        CONVERT(NVARCHAR, BEGIN_TIME, 112) BEGIN_TIME,
+                                        USER_GUID
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+
+
+                                        WHERE[FORM_NAME] = 'PUR20.請購單變更單'
+                                        AND TASK_STATUS = '1'
+
+
+                                    )
+
+                                    SELECT TEMP.*
+                                    ,[TB_EB_USER].ACCOUNT AS '申請人'
+                                    ,[TB_EB_USER].NAME AS '申請人名'
+                                    ,[TB_EB_USER].EMAIL AS 'EMAIL'
+                                    ,(
+                                        SELECT TOP 1[TB_EB_USER].NAME
+                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE
+                                        LEFT JOIN[UOF].[dbo].[TB_EB_USER]
+                                            ON [TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ORIGINAL_SIGNER
+                                            WHERE [TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
+                                            AND NODE_STATUS = '1'
+                                            ORDER BY NODE_SEQ DESC
+                                    ) AS '目前簽核人還未核'
+                                    FROM TEMP
+                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER]
+                                            ON [TB_EB_USER].USER_GUID=TEMP.USER_GUID
+                                    WHERE 1=1
+                                    AND ISNULL([TB_EB_USER].EMAIL,' ')<>''
+                                    ORDER BY [DOC_NBR]                                  
+
+
+                                      ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+            
+        }
+
+        public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS(string DOC_NBR)
+        {
+            string SDATES = DateTime.Now.ToString("yyyyMMdd");
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"                                       
+                                    WITH TEMP AS (
+                                    SELECT 
+                                        [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""DEPNO""]/@fieldValue)[1]', 'NVARCHAR(100)') AS DEPNO_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA001_FieldValue,
+	                                    [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA002_FieldValue,
+	                                    [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""MV002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS MV002_FieldValue,
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT,
+	                                    CONVERT(NVARCHAR,BEGIN_TIME,112) BEGIN_TIME,
+	                                    USER_GUID,
+	                                    RowData.value('(Cell[@fieldId=""TB005""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB005,
+                                        RowData.value('(Cell[@fieldId=""TB011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB011,
+	                                    RowData.value('(Cell[@fieldId=""SUMLA011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS SUMLA011
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+	                                    CROSS APPLY [CURRENT_DOC].nodes('/Form/FormFieldValue/FieldItem[@fieldId=""TB""]/DataGrid/Row') AS Rows(RowData)
+                                        WHERE[FORM_NAME] = 'PUR10.請購單申請'
+                                        AND TASK_STATUS = '1'
+
+	                                    UNION ALL
+                                    SELECT	
+	                                    [FORM_NAME],
+                                        [DOC_NBR],
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""DEPNO""]/@fieldValue)[1]', 'NVARCHAR(100)') AS DEPNO_FieldValue,
+                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA001_FieldValue,
+	                                    [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TA002_FieldValue,
+	                                    [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""MV002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS MV002_FieldValue,
+                                        TASK_ID,
+                                        TASK_STATUS,
+                                        TASK_RESULT,
+	                                    CONVERT(NVARCHAR,BEGIN_TIME,112) BEGIN_TIME,
+	                                    USER_GUID,
+	                                    RowData.value('(Cell[@fieldId=""TB005""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB005,
+                                        RowData.value('(Cell[@fieldId=""TB011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB011,
+	                                    RowData.value('(Cell[@fieldId=""TB009""]/@fieldValue)[1]', 'NVARCHAR(200)') AS SUMLA011
+
+                                        FROM[UOF].[dbo].TB_WKF_TASK
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+		                                    CROSS APPLY [CURRENT_DOC].nodes('/Form/FormFieldValue/FieldItem[@fieldId=""TB""]/DataGrid/Row') AS Rows(RowData)
+                                        WHERE[FORM_NAME] = 'PUR20.請購單變更單'
+                                        AND TASK_STATUS = '1'
+
+
+                                    )
+
+                                    SELECT TEMP.*
+                                    ,[TB_EB_USER].ACCOUNT AS '申請人'
+                                    ,[TB_EB_USER].NAME AS '申請人名'
+                                    ,[TB_EB_USER].EMAIL AS 'EMAIL'
+                                    ,(
+                                        SELECT TOP 1 [TB_EB_USER].NAME
+                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE
+                                        LEFT JOIN [UOF].[dbo].[TB_EB_USER]
+	
+                                        ON [TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ORIGINAL_SIGNER
+	                                    WHERE [TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
+	                                    AND NODE_STATUS='1'
+	                                    ORDER BY NODE_SEQ DESC
+                                    ) AS '目前簽核人還未核'
+                                    FROM TEMP
+                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER] ON [TB_EB_USER].USER_GUID=TEMP.USER_GUID
+                                    WHERE 1=1
+                                    AND  TEMP.[DOC_NBR]='{0}'
+                                    ORDER BY [DOC_NBR]
+
+                                   
+
+
+                                      ", DOC_NBR);
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
 
 
         #endregion
@@ -17226,8 +17660,16 @@ namespace TKMQ
 
         }
 
+
         #endregion
 
+        private void button48_Click(object sender, EventArgs e)
+        {
+            //UOF請購相關未核準明細
+            //PUR10.請購單申請+PUR20.請購單變更單
+            SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
 
+            MessageBox.Show("OK");
+        }
     }
 }
