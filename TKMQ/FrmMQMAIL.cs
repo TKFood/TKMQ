@@ -16906,13 +16906,13 @@ namespace TKMQ
                                 BODY.Clear();
 
 
-                                SUBJEST.AppendFormat(@"系統通知-每日通知，UOF簽核的「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                                SUBJEST.AppendFormat(@"系統通知-每日通知，UOF未核「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                                 //ERP 採購相關單別、單號未核準的明細
                                 //
                                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                                    + "<br>" + "系統通知-每日通知，UOF簽核的「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝"
+                                    + "<br>" + "系統通知-每日通知，UOF未核「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝"
                                     + " <br>"
                                     );
 
@@ -16934,6 +16934,7 @@ namespace TKMQ
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購單號</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購品名</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求日</th>");
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求數量</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人名</th>");                                    
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人還未核</th>");
 
@@ -16994,8 +16995,7 @@ namespace TKMQ
                                     try
                                     {
                                         
-                                       //MyMail.To.Add(DR_MAIN["EMAIL"].ToString()); //設定收件者Email，多筆mail
-                                        
+                                        MyMail.To.Add(DR_MAIN["EMAIL"].ToString()); //設定收件者Email，多筆mail                                        
 
                                         MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                                         MySMTP.Send(MyMail);
