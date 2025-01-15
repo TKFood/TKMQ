@@ -74,6 +74,8 @@
             this.button43 = new System.Windows.Forms.Button();
             this.button45 = new System.Windows.Forms.Button();
             this.button46 = new System.Windows.Forms.Button();
+            this.button47 = new System.Windows.Forms.Button();
+            this.button48 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -91,8 +93,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button47 = new System.Windows.Forms.Button();
-            this.button48 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -504,7 +504,7 @@
             this.button37.Name = "button37";
             this.button37.Size = new System.Drawing.Size(145, 34);
             this.button37.TabIndex = 36;
-            this.button37.Text = "採購今日未到貨";
+            this.button37.Text = "採購7日前未到貨";
             this.button37.UseVisualStyleBackColor = true;
             this.button37.Click += new System.EventHandler(this.button37_Click);
             // 
@@ -661,6 +661,26 @@
             this.button46.Text = "當日UOF簽核的「採購單」";
             this.button46.UseVisualStyleBackColor = true;
             this.button46.Click += new System.EventHandler(this.button46_Click);
+            // 
+            // button47
+            // 
+            this.button47.Location = new System.Drawing.Point(723, 283);
+            this.button47.Name = "button47";
+            this.button47.Size = new System.Drawing.Size(197, 34);
+            this.button47.TabIndex = 98;
+            this.button47.Text = "研發每週通知「1006.樣品試吃回覆單」";
+            this.button47.UseVisualStyleBackColor = true;
+            this.button47.Click += new System.EventHandler(this.button47_Click);
+            // 
+            // button48
+            // 
+            this.button48.Location = new System.Drawing.Point(540, 483);
+            this.button48.Name = "button48";
+            this.button48.Size = new System.Drawing.Size(145, 34);
+            this.button48.TabIndex = 99;
+            this.button48.Text = "UOF請購相關未核準明細";
+            this.button48.UseVisualStyleBackColor = true;
+            this.button48.Click += new System.EventHandler(this.button48_Click);
             // 
             // tabPage2
             // 
@@ -895,26 +915,6 @@
             // timer3
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
-            // 
-            // button47
-            // 
-            this.button47.Location = new System.Drawing.Point(723, 283);
-            this.button47.Name = "button47";
-            this.button47.Size = new System.Drawing.Size(197, 34);
-            this.button47.TabIndex = 98;
-            this.button47.Text = "研發每週通知「1006.樣品試吃回覆單」";
-            this.button47.UseVisualStyleBackColor = true;
-            this.button47.Click += new System.EventHandler(this.button47_Click);
-            // 
-            // button48
-            // 
-            this.button48.Location = new System.Drawing.Point(540, 483);
-            this.button48.Name = "button48";
-            this.button48.Size = new System.Drawing.Size(145, 34);
-            this.button48.TabIndex = 99;
-            this.button48.Text = "UOF請購相關未核準明細";
-            this.button48.UseVisualStyleBackColor = true;
-            this.button48.Click += new System.EventHandler(this.button48_Click);
             // 
             // FrmMQMAIL
             // 

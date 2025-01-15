@@ -13242,9 +13242,9 @@ namespace TKMQ
                                     AND TC014='Y'
                                     AND REPLACE(TD001+TD002+TD003,' ','') NOT IN (SELECT REPLACE(TH011+TH012+TH013,' ','') FROM [TK].dbo.PURTH)
                                     AND TD008>0
-                                    AND TD012=CONVERT(NVARCHAR,GETDATE(),112)
-                                    ORDER BY TC004
-
+                                    AND TD012 >= CONVERT(NVARCHAR, DATEADD(DAY, -7, GETDATE()), 112)
+                                    AND TD012 <= CONVERT(NVARCHAR, DATEADD(DAY, 0, GETDATE()), 112)
+                                    ORDER BY TD012,TC004
                                     ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
