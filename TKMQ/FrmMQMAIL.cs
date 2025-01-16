@@ -364,13 +364,28 @@ namespace TKMQ
             StringBuilder BODY = new StringBuilder();
 
             try
-            {
-
+            {               
                 //Thread.Sleep(5000);
             }
             catch
             {
                 //MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知
+              
+                SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 託外未到貨通知 失敗 ||");
             }
             finally
             {
