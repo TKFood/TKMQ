@@ -13237,8 +13237,12 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
+                //託外採購單比對託外製令+託外入庫
+                //一般採購比對進貨單
                 sbSql.AppendFormat(@"                                      
+                                    SELECT *
+                                    FROM 
+                                    (
                                     SELECT 
                                     TD012 AS '預交日'
                                     ,TC004 AS '供應廠商'
@@ -13254,12 +13258,37 @@ namespace TKMQ
                                     FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
+                                    AND TC001 NOT IN ('A334')
                                     AND TC014='Y'
                                     AND REPLACE(TD001+TD002+TD003,' ','') NOT IN (SELECT REPLACE(TH011+TH012+TH013,' ','') FROM [TK].dbo.PURTH)
                                     AND TD008>0
                                     AND TD012 >= CONVERT(NVARCHAR, DATEADD(DAY, -7, GETDATE()), 112)
                                     AND TD012 <= CONVERT(NVARCHAR, DATEADD(DAY, 0, GETDATE()), 112)
-                                    ORDER BY TD012,TC004
+                                    UNION ALL
+                                    SELECT 
+                                    TD012 AS '預交日'
+                                    ,TC004 AS '供應廠商'
+                                    ,MA002 AS '廠商'
+                                    ,TD001 AS '採購單別'
+                                    ,TD002 AS '採購單號'
+                                    ,TD003 AS '序號'
+                                    ,TD004 AS '品號'
+                                    ,TD005 AS '品名'
+                                    ,TD006 AS '規格'
+                                    ,TD008 AS '採購數量'
+                                    ,TD009 AS '單位'
+                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    WHERE TC001=TD001 AND TC002=TD002
+                                    AND MA001=TC004
+                                    AND TC001 IN ('A334')
+                                    AND TC014='Y'
+                                    AND TD008>0
+                                    AND ISNULL(TC045,'')<>''
+                                    AND TC045 NOT IN (SELECT TI013+TI014 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TH023='Y' AND TI013=SUBSTRING(TC045,1,4)  AND TI014=SUBSTRING(TC045,5,11)  )
+                                    AND TD012 >= CONVERT(NVARCHAR, DATEADD(DAY, -7, GETDATE()), 112)
+                                    AND TD012 <= CONVERT(NVARCHAR, DATEADD(DAY, 0, GETDATE()), 112)
+                                    ) AS TEMP
+                                    ORDER BY 採購單別,採購單號
                                     ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
