@@ -12189,6 +12189,7 @@ namespace TKMQ
 	                            WHERE CONVERT(NVARCHAR, DATES, 112) >= '{0}'
 		                            AND CONVERT(NVARCHAR, DATES, 112) <= '{1}'
 	                            ) AS TEMP
+                                ORDER BY DATES
                             ", firstDayOfMonth.ToString("yyyyMMdd"), lastDayOfMonth.ToString("yyyyMMdd"));
 
 
