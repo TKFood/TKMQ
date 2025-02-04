@@ -11528,12 +11528,20 @@ namespace TKMQ
 
         public void SETFASTREPORT()
         {
-            StringBuilder SQL1 = new StringBuilder();
-
-            SQL1 = SETSQL();
             Report report1 = new Report();
+            StringBuilder SQL1 = new StringBuilder();
+            StringBuilder SQL_IN = new StringBuilder();
+            StringBuilder SQL_OUT = new StringBuilder();
 
-            report1.Load(@"REPORT\國內、外業務部業績日報表V7.frx");
+            //舊日報用表格各自業務計算
+            //SQL1 = SETSQL();
+            //report1.Load(@"REPORT\國內、外業務部業績日報表V7.frx");
+
+            //新日報用業務+國內外，matrix表
+            SQL1 = SETSQLNEW();
+            SQL_IN = SETSQLNEW_IN();
+            SQL_OUT = SETSQLNEW_OUT();
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEW.frxrx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
@@ -11557,6 +11565,221 @@ namespace TKMQ
             report1.Show();
         }
 
+        /// <summary>
+        /// 新日報
+        /// </summary>
+        /// <returns></returns>
+        public StringBuilder SETSQLNEW()
+        {
+            StringBuilder SB = new StringBuilder();
+
+            SB.AppendFormat(@"   
+                          --產生當月的每一天日期
+                            WITH Dates AS (
+                                SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
+                                UNION ALL
+                                SELECT DATEADD(DAY, 1, DateValue)
+                                FROM Dates
+                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                            )
+
+                            SELECT 
+                            CONVERT(VARCHAR(8), DateValue, 112) AS '日期',
+                            CASE WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' ELSE '工作日' END AS DayType,
+                            MV001,
+                            MV002,
+                            NATIONS,
+                            (
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 = MV001
+	                            ) AS '銷貨',
+                            (
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 = MV001
+	                            ) AS '銷退'
+                            FROM Dates
+                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
+                            ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
+                            OPTION (MAXRECURSION 31);
+                            ");
+
+
+            return SB;
+        }
+        public StringBuilder SETSQLNEW_IN()
+        {
+            StringBuilder SB = new StringBuilder();
+
+            SB.AppendFormat(@"   
+                            
+                            WITH Dates AS (
+                                SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
+                                UNION ALL
+                                SELECT DATEADD(DAY, 1, DateValue)
+                                FROM Dates
+                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                            )
+
+                            SELECT *
+                            ,CASE WHEN 國內月目前總業績>0 AND 國內月目標業績>0 THEN CONVERT(decimal(16,4),國內月目前總業績/國內月目標業績) ELSE 0 END '國內累積達成率'
+                            FROM
+                            (
+	                            SELECT NATIONS, (SUM(銷貨) - SUM(銷退)) AS '國內月目前總業績'
+	                            ,(
+		                            SELECT ISNULL(INTARGETMONEYS, 0)
+		                            FROM [TK].[dbo].[ZTARGETMONEYS]
+		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, GETDATE(), 112), 1, 6)
+		                            ) AS '國內月目標業績'
+
+	                            FROM (
+		                            SELECT 
+			                            CONVERT(VARCHAR(8), DateValue, 112) AS '日期',
+			                            CASE 
+				                            WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' 
+				                            ELSE '工作日' 
+			                            END AS DayType,
+			                            MV001,
+			                            MV002,
+			                            NATIONS,
+			                            (
+				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+				                            FROM [TK].dbo.COPTG, [TK].dbo.COPTH
+				                            WHERE TG001 = TH001
+					                            AND TG002 = TH002
+					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TG023 = 'Y'
+					                            AND TG001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') 
+					                            )        
+					                            AND TG006 = MV001
+			                            ) AS '銷貨',
+			                            (
+				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
+				                            FROM [TK].dbo.COPTI, [TK].dbo.COPTJ
+				                            WHERE TI001 = TJ001
+					                            AND TI002 = TJ002
+					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TI019 = 'Y'
+					                            AND TI001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') 
+					                            )    
+					                            AND TI006 = MV001
+			                            ) AS '銷退'
+		                            FROM Dates
+		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
+	                            ) AS TEMP
+	                            WHERE NATIONS IN ('國內')
+	                            GROUP BY NATIONS
+
+                            ) AS TEMP2
+                            OPTION (MAXRECURSION 31);
+                            ");
+
+
+            return SB;
+        }
+
+        public StringBuilder SETSQLNEW_OUT()
+        {
+            StringBuilder SB = new StringBuilder();
+
+            SB.AppendFormat(@"   
+                            
+                            WITH Dates AS (
+                                SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
+                                UNION ALL
+                                SELECT DATEADD(DAY, 1, DateValue)
+                                FROM Dates
+                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                            )
+
+                            SELECT *
+                            ,CASE WHEN 國外月目前總業績>0 AND 國外月目標業績>0 THEN CONVERT(decimal(16,4),國外月目前總業績/國外月目標業績) ELSE 0 END '國外累積達成率'
+                            FROM
+                            (
+	                            SELECT NATIONS, (SUM(銷貨) - SUM(銷退)) AS '國外月目前總業績'
+	                            ,(
+		                            SELECT ISNULL(OUTTARGETMONEYS, 0)
+		                            FROM [TK].[dbo].[ZTARGETMONEYS]
+		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, GETDATE(), 112), 1, 6)
+		                            ) AS '國外月目標業績'
+
+	                            FROM (
+		                            SELECT 
+			                            CONVERT(VARCHAR(8), DateValue, 112) AS '日期',
+			                            CASE 
+				                            WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' 
+				                            ELSE '工作日' 
+			                            END AS DayType,
+			                            MV001,
+			                            MV002,
+			                            NATIONS,
+			                            (
+				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+				                            FROM [TK].dbo.COPTG, [TK].dbo.COPTH
+				                            WHERE TG001 = TH001
+					                            AND TG002 = TH002
+					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TG023 = 'Y'
+					                            AND TG001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') 
+					                            )        
+					                            AND TG006 = MV001
+			                            ) AS '銷貨',
+			                            (
+				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
+				                            FROM [TK].dbo.COPTI, [TK].dbo.COPTJ
+				                            WHERE TI001 = TJ001
+					                            AND TI002 = TJ002
+					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TI019 = 'Y'
+					                            AND TI001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') 
+					                            )    
+					                            AND TI006 = MV001
+			                            ) AS '銷退'
+		                            FROM Dates
+		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
+	                            ) AS TEMP
+	                            WHERE NATIONS IN ('國外')
+	                            GROUP BY NATIONS
+
+                            ) AS TEMP2
+                            OPTION (MAXRECURSION 31);
+                            ");
+
+
+            return SB;
+        }
+        /// <summary>
+        /// 舊日報
+        /// </summary>
+        /// <returns></returns>
         public StringBuilder SETSQL()
         {
             DateTime now = DateTime.Now;
@@ -12278,14 +12501,14 @@ namespace TKMQ
 
             try
             {
-                foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
-                {
+                //foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
+                //{
 
-                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
-                }
+                //    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                //}
 
                 //測試寄MAIL
-                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 MySMTP.Send(MyMail);
 
@@ -12303,14 +12526,22 @@ namespace TKMQ
 
         public void SAVEREPORT(string pathFileSALESMONEYS)
         {
+            Report report1 = new Report();
             string FILENAME = pathFileSALESMONEYS;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
+            StringBuilder SQL_IN = new StringBuilder();
+            StringBuilder SQL_OUT = new StringBuilder();
 
-            SQL1 = SETSQL();
-            Report report1 = new Report();  
+            //舊日報用表格各自業務計算
+            //SQL1 = SETSQL();
+            //report1.Load(@"REPORT\國內、外業務部業績日報表V8.frx");
 
-            report1.Load(@"REPORT\國內、外業務部業績日報表V8.frx");
+            //新日報用業務+國內外，matrix表
+            SQL1 = SETSQLNEW();
+            SQL_IN = SETSQLNEW_IN();
+            SQL_OUT = SETSQLNEW_OUT();
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEW.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
