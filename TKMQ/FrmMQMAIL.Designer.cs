@@ -52,7 +52,6 @@
             this.button12 = new System.Windows.Forms.Button();
             this.button27 = new System.Windows.Forms.Button();
             this.button28 = new System.Windows.Forms.Button();
-            this.button30 = new System.Windows.Forms.Button();
             this.button29 = new System.Windows.Forms.Button();
             this.button13 = new System.Windows.Forms.Button();
             this.button33 = new System.Windows.Forms.Button();
@@ -76,6 +75,7 @@
             this.button46 = new System.Windows.Forms.Button();
             this.button47 = new System.Windows.Forms.Button();
             this.button48 = new System.Windows.Forms.Button();
+            this.button49 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -93,7 +93,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button49 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -167,7 +166,6 @@
             this.tableLayoutPanel1.Controls.Add(this.button12, 3, 4);
             this.tableLayoutPanel1.Controls.Add(this.button27, 2, 6);
             this.tableLayoutPanel1.Controls.Add(this.button28, 2, 7);
-            this.tableLayoutPanel1.Controls.Add(this.button30, 6, 0);
             this.tableLayoutPanel1.Controls.Add(this.button29, 2, 2);
             this.tableLayoutPanel1.Controls.Add(this.button13, 3, 7);
             this.tableLayoutPanel1.Controls.Add(this.button33, 6, 1);
@@ -436,17 +434,6 @@
             this.button28.UseVisualStyleBackColor = true;
             this.button28.Click += new System.EventHandler(this.button28_Click);
             // 
-            // button30
-            // 
-            this.button30.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button30.Location = new System.Drawing.Point(723, 3);
-            this.button30.Name = "button30";
-            this.button30.Size = new System.Drawing.Size(197, 34);
-            this.button30.TabIndex = 31;
-            this.button30.Text = "國內、外業務部業績日報";
-            this.button30.UseVisualStyleBackColor = true;
-            this.button30.Click += new System.EventHandler(this.button30_Click);
-            // 
             // button29
             // 
             this.button29.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
@@ -684,6 +671,16 @@
             this.button48.UseVisualStyleBackColor = true;
             this.button48.Click += new System.EventHandler(this.button48_Click);
             // 
+            // button49
+            // 
+            this.button49.Location = new System.Drawing.Point(540, 523);
+            this.button49.Name = "button49";
+            this.button49.Size = new System.Drawing.Size(145, 34);
+            this.button49.TabIndex = 100;
+            this.button49.Text = "託外採購未到貨明細";
+            this.button49.UseVisualStyleBackColor = true;
+            this.button49.Click += new System.EventHandler(this.button49_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -918,16 +915,6 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button49
-            // 
-            this.button49.Location = new System.Drawing.Point(540, 523);
-            this.button49.Name = "button49";
-            this.button49.Size = new System.Drawing.Size(145, 34);
-            this.button49.TabIndex = 100;
-            this.button49.Text = "託外採購未到貨明細";
-            this.button49.UseVisualStyleBackColor = true;
-            this.button49.Click += new System.EventHandler(this.button49_Click);
-            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -995,7 +982,6 @@
         private System.Windows.Forms.Button button27;
         private System.Windows.Forms.Button button28;
         private System.Windows.Forms.Button button29;
-        private System.Windows.Forms.Button button30;
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
