@@ -4748,7 +4748,7 @@ namespace TKMQ
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
-                                    AND TH117>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                    AND TH117>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
                                     FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
@@ -4764,7 +4764,7 @@ namespace TKMQ
                                     AND TG022='Y' 
                                     AND TG004 LIKE '3%'  
                                     AND TG004 NOT LIKE '307%' 
-                                    AND TG040>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                    AND TG040>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
                                     FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
