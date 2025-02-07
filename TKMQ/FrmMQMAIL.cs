@@ -12658,7 +12658,7 @@ namespace TKMQ
 
 
             return SB;
-
+             
         }
         public void SENDEMAIL_DAILY_SALES_MONEY()
         {
@@ -12745,11 +12745,11 @@ namespace TKMQ
                 foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
                 {
 
-                    //MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
 
                 //測試寄MAIL
-                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 MySMTP.Send(MyMail);
 
