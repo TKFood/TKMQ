@@ -11541,7 +11541,7 @@ namespace TKMQ
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
             SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEW.frxrx");
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV2.frxrx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
@@ -11575,6 +11575,7 @@ namespace TKMQ
 
             SB.AppendFormat(@"   
                           --產生當月的每一天日期
+                           --20250207 新業務日報
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
@@ -11585,11 +11586,11 @@ namespace TKMQ
 
                             SELECT 
                             CONVERT(VARCHAR(8), DateValue, 112) AS '日期',
-                            CASE WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' ELSE '工作日' END AS DayType,
-                            MV001,
-                            MV002,
-                            NATIONS,
-                            (
+                            (CASE WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' ELSE '' END )AS DayType,
+                            CONVERT(VARCHAR(8), DateValue, 112)+(CASE WHEN DATEPART(WEEKDAY, DateValue) IN (1, 7) THEN '假日' ELSE '' END )  AS '日期DayType'
+
+                            --各業務
+                            ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
 	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
 	                            WHERE TG001 = TH001
@@ -11599,9 +11600,13 @@ namespace TKMQ
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
-		                            AND TG006 = MV001
-	                            ) AS '銷貨',
-                            (
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='100005'
+		                            )
+	                            ) AS '何姍怡銷貨'	
+                            ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
 	                            FROM [TK].dbo.COPTI
 		                            ,[TK].dbo.COPTJ
@@ -11612,10 +11617,246 @@ namespace TKMQ
 		                            AND TI001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('24.銷退單') )	
-		                            AND TI006 = MV001
-	                            ) AS '銷退'
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='100005'
+		                            )
+	                            )AS '何姍怡銷退'
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='140078'
+		                            )
+	                            ) AS '蔡顏鴻銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='140078'
+		                            )
+	                            )AS '蔡顏鴻銷退'
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='160155'
+		                            )
+	                            ) AS '洪櫻芬銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='160155'
+		                            )
+	                            )AS '洪櫻芬銷退'
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='200050'
+		                            )
+	                            ) AS '張釋予銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='200050'
+		                            )
+	                            )AS '張釋予銷退'
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='240036'
+		                            )
+	                            ) AS '許湘舷銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [MV001] ='240036'
+		                            )
+	                            )AS '許湘舷銷退'
+
+                            --國內小計 
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [NATIONS] ='國內'
+		                            )
+	                            ) AS '國內銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [NATIONS] ='國內'
+		                            )
+	                            )AS '國內銷退'
+                            --國外小計 
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [NATIONS] ='國外'
+		                            )
+	                            ) AS '國外銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+			                            WHERE [NATIONS] ='國外'
+		                            )
+	                            )AS '國外銷退'
+                            --國內、國外總計
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            WHERE TG001 = TH001
+		                            AND TG002 = TH002
+		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TG023 = 'Y'
+		                            AND TG001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') )		
+		                            AND TG006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
+					                            )
+	                            ) AS '總計銷貨'	
+                            ,(
+	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
+	                            FROM [TK].dbo.COPTI
+		                            ,[TK].dbo.COPTJ
+	                            WHERE TI001 = TJ001
+		                            AND TI002 = TJ002
+		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+		                            AND TI019 = 'Y'
+		                            AND TI001 IN ( SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') )	
+		                            AND TI006 IN (
+			                            SELECT [MV001] 
+			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]			
+		                            )
+	                            )AS '總計銷退'
                             FROM Dates
-                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
                             OPTION (MAXRECURSION 31);
                             ");
@@ -12504,11 +12745,11 @@ namespace TKMQ
                 foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
                 {
 
-                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                    //MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
 
                 //測試寄MAIL
-                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 MySMTP.Send(MyMail);
 
@@ -12541,7 +12782,7 @@ namespace TKMQ
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
             SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEW.frx");
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV2.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
