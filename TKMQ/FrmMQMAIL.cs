@@ -11860,7 +11860,7 @@ namespace TKMQ
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
                             OPTION (MAXRECURSION 31);
                             ");
-
+             
 
             return SB;
         }
