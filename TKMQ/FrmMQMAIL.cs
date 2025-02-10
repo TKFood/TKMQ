@@ -11574,8 +11574,9 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"   
-                          --產生當月的每一天日期
-                           --20250207 新業務日報
+                            --產生當月的每一天日期
+                            --20250207 新業務日報
+                            --20250210 銷貨單只需加正金額	AND TH037>0，負金額是預計沖銷不用計算
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
@@ -11597,6 +11598,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11630,6 +11632,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11663,6 +11666,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11696,6 +11700,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11729,6 +11734,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11764,6 +11770,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11798,6 +11805,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11832,6 +11840,7 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
+                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11906,6 +11915,7 @@ namespace TKMQ
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 					                            AND TG023 = 'Y'
+                                                AND TH037>0
 					                            AND TG001 IN ( 
 						                            SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
@@ -11983,6 +11993,7 @@ namespace TKMQ
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 					                            AND TG023 = 'Y'
+                                                AND TH037>0
 					                            AND TG001 IN ( 
 						                            SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
@@ -12771,6 +12782,8 @@ namespace TKMQ
             string FILENAME = pathFileSALESMONEYS;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
+
+            //報表單頭要改報表內的SQL，因為報表沒有放在DATA中，不會連動
             StringBuilder SQL_IN = new StringBuilder();
             StringBuilder SQL_OUT = new StringBuilder();
 
@@ -18938,7 +18951,7 @@ namespace TKMQ
 
         private void button31_Click(object sender, EventArgs e)
         {
-            //SETFASTREPORT();
+            //SETFASTREPORT(); 
             SENDEMAIL_DAILY_SALES_MONEY();
         }
 
