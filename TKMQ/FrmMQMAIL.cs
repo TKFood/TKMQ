@@ -221,13 +221,13 @@ namespace TKMQ
         {
             // 取得目前日期和時間
             DateTime now = DateTime.Now;
-            string targetTime1 = "17:03";
+            string targetTime1 = "09:30";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
 
             // 檢查是否為每季度的1號、15號
 
-            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15 || DateTime.Now.Day == 11)
+            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15 )
             {
                 if (currentTime1 == targetTime1)
                 {
