@@ -93,6 +93,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button50 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -190,6 +191,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button47, 6, 7);
             this.tableLayoutPanel1.Controls.Add(this.button48, 4, 12);
             this.tableLayoutPanel1.Controls.Add(this.button49, 4, 13);
+            this.tableLayoutPanel1.Controls.Add(this.button50, 3, 10);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -773,7 +775,7 @@
             // 
             this.splitContainer1.Panel2.Controls.Add(this.previewControl1);
             this.splitContainer1.Size = new System.Drawing.Size(976, 595);
-            this.splitContainer1.SplitterDistance = 325;
+            this.splitContainer1.SplitterDistance = 461;
             this.splitContainer1.TabIndex = 0;
             // 
             // tableLayoutPanel3
@@ -794,7 +796,7 @@
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 7;
+            this.tableLayoutPanel3.RowCount = 11;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
@@ -802,8 +804,11 @@
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(972, 321);
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(972, 457);
             this.tableLayoutPanel3.TabIndex = 1;
             // 
             // button31
@@ -846,7 +851,7 @@
             this.previewControl1.Name = "previewControl1";
             this.previewControl1.PageOffset = new System.Drawing.Point(10, 10);
             this.previewControl1.RightToLeft = System.Windows.Forms.RightToLeft.No;
-            this.previewControl1.Size = new System.Drawing.Size(972, 262);
+            this.previewControl1.Size = new System.Drawing.Size(972, 126);
             this.previewControl1.TabIndex = 13;
             // 
             // tabPage4
@@ -914,6 +919,16 @@
             // timer3
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
+            // 
+            // button50
+            // 
+            this.button50.Location = new System.Drawing.Point(386, 403);
+            this.button50.Name = "button50";
+            this.button50.Size = new System.Drawing.Size(148, 34);
+            this.button50.TabIndex = 101;
+            this.button50.Text = "採購每月1+15未到貨通知";
+            this.button50.UseVisualStyleBackColor = true;
+            this.button50.Click += new System.EventHandler(this.button50_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1009,5 +1024,6 @@
         private System.Windows.Forms.Button button47;
         private System.Windows.Forms.Button button48;
         private System.Windows.Forms.Button button49;
+        private System.Windows.Forms.Button button50;
     }
 }
