@@ -940,6 +940,7 @@
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FrmMQMAIL";
             this.Text = "FrmMQMAIL";
+            this.Load += new System.EventHandler(this.FrmMQMAIL_Load);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);

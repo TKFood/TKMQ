@@ -165,14 +165,20 @@ namespace TKMQ
         {
             InitializeComponent();
 
+        }
+
+        private void FrmMQMAIL_Load(object sender, EventArgs e)
+        {
             timer1.Enabled = true;
             timer1.Interval = 1000 * 60;
             //timer1.Interval = 1000 ;
+            timer1.Tick += new EventHandler(timer1_Tick);
             timer1.Start();
 
             timer2.Enabled = true;
             timer2.Interval = 1000 * 60;
             //timer1.Interval = 1000 ;
+            timer2.Tick += new EventHandler(timer2_Tick);
             timer2.Start();
 
             // 在適當的地方設置 timer3 的屬性
@@ -185,7 +191,6 @@ namespace TKMQ
 
             SETPATH();
         }
-
         #region FUNCTION
         private void timer3_Tick(object sender, EventArgs e)
         {
@@ -214,18 +219,33 @@ namespace TKMQ
         }
         private void timer2_Tick(object sender, EventArgs e)
         {
-            //    ///測試用的
-            //    ///
-            //    // 取得目前日期和時間
-            //    DateTime now = DateTime.Now;
+            // 取得目前日期和時間
+            DateTime now = DateTime.Now;
+            string targetTime1 = "17:03";
+            string currentTime1 = DateTime.Now.ToString("HH:mm");
 
-            //    int HH = 9;
-            //    int MM = 55;
-            //    // 判斷是否是星期一至星期五，且時間是 09:05
-            //    if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday && now.Hour == HH && now.Minute == MM)
-            //    {
-            //        HRAUTORUN3();
-            //    }
+
+            // 檢查是否為每季度的1號、15號
+
+            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15 || DateTime.Now.Day == 11)
+            {
+                if (currentTime1 == targetTime1)
+                {
+                    try
+                    {
+                        //採購每月1號、15號未到貨通知
+                        SENDMAIL_TK_PUR_MONTHS_NO_IN();
+                      
+                    }
+                    catch
+                    {
+
+                    }
+                    finally { }
+
+                }
+
+            }
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -19406,8 +19426,9 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+
         #endregion
 
-
+     
     }
 }
