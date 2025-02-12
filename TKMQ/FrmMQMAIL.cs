@@ -11911,7 +11911,7 @@ namespace TKMQ
                             ,CASE WHEN 國內月目前總業績>0 AND 國內月目標業績>0 THEN CONVERT(decimal(16,4),國內月目前總業績/國內月目標業績) ELSE 0 END '國內累積達成率'
                             FROM
                             (
-	                            SELECT NATIONS, (SUM(銷貨) - SUM(銷退)) AS '國內月目前總業績'
+	                            SELECT NATIONS, (SUM(銷貨) + SUM(銷退)) AS '國內月目前總業績'
 	                            ,(
 		                            SELECT ISNULL(INTARGETMONEYS, 0)
 		                            FROM [TK].[dbo].[ZTARGETMONEYS]
@@ -11989,7 +11989,7 @@ namespace TKMQ
                             ,CASE WHEN 國外月目前總業績>0 AND 國外月目標業績>0 THEN CONVERT(decimal(16,4),國外月目前總業績/國外月目標業績) ELSE 0 END '國外累積達成率'
                             FROM
                             (
-	                            SELECT NATIONS, (SUM(銷貨) - SUM(銷退)) AS '國外月目前總業績'
+	                            SELECT NATIONS, (SUM(銷貨) + SUM(銷退)) AS '國外月目前總業績'
 	                            ,(
 		                            SELECT ISNULL(OUTTARGETMONEYS, 0)
 		                            FROM [TK].[dbo].[ZTARGETMONEYS]
