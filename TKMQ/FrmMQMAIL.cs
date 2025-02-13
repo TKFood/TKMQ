@@ -14307,7 +14307,9 @@ namespace TKMQ
                 //託外採購單比對託外製令+託外入庫
                 //一般採購比對進貨單
                 sbSql.AppendFormat(@"                                      
-                                    SELECT *
+                                    SELECT 
+                                    ISNULL((SELECT SUM(NUMS) FROM  [TKWAREHOUSE].[dbo].[TBPURINCHECK] WHERE [TBPURINCHECK].TC001=TEMP.採購單別 AND [TBPURINCHECK].TC002=TEMP.採購單號 AND [TBPURINCHECK].TD003=TEMP.序號),0) AS '到貨未進數量'
+                                    ,*
                                     FROM 
                                     (
                                     SELECT 
