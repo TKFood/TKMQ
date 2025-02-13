@@ -11597,6 +11597,7 @@ namespace TKMQ
                             --產生當月的每一天日期
                             --20250207 新業務日報
                             --20250210 銷貨單只需加正金額	AND TH037>0，負金額是預計沖銷不用計算
+                            --20250213 銷貨單、銷退單，過濾[TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS]的備註
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
@@ -11618,7 +11619,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11627,6 +11627,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='100005'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '何姍怡銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11644,6 +11645,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='100005'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '何姍怡銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11652,7 +11654,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11661,6 +11662,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='140078'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '蔡顏鴻銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11678,6 +11680,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='140078'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '蔡顏鴻銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11686,7 +11689,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11695,6 +11697,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='160155'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '洪櫻芬銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11712,6 +11715,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='160155'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '洪櫻芬銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11720,7 +11724,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11729,6 +11732,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='200050'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '張釋予銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11746,6 +11750,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='200050'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '張釋予銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11754,7 +11759,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11763,6 +11767,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='240036'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '許湘舷銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11780,6 +11785,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='240036'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '許湘舷銷退'
 
                             --國內小計 
@@ -11790,7 +11796,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11799,6 +11804,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國內'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '國內銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11816,6 +11822,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國內'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '國內銷退'
                             --國外小計 
                             ,(
@@ -11825,7 +11832,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11834,6 +11840,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國外'
 		                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '國外銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11851,6 +11858,7 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國外'
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '國外銷退'
                             --國內、國外總計
                             ,(
@@ -11860,7 +11868,6 @@ namespace TKMQ
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 		                            AND TG023 = 'Y'
-                                    AND TH037>0
 		                            AND TG001 IN ( SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') )		
@@ -11868,6 +11875,7 @@ namespace TKMQ
 			                            SELECT [MV001] 
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 					                            )
+		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            ) AS '總計銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11884,6 +11892,7 @@ namespace TKMQ
 			                            SELECT [MV001] 
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]			
 		                            )
+		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 	                            )AS '總計銷退'
                             FROM Dates
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
@@ -11935,13 +11944,13 @@ namespace TKMQ
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 					                            AND TG023 = 'Y'
-                                                AND TH037>0
 					                            AND TG001 IN ( 
 						                            SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') 
 					                            )        
 					                            AND TG006 = MV001
+                                                AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
@@ -11956,6 +11965,7 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('24.銷退單') 
 					                            )    
 					                            AND TI006 = MV001
+                                                AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 			                            ) AS '銷退'
 		                            FROM Dates
 		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
@@ -12013,13 +12023,13 @@ namespace TKMQ
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
 					                            AND TG023 = 'Y'
-                                                AND TH037>0
 					                            AND TG001 IN ( 
 						                            SELECT [TG001]
 						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
 						                            WHERE [KINDS] IN ('23.銷貨單') 
 					                            )        
 					                            AND TG006 = MV001
+                                                AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
@@ -12034,6 +12044,7 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('24.銷退單') 
 					                            )    
 					                            AND TI006 = MV001
+                                                AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
 			                            ) AS '銷退'
 		                            FROM Dates
 		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
@@ -12773,14 +12784,14 @@ namespace TKMQ
 
             try
             {
-                foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
-                {
+                //foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
+                //{
 
-                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
-                }
+                //    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                //}
 
                 //測試寄MAIL
-                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 MySMTP.Send(MyMail);
 
