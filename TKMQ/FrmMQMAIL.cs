@@ -12826,7 +12826,7 @@ namespace TKMQ
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
             SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV3.frx");
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV4.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
