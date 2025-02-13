@@ -19264,7 +19264,7 @@ namespace TKMQ
         {
             //path_File_COPTCD
             //每日訂單明細表
-            SETPATH();
+            SETPATH(); 
             SETFILE_COPTCD(path_File_COPTCD);
             CLEAREXCEL();
 
