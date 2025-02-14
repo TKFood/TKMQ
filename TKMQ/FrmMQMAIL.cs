@@ -11627,7 +11627,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='100005'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '何姍怡銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11645,8 +11649,12 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='100005'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
-	                            )AS '何姍怡銷退'
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)			                            
+	                            ) AS '何姍怡銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
 	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
@@ -11662,7 +11670,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='140078'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '蔡顏鴻銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11680,7 +11692,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='140078'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '蔡顏鴻銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11697,7 +11713,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='160155'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '洪櫻芬銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11715,7 +11735,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='160155'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '洪櫻芬銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11732,7 +11756,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='200050'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '張釋予銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11750,7 +11778,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='200050'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '張釋予銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
@@ -11767,7 +11799,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='240036'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '許湘舷銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11785,7 +11821,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [MV001] ='240036'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '許湘舷銷退'
 
                             --國內小計 
@@ -11804,7 +11844,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國內'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '國內銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11822,7 +11866,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國內'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '國內銷退'
                             --國外小計 
                             ,(
@@ -11840,7 +11888,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國外'
 		                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '國外銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11858,7 +11910,11 @@ namespace TKMQ
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 			                            WHERE [NATIONS] ='國外'
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '國外銷退'
                             --國內、國外總計
                             ,(
@@ -11875,7 +11931,11 @@ namespace TKMQ
 			                            SELECT [MV001] 
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]
 					                            )
-		                            AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+											SELECT 1 
+											FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+											WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            ) AS '總計銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
@@ -11892,7 +11952,11 @@ namespace TKMQ
 			                            SELECT [MV001] 
 			                            FROM [TK].[dbo].[Z_SALES_DAILY_REPORTS]			
 		                            )
-		                            AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+		                            AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+									)
 	                            )AS '總計銷退'
                             FROM Dates
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
@@ -11950,7 +12014,11 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('23.銷貨單') 
 					                            )        
 					                            AND TG006 = MV001
-                                                AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+                                                AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+												)
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
@@ -11965,7 +12033,11 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('24.銷退單') 
 					                            )    
 					                            AND TI006 = MV001
-                                                AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+                                                AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+												)
 			                            ) AS '銷退'
 		                            FROM Dates
 		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
@@ -12029,7 +12101,11 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('23.銷貨單') 
 					                            )        
 					                            AND TG006 = MV001
-                                                AND TG020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+                                                                                                AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+												)
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
@@ -12044,7 +12120,11 @@ namespace TKMQ
 						                            WHERE [KINDS] IN ('24.銷退單') 
 					                            )    
 					                            AND TI006 = MV001
-                                                AND TI020 NOT IN (SELECT [COMMENTS]   FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS])
+                                                AND NOT EXISTS (
+													SELECT 1 
+													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+												)
 			                            ) AS '銷退'
 		                            FROM Dates
 		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
@@ -12793,7 +12873,7 @@ namespace TKMQ
                 //測試寄MAIL
                 MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
-                MySMTP.Send(MyMail);
+                MySMTP.Send(MyMail); 
 
                 MyMail.Dispose(); //釋放資源
 
