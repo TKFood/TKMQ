@@ -14273,6 +14273,7 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購數量</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">到貨但未進數量</th>");
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -14290,6 +14291,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購數量"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨但未進數量s"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
 
@@ -14399,7 +14401,7 @@ namespace TKMQ
                 //一般採購比對進貨單
                 sbSql.AppendFormat(@"                                      
                                     SELECT 
-                                    ISNULL((SELECT SUM(NUMS) FROM  [TKWAREHOUSE].[dbo].[TBPURINCHECK] WHERE [TBPURINCHECK].TC001=TEMP.採購單別 AND [TBPURINCHECK].TC002=TEMP.採購單號 AND [TBPURINCHECK].TD003=TEMP.序號),0) AS '到貨未進數量'
+                                    ISNULL((SELECT SUM(NUMS) FROM  [TKWAREHOUSE].[dbo].[TBPURINCHECK] WHERE [TBPURINCHECK].TC001=TEMP.採購單別 AND [TBPURINCHECK].TC002=TEMP.採購單號 AND [TBPURINCHECK].TD003=TEMP.序號),0) AS '到貨但未進數量'
                                     ,*
                                     FROM 
                                     (
