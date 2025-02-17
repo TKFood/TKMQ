@@ -14291,7 +14291,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購數量"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨但未進數量s"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨但未進數量"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
 
