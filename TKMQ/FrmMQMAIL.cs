@@ -19368,17 +19368,14 @@ namespace TKMQ
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
             MessageBox.Show("OK");
         }
-        private void button30_Click(object sender, EventArgs e)
-        {
-            SENDEMAIL_DAILY_SALES_MONEY();
-
-            MessageBox.Show("完成");
-        }
+       
 
         private void button31_Click(object sender, EventArgs e)
         {
             //SETFASTREPORT(); 
             SENDEMAIL_DAILY_SALES_MONEY();
+
+            MessageBox.Show("完成");
         }
 
         private void button32_Click(object sender, EventArgs e)
