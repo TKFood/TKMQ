@@ -1207,6 +1207,27 @@ namespace TKMQ
         {
             StringBuilder MSG = new StringBuilder();
 
+            try
+            {
+
+            }
+
+            catch
+            {
+                MSG.AppendFormat(@" ");
+            }
+
+            try
+            {
+                //採購7日前未到貨
+                SENDEMAIL_PURNOTIN();
+            }
+
+            catch
+            {
+                MSG.AppendFormat(@"採購7日前未到貨  失敗 ||");
+            }
+
             //每週通知，1006.樣品試吃回覆單，還未回覆的明細    
             try
             {
