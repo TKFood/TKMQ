@@ -5015,9 +5015,7 @@ namespace TKMQ
 
 
         public void ADDLOG(DateTime DATES, string SOURCE, string EX)
-        {
-            Guid NEWGUID = new Guid();
-            NEWGUID = Guid.NewGuid();
+        {         
 
             try
             {
@@ -5042,10 +5040,10 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@" 
                                     INSERT INTO [TKMQ].[dbo].[LOG]
-                                    ([ID],[DATES],[SOURCE],[EX])
+                                    ([DATES],[SOURCE],[EX])
                                     VALUES 
-                                    ('{0}','{1}','{2}','{3}')
-                                   ", NEWGUID, DATES.ToString("yyyy/MM/dd HH:mm:ss"), SOURCE, EX);
+                                    ('{0}','{1}','{2}')
+                                   ", DATES.ToString("yyyy/MM/dd HH:mm:ss"), SOURCE, EX);
 
 
 
@@ -12887,7 +12885,6 @@ namespace TKMQ
             {
                 foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
                 {
-
                     MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
                 }
 
