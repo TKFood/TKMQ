@@ -254,7 +254,7 @@ namespace TKMQ
             DateTime now = DateTime.Now;
 
 
-            string targetTime1 = "08:25";
+            string targetTime1 = "08:29";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
             string targetTime2 = "08:50";
@@ -1329,12 +1329,12 @@ namespace TKMQ
             //
             try
             {
-                // 國內、外業務部業績日報表
-                Thread.Sleep(5000);
-
+                // 國內、外業務部業績日報表    
                 SENDEMAIL_DAILY_SALES_MONEY();
 
-                Thread.Sleep(5000);
+                //Thread.Sleep(1000 * 60); 的作用是在執行緒（Thread）中暫停執行 60 秒（1 分鐘）。
+                //因為HRAUTORUN_currentTime1排程在1分鐘內跑完，會重覆執行，所以sleep暫停1分鐘再繼續排程
+                Thread.Sleep(1000*60);
             }
             catch
             {
@@ -12897,7 +12897,7 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
+                //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
 
 
             }
