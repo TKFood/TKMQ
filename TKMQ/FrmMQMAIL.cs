@@ -254,7 +254,7 @@ namespace TKMQ
             DateTime now = DateTime.Now;
 
 
-            string targetTime1 = "08:30";
+            string targetTime1 = "08:25";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
             string targetTime2 = "08:50";
@@ -12894,6 +12894,8 @@ namespace TKMQ
                 MySMTP.Send(MyMail); 
 
                 MyMail.Dispose(); //釋放資源
+
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
 
 
             }
