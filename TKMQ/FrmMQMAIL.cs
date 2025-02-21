@@ -1330,6 +1330,8 @@ namespace TKMQ
             try
             {
                 // 國內、外業務部業績日報表
+                Thread.Sleep(5000);
+
                 SENDEMAIL_DAILY_SALES_MONEY();
 
                 Thread.Sleep(5000);
