@@ -76,6 +76,7 @@
             this.button47 = new System.Windows.Forms.Button();
             this.button48 = new System.Windows.Forms.Button();
             this.button49 = new System.Windows.Forms.Button();
+            this.button50 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -93,7 +94,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button50 = new System.Windows.Forms.Button();
+            this.button30 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -177,8 +178,6 @@
             this.tableLayoutPanel1.Controls.Add(this.button39, 6, 6);
             this.tableLayoutPanel1.Controls.Add(this.button36, 6, 5);
             this.tableLayoutPanel1.Controls.Add(this.button35, 6, 4);
-            this.tableLayoutPanel1.Controls.Add(this.button22, 6, 9);
-            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 10);
             this.tableLayoutPanel1.Controls.Add(this.button44, 4, 10);
             this.tableLayoutPanel1.Controls.Add(this.button25, 0, 13);
             this.tableLayoutPanel1.Controls.Add(this.button18, 0, 12);
@@ -192,6 +191,9 @@
             this.tableLayoutPanel1.Controls.Add(this.button48, 4, 12);
             this.tableLayoutPanel1.Controls.Add(this.button49, 4, 13);
             this.tableLayoutPanel1.Controls.Add(this.button50, 3, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button21, 6, 12);
+            this.tableLayoutPanel1.Controls.Add(this.button22, 6, 11);
+            this.tableLayoutPanel1.Controls.Add(this.button30, 6, 8);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -542,7 +544,7 @@
             // button22
             // 
             this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button22.Location = new System.Drawing.Point(723, 363);
+            this.button22.Location = new System.Drawing.Point(723, 443);
             this.button22.Name = "button22";
             this.button22.Size = new System.Drawing.Size(197, 34);
             this.button22.TabIndex = 24;
@@ -552,7 +554,7 @@
             // 
             // button21
             // 
-            this.button21.Location = new System.Drawing.Point(723, 403);
+            this.button21.Location = new System.Drawing.Point(723, 483);
             this.button21.Name = "button21";
             this.button21.Size = new System.Drawing.Size(197, 34);
             this.button21.TabIndex = 23;
@@ -682,6 +684,16 @@
             this.button49.Text = "託外採購未到貨明細";
             this.button49.UseVisualStyleBackColor = true;
             this.button49.Click += new System.EventHandler(this.button49_Click);
+            // 
+            // button50
+            // 
+            this.button50.Location = new System.Drawing.Point(386, 403);
+            this.button50.Name = "button50";
+            this.button50.Size = new System.Drawing.Size(148, 34);
+            this.button50.TabIndex = 101;
+            this.button50.Text = "採購每月1+15未到貨通知";
+            this.button50.UseVisualStyleBackColor = true;
+            this.button50.Click += new System.EventHandler(this.button50_Click);
             // 
             // tabPage2
             // 
@@ -920,15 +932,15 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button50
+            // button30
             // 
-            this.button50.Location = new System.Drawing.Point(386, 403);
-            this.button50.Name = "button50";
-            this.button50.Size = new System.Drawing.Size(148, 34);
-            this.button50.TabIndex = 101;
-            this.button50.Text = "採購每月1+15未到貨通知";
-            this.button50.UseVisualStyleBackColor = true;
-            this.button50.Click += new System.EventHandler(this.button50_Click);
+            this.button30.Location = new System.Drawing.Point(723, 323);
+            this.button30.Name = "button30";
+            this.button30.Size = new System.Drawing.Size(197, 34);
+            this.button30.TabIndex = 102;
+            this.button30.Text = "研發每日通知新品售價";
+            this.button30.UseVisualStyleBackColor = true;
+            this.button30.Click += new System.EventHandler(this.button30_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1026,5 +1038,6 @@
         private System.Windows.Forms.Button button48;
         private System.Windows.Forms.Button button49;
         private System.Windows.Forms.Button button50;
+        private System.Windows.Forms.Button button30;
     }
 }
