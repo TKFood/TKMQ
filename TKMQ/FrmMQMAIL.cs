@@ -384,7 +384,7 @@ namespace TKMQ
             StringBuilder BODY = new StringBuilder();
 
             try
-            {               
+            {
                 //Thread.Sleep(5000);
             }
             catch
@@ -398,8 +398,22 @@ namespace TKMQ
 
             try
             {
-                //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知
-              
+                //研發每日通知新品售價
+                SENDMAIL_DEC_NEW_PRODUCT_PRICES();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 研發每日通知新品售價 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知              
                 SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
                 Thread.Sleep(5000);
             }
