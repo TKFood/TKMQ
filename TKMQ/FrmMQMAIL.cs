@@ -19171,7 +19171,7 @@ namespace TKMQ
 
         public void SENDMAIL_DEC_NEW_PRODUCT_PRICES()
         {
-
+            string IS_SPECIAL = "N";
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
 
@@ -19180,9 +19180,11 @@ namespace TKMQ
 
             try
             {
-                DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_PUR_MONTHS_NO_IN();
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_DEC_NEW_PRODUCT_PRICES();
                 DT_DATAS = SERACH_DEC_NEW_PRODUCT_PRICES_UOF();
 
+                //找出特定人員的mail
+                DataTable DT_EMAIL_TO_EMAIL_SPECIAL = SERACH_MAIL_DEC_NEW_PRODUCT_PRICES_SPECIAL();
 
                 SUBJEST.Clear();
                 BODY.Clear();
@@ -19263,9 +19265,36 @@ namespace TKMQ
 
                     try
                     {
+                        //通知預設的群組
                         foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
                         {
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //通知未簽核人員 
+                        //HashSet<string> 會自動過濾重複的 Email，確保 To 清單中不會有重複地址。
+                        HashSet<string> emailSet = new HashSet<string>();
+                        foreach (DataRow DR in DT_DATAS.Rows)
+                        {
+                            string email = DR["EMAIL"].ToString();
+                            string SEICALNAMES = DR["NAME"].ToString();
+
+                            if (!string.IsNullOrWhiteSpace(email) && emailSet.Add(email)) // 確保唯一
+                            {
+                                MyMail.To.Add(email);
+                            }
+
+                            //張琬瑜
+                            if (SEICALNAMES.Equals("張琬瑜")&& IS_SPECIAL.Equals("N"))
+                            {
+                                //只需通知特定人員1次
+                                IS_SPECIAL = "Y";
+
+                                foreach (DataRow DR_SEPCIAL in DT_EMAIL_TO_EMAIL_SPECIAL.Rows)
+                                {
+                                    MyMail.To.Add(DR_SEPCIAL["MAIL"].ToString()); //設定收件者Email，多筆mail
+                                }
+                            }
                         }
 
                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
@@ -19429,6 +19458,76 @@ namespace TKMQ
                                     ,[COMMENTS]
                                     FROM [TKMQ].[dbo].[MQSENDMAIL]
                                     WHERE [SENDTO]='DEC_NEW_PRODUCT_PRICES'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_MAIL_DEC_NEW_PRODUCT_PRICES_SPECIAL()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='DEC_NEW_PRODUCT_PRICES_SPECIAL'
                                                                        
                                     ");
 
