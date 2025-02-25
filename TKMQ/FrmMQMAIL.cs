@@ -19253,90 +19253,91 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
                 }
 
-                try
+                //有資料才寄送
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
-                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                    string NAME = ConfigurationManager.AppSettings["NAME"];
-                    string PW = ConfigurationManager.AppSettings["PW"];
-
-                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                    MyMail.Subject = SUBJEST.ToString();
-                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                    MyMail.Body = BODY.ToString();
-                    MyMail.IsBodyHtml = true; //是否使用html格式
-
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
                     try
                     {
-                        //通知預設的群組
-                        foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
-                        {
-                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                        }
+                        string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                        string NAME = ConfigurationManager.AppSettings["NAME"];
+                        string PW = ConfigurationManager.AppSettings["PW"];
 
-                        //通知未簽核人員 
-                        //HashSet<string> 會自動過濾重複的 Email，確保 To 清單中不會有重複地址。
-                        HashSet<string> emailSet = new HashSet<string>();
-                        foreach (DataRow DR in DT_DATAS.Rows)
-                        {
-                            string email = DR["EMAIL"].ToString();
-                            string SEICALNAMES = DR["NAME"].ToString();
+                        System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
-                            if (!string.IsNullOrWhiteSpace(email) && emailSet.Add(email)) // 確保唯一
+                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                        MyMail.Subject = SUBJEST.ToString();
+                        //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                        MyMail.Body = BODY.ToString();
+                        MyMail.IsBodyHtml = true; //是否使用html格式
+
+                        //加上附圖
+                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                        try
+                        {
+                            //通知預設的群組
+                            foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
                             {
-                                MyMail.To.Add(email);
+                                MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                             }
 
-                            //張琬瑜
-                            if (SEICALNAMES.Equals("張琬瑜")&& IS_SPECIAL.Equals("N"))
+                            //通知未簽核人員 
+                            //HashSet<string> 會自動過濾重複的 Email，確保 To 清單中不會有重複地址。
+                            HashSet<string> emailSet = new HashSet<string>();
+                            foreach (DataRow DR in DT_DATAS.Rows)
                             {
-                                //只需通知特定人員1次
-                                IS_SPECIAL = "Y";
+                                string email = DR["EMAIL"].ToString();
+                                string SEICALNAMES = DR["NAME"].ToString();
 
-                                foreach (DataRow DR_SEPCIAL in DT_EMAIL_TO_EMAIL_SPECIAL.Rows)
+                                if (!string.IsNullOrWhiteSpace(email) && emailSet.Add(email)) // 確保唯一
                                 {
-                                    MyMail.To.Add(DR_SEPCIAL["MAIL"].ToString()); //設定收件者Email，多筆mail
+                                    MyMail.To.Add(email);
+                                }
+
+                                //張琬瑜
+                                if (SEICALNAMES.Equals("張琬瑜") && IS_SPECIAL.Equals("N"))
+                                {
+                                    //只需通知特定人員1次
+                                    IS_SPECIAL = "Y";
+
+                                    foreach (DataRow DR_SEPCIAL in DT_EMAIL_TO_EMAIL_SPECIAL.Rows)
+                                    {
+                                        MyMail.To.Add(DR_SEPCIAL["MAIL"].ToString()); //設定收件者Email，多筆mail
+                                    }
                                 }
                             }
+
+                            //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MySMTP.Send(MyMail);
+
+                            MyMail.Dispose(); //釋放資源
+
                         }
+                        catch (Exception ex)
+                        {
+                            //MessageBox.Show("有錯誤");
 
-                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-                        MySMTP.Send(MyMail);
-
-                        MyMail.Dispose(); //釋放資源
-
+                            ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                            //ex.ToString();
+                        }
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                    }
+                    finally
+                    {
+
                     }
                 }
-                catch
-                {
-
-                }
-                finally
-                {
-
-                }
-
-
-
-
+                    
             }
             catch
             {
