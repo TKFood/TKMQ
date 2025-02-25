@@ -315,7 +315,7 @@ namespace TKMQ
             }
 
             //09:29 通知
-            if (targetTime8 == targetTime8)
+            if (currentTime8 == targetTime8)
             {
                 //每星期一~星期五寄送
                 if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
