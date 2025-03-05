@@ -404,9 +404,32 @@ namespace TKMQ
                 //MSG.AppendFormat(@" 溫濕度 失敗 ||");
             }
             finally
-            {
+            { }
 
+            try
+            {
+                //是否有建進貨單
+                SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();                
             }
+            catch
+            {
+                MSG.AppendFormat(@" 到貨是否有建進貨單 失敗 ||");
+            }
+            finally
+            {}
+
+            try
+            { 
+                //到貨數量是否等同進貨數量
+                SENDMAIL_STOCK_TBPURINCHECK();
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 到貨數量是否等同進貨數量失敗 ||");
+            }
+            finally
+            { }
+
 
             try
             {
@@ -20877,7 +20900,7 @@ namespace TKMQ
         private void button52_Click(object sender, EventArgs e)
         {
             //到貨檢查進貨
-            //是否有建進貨單
+            //到貨是否有建進貨單
             SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();
             //到貨數量是否等同進貨數量
             SENDMAIL_STOCK_TBPURINCHECK();
