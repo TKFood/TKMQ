@@ -1633,11 +1633,65 @@ namespace TKMQ
             }
         }
 
-        //currentTime8
-        //09:29
+        //currentTime8        
         public void HRAUTORUN_currentTime8()
         {
             StringBuilder MSG = new StringBuilder();
+
+            try
+            {
+                //資訊-寄送失敗的重寄
+                //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
+
+                //檢查當日是否有寄送失敗
+                //[TKMQ].[dbo].[LOG]
+                DataTable DT = SERACH_IT_FAIL_DOTIFY();
+
+                if (DT != null && DT.Rows.Count >= 1)
+                {
+                    foreach (DataRow DR in DT.Rows)
+                    {
+                        //找出是那些mail寄送失敗
+                        string SOURCE = DR["SOURCE"].ToString();
+
+                        //國內外業務業績日報
+                        if (SOURCE.Contains("國內外業務業績日報"))
+                        {
+                            SENDEMAIL_DAILY_SALES_MONEY();
+                        }
+
+                        //每日批號檢查表
+                        if (SOURCE.Contains("每日批號檢查表"))
+                        {
+                            SETPATH();
+                            SETFILELOTCHECK();
+
+                            CLEAREXCEL();
+
+                            StringBuilder SUBJEST = new StringBuilder();
+                            StringBuilder BODY = new StringBuilder();
+                            //LOTCHECK
+                            SERACHMAILLOTCHECK();
+                            SUBJEST.Clear();
+                            BODY.Clear();
+                            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+                            SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+                        }
+
+
+                    }
+
+                    Thread.Sleep(1000 * 60);
+                }
+            }
+            catch
+            {
+                MSG.AppendFormat(@"寄送失敗的重寄  失敗 ||");
+            }
+            finally
+            {
+            }
 
             try
             {
@@ -20927,7 +20981,9 @@ namespace TKMQ
                     {
                         SENDEMAIL_DAILY_SALES_MONEY();
                     }
-                    else if(SOURCE.Contains("每日批號檢查表"))
+
+                    //每日批號檢查表
+                    if (SOURCE.Contains("每日批號檢查表"))
                     {
                         SETPATH();
                         SETFILELOTCHECK();
