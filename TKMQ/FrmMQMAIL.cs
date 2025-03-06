@@ -20948,9 +20948,10 @@ namespace TKMQ
 
                 }
 
-                MessageBox.Show("OK");
+               
             }
 
+            MessageBox.Show("OK");
 
         }
         #endregion
