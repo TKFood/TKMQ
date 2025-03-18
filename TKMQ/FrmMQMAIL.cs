@@ -13025,9 +13025,26 @@ namespace TKMQ
                 //測試寄MAIL
                 //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
-                MySMTP.Send(MyMail); 
+                //增加重試機制，避免短暫的網路問題導致失敗
+                int retryCount = 3;
+                for (int i = 0; i < retryCount; i++)
+                {
+                    try
+                    {
+                        MySMTP.Send(MyMail);
+                        MyMail.Dispose(); //釋放資源
 
-                MyMail.Dispose(); //釋放資源
+                        break; // 成功則跳出迴圈
+                    }
+                    catch
+                    {
+                        if (i == retryCount - 1)
+                            throw; // 最後一次仍失敗則拋出異常
+                    }
+
+                    System.Threading.Thread.Sleep(5000); // 等待 5 秒再試
+                }
+                              
 
                 //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
 
