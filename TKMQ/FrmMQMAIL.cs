@@ -10627,8 +10627,19 @@ namespace TKMQ
                                     ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
 
                                     FROM [TK].dbo.INVLA 
-                                    WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
+                                    WHERE  (
+	                                    LA009 IN (
+		                                    SELECT
+		                                    [LA009]
+		                                    FROM [TKMQ].[dbo].[POSINV_LA009]
+		                                    )
+	                                    ) 
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
+                                    AND LA009+LA001+LA016 NOT IN (
+	                                    SELECT 
+	                                    [MC001]+[MB001]+[LOTNO]
+	                                    FROM [TKMQ].[dbo].[POSINV_LAOO9_NOTIN]
+                                    )
                                     AND ISDATE(LA016)=1
                                     GROUP BY  LA009,LA001,LA016
                                     HAVING SUM(LA005*LA011)>0
