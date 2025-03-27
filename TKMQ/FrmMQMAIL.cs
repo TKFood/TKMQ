@@ -1363,8 +1363,8 @@ namespace TKMQ
             StringBuilder MSG = new StringBuilder();
 
             try
-            {                
-                //Thread.Sleep(5000);
+            {
+                //Thread.Sleep(1000*60);
             }
             catch
             {
@@ -1386,14 +1386,29 @@ namespace TKMQ
                 Thread.Sleep(1000*60);
             }
             catch
-            {
-                //MessageBox.Show("國內、外業務部業績日報表 有錯誤");
-                MSG.AppendFormat(@" 國內、外業務部業績日報表  失敗 ||");
+            {               
+                MSG.AppendFormat(@"國內、外業務部業績日報表  失敗 ||");
             }
             finally
             {
 
             }
+
+            try
+            {
+                //寄送MAIL，硯微墨統計表
+                SENDMAIL_STORES_REPORTS();
+                Thread.Sleep(1000 * 60);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"硯微墨統計表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
 
             if (!string.IsNullOrEmpty(MSG.ToString()))
             {
@@ -21860,7 +21875,7 @@ namespace TKMQ
 
         private void button54_Click(object sender, EventArgs e)
         {
-            //寄送MAIL
+            //寄送MAIL，硯微墨統計表
             SENDMAIL_STORES_REPORTS();
             MessageBox.Show("OK");
         }
