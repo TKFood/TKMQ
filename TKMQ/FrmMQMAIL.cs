@@ -13109,8 +13109,8 @@ namespace TKMQ
             //新日報用業務+國內外，matrix表
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
-            SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV4.frx");
+            SQL_OUT = SETSQLNEW_OUT(); 
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV5.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
