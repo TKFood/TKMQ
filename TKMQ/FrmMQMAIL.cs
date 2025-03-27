@@ -21065,7 +21065,14 @@ namespace TKMQ
             MessageBox.Show("OK");
 
         }
+
+        private void button54_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("OK");
+        }
+
         #endregion
+
 
     }
 }
