@@ -20624,9 +20624,9 @@ namespace TKMQ
             string SMONTHS = yesterdayDate.ToString("yyyyMM");
 
             //新增每日記錄
-            //ADD_TBDAILYPOSTB(yesterday);
+            ADD_TBDAILYPOSTB(yesterday);
             //新增當月記錄
-            //ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday);
+            ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday);
 
             DataSet ds = new DataSet();
             DataTable DT = new DataTable();
