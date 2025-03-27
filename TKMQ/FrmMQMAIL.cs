@@ -11779,12 +11779,14 @@ namespace TKMQ
                             --20250207 新業務日報
                             --20250210 銷貨單只需加正金額	AND TH037>0，負金額是預計沖銷不用計算
                             --20250213 銷貨單、銷退單，過濾[TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS]的備註
+
+                            DECLARE @EndOfMonth DATE = DATEADD(DAY, -1, DATEADD(MONTH, 1, DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE())));  -- 當月最後一天
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
                                 SELECT DATEADD(DAY, 1, DateValue)
                                 FROM Dates
-                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                                WHERE DateValue < @EndOfMonth -- 強制遞迴只到當月最後一天
                             )
 
                             SELECT 
@@ -12140,6 +12142,7 @@ namespace TKMQ
 									)
 	                            )AS '總計銷退'
                             FROM Dates
+                           
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
                             OPTION (MAXRECURSION 31);
                             ");
@@ -12152,13 +12155,13 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"   
-                            
+                            DECLARE @EndOfMonth DATE = DATEADD(DAY, -1, DATEADD(MONTH, 1, DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE())));  -- 當月最後一天
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
                                 SELECT DATEADD(DAY, 1, DateValue)
                                 FROM Dates
-                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                                WHERE DateValue < @EndOfMonth -- 強制遞迴只到當月最後一天
                             )
 
                             SELECT *
@@ -12227,6 +12230,7 @@ namespace TKMQ
 	                            GROUP BY NATIONS
 
                             ) AS TEMP2
+                            
                             OPTION (MAXRECURSION 31);
                             ");
 
@@ -12239,13 +12243,13 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"   
-                            
+                            DECLARE @EndOfMonth DATE = DATEADD(DAY, -1, DATEADD(MONTH, 1, DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE())));  -- 當月最後一天
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
                                 UNION ALL
                                 SELECT DATEADD(DAY, 1, DateValue)
                                 FROM Dates
-                                WHERE DateValue < DATEADD(DAY, -DAY(DATEADD(MONTH, 1, GETDATE())), DATEADD(MONTH, 1, GETDATE()))
+                                WHERE DateValue < @EndOfMonth -- 強制遞迴只到當月最後一天
                             )
 
                             SELECT *
@@ -12314,6 +12318,7 @@ namespace TKMQ
 	                            GROUP BY NATIONS
 
                             ) AS TEMP2
+                           
                             OPTION (MAXRECURSION 31);
                             ");
 
@@ -13045,13 +13050,13 @@ namespace TKMQ
 
             try
             {
-                foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
-                {
-                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
-                }
+                //foreach (DataRow od in dsSALESMONEYS.Tables[0].Rows)
+                //{
+                //    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                //}
 
                 //測試寄MAIL
-                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
 
                 //增加重試機制，避免短暫的網路問題導致失敗
                 int retryCount = 3;
