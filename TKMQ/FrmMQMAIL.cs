@@ -13130,7 +13130,12 @@ namespace TKMQ
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = TIMEOUT_LIMITS;
             //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
-
+            TableDataSource table1 = report1.GetDataSource("Table1") as TableDataSource;
+            table1.SelectCommand = SQL_IN.ToString();
+            table1.Connection.CommandTimeout = TIMEOUT_LIMITS;
+            TableDataSource table2 = report1.GetDataSource("Table2") as TableDataSource;
+            table2.SelectCommand = SQL_OUT.ToString();
+            table2.Connection.CommandTimeout = TIMEOUT_LIMITS;
 
             // prepare a report
             report1.Prepare();
