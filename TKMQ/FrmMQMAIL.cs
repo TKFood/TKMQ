@@ -20616,17 +20616,113 @@ namespace TKMQ
             }
         }
 
-        public void  SENDMAIL_SOTRES_SET()
+        public void SENDMAIL_STORES_REPORTS()
         {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
             string yesterday = yesterdayDate.ToString("yyyyMMdd");
             string firstDayOfMonth = new DateTime(yesterdayDate.Year, yesterdayDate.Month, 1).ToString("yyyyMMdd");
             string SMONTHS = yesterdayDate.ToString("yyyyMM");
-            
+
             //新增每日記錄
-           // ADD_TBDAILYPOSTB(yesterday);
+            //ADD_TBDAILYPOSTB(yesterday);
             //新增當月記錄
-            ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday);
+            //ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday);
+
+            DataSet ds = new DataSet();
+            DataTable DT = new DataTable();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETPATH();
+
+            //DATES = DateTime.Now.ToString("yyyyMMdd");
+            DATES = yesterday;
+
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            //pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+            string pathFile_DAILY = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日硯微墨統計表" + DATES.ToString() + ".pdf";
+            string pathFile_MONTH = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份硯微墨統計表" + DATES.ToString() + ".pdf";
+            
+            //如果日期資料夾不存在就新增
+            if (!Directory.Exists(DirectoryNAME))
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+            // 檢查檔案是否存在，然後用 File.Delete() 刪除它們
+            if (File.Exists(pathFile_DAILY))
+            {
+                File.Delete(pathFile_DAILY);
+            }
+
+            if (File.Exists(pathFile_MONTH))
+            {
+                File.Delete(pathFile_MONTH);
+            }
+
+            SAVEREPORT_STORES_REPORTS_DAILY(pathFile_DAILY, yesterday);
+            SAVEREPORT_STORES_REPORTS_MONTH(pathFile_MONTH, SMONTHS, firstDayOfMonth, yesterday);
+
+            DT = SERACH_MAIL_STORES_REPORTS();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每日及月份-硯微墨統計表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear All, ");
+            BODY.AppendFormat(Environment.NewLine);
+            BODY.AppendFormat(Environment.NewLine + "檢附每日及月份-硯微墨統計表，請參考，謝謝");
+            BODY.AppendFormat(Environment.NewLine);
+
+
+            string emailBody = BODY.ToString();            
+
+            // 将 HTML 视图添加到邮件
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+          
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            // 添加附件
+            Attachment attch = new Attachment(pathFile_DAILY);
+            Attachment attch2 = new Attachment(pathFile_MONTH);
+            MyMail.Attachments.Add(attch);
+            MyMail.Attachments.Add(attch2);
+
+            try
+            {
+                foreach (DataRow od in DT.Rows)
+                {
+
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                MySMTP.Send(MyMail);
+
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception ex)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
+                //ex.ToString();
+            }
         }
 
         public void ADD_TBDAILYPOSTB(string SDATES)
@@ -21106,6 +21202,214 @@ namespace TKMQ
 
         }
 
+        public DataTable SERACH_MAIL_STORES_REPORTS()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='STORES_REPORTS'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SAVEREPORT_STORES_REPORTS_DAILY(string pathFile, string SDAYS)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL_STORES_REPORTS_DAILY(SDAYS);
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\硯微墨每日商品統計表.frx"); 
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = TIMEOUT_LIMITS;
+            report1.SetParameterValue("P1", SDAYS);
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+        }
+
+        public StringBuilder SETSQL_STORES_REPORTS_DAILY(string SDAYS)
+        {
+
+            StringBuilder SB = new StringBuilder();
+
+
+            SB.AppendFormat(@"   
+                            SELECT 
+                            [SDATES] AS '日期'
+                            ,[MB001] AS '品號'
+                            ,[MB002] AS '品名'
+                            ,[SALENUMS] AS '銷售數量'
+                            ,[INNUMS] AS '入庫數量'
+                            ,[PUBNUMS] AS '試吃+公關數量'
+                            ,[NOWNUMS] AS '庫存數量'
+                            ,[COMMENTS] AS '備註'
+                            ,[ID]
+                            ,[CREATEDATES]
+                            FROM [TKMK].[dbo].[TBDAILYPOSTB]
+                            WHERE [SDATES]='{0}'
+                            ORDER BY [MB001]
+
+                         
+
+                            ", SDAYS);
+
+
+            return SB;
+        }
+
+        public void SAVEREPORT_STORES_REPORTS_MONTH(string pathFile, string SMONTHS,string SDATES,string EDATES)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1 = SETSQL_STORES_REPORTS_MONTH(SMONTHS);
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\硯微墨當月商品統計表.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = TIMEOUT_LIMITS;
+            report1.SetParameterValue("P1", SDATES);
+            report1.SetParameterValue("P2", EDATES);
+
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+        }
+
+        public StringBuilder SETSQL_STORES_REPORTS_MONTH(string SMONTHS)
+        {
+
+            StringBuilder SB = new StringBuilder();
+
+
+            SB.AppendFormat(@"   
+                           SELECT 
+                            [ID]
+                            ,[SMONTHS] AS '年月'
+                            ,[MB001] AS '品號'
+                            ,[MB002] AS '品名'
+                            ,[SALENUMS] AS '銷售累計總數量'
+                            ,[INNUMS] AS '入庫累計總數量'
+                            ,[PUBNUMS] AS '試吃+公關累計總數量'
+                            ,[NOWNUMS] AS '目前庫存數量'
+                            ,[COMMENTS]AS '備註'
+                            ,[CREATEDATES]
+                            FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                            WHERE [SMONTHS]='{0}'
+                            ORDER BY [MB001]                         
+
+                            ", SMONTHS);
+
+
+            return SB;
+        }
+
         #endregion
 
         #region BUTTON
@@ -21558,7 +21862,7 @@ namespace TKMQ
         private void button54_Click(object sender, EventArgs e)
         {
             //寄送MAIL
-            SENDMAIL_SOTRES_SET();
+            SENDMAIL_STORES_REPORTS();
             MessageBox.Show("OK");
         }
 
