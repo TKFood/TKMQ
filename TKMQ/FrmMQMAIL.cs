@@ -20616,7 +20616,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_STORES_REPORTS()
+        public void SENDMAIL_STORES_REPORTS() 
         {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
             string yesterday = yesterdayDate.ToString("yyyyMMdd");
