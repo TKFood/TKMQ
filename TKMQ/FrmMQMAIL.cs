@@ -20835,8 +20835,7 @@ namespace TKMQ
 	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
 	                                    WHERE LA001=MB001
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
-	                                    AND LA009 IN ('21002')
-                                        AND LA004<='{0}'
+	                                    AND LA009 IN ('21002')                                      
 	                                    GROUP BY  LA001,MB002
                                     HAVING SUM(LA005*LA011)>0
                                     ) AS TEMP
@@ -21042,7 +21041,7 @@ namespace TKMQ
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
 	                                    AND LA009 IN ('21002')	
 	                                    GROUP BY  LA001,MB002
-                                    HAVING SUM(LA005*LA011)>0
+                                        HAVING SUM(LA005*LA011)>0
                                     ) AS TEMP
                                     WHERE TEMP.LA001=[TBDAILYPOSTBMONTH].MB001
                                     AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
