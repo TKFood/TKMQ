@@ -21448,7 +21448,7 @@ namespace TKMQ
             SQL1 = SETSQL_STORES_REPORTS_MONTH(SMONTHS);
             Report report1 = new Report();
 
-            report1.Load(@"REPORT\硯微墨當月商品統計表.frx");
+            report1.Load(@"REPORT\硯微墨月份商品統計表.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體

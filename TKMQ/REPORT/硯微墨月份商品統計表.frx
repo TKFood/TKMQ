@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report ScriptLanguage="CSharp" ReportInfo.Created="03/26/2025 14:09:58" ReportInfo.Modified="03/28/2025 13:19:22" ReportInfo.CreatorVersion="2016.4.4.0">
+<Report ScriptLanguage="CSharp" ReportInfo.Created="03/26/2025 14:09:58" ReportInfo.Modified="03/28/2025 14:00:08" ReportInfo.CreatorVersion="2016.4.4.0">
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUGAK4+2K1ApqWY/e4wk7H72">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUGJ9gdAuwSxyi6ikDSdrpEG">
       <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="SELECT &#13;&#10;[ID]&#13;&#10;,[SMONTHS] AS '年月'&#13;&#10;,[MB001] AS '品號'&#13;&#10;,[MB002] AS '品名'&#13;&#10;,[PRENUMS] AS '上月底庫存數量'&#13;&#10;,[SALENUMS] AS '銷售累計總數量'&#13;&#10;,[INNUMS] AS '入庫累計總數量'&#13;&#10;,[PUBNUMS] AS '試吃+公關累計總數量'&#13;&#10;,[OTHERSINNUMS] AS '轉入'&#13;&#10;,[OTHERSOUTNUMS] AS '領出'&#13;&#10;,[NOWNUMS] AS '目前庫存數量'&#13;&#10;,[COMMENTS]AS '備註'&#13;&#10;,[CREATEDATES]&#13;&#10;FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH]&#13;&#10;WHERE [SMONTHS]='202503'&#13;&#10;ORDER BY [MB001]">
         <Column Name="品號" DataType="System.String"/>
         <Column Name="品名" DataType="System.String"/>
@@ -23,7 +23,7 @@
   </Dictionary>
   <ReportPage Name="Page1" Landscape="true" PaperWidth="350" PaperHeight="300">
     <ReportTitleBand Name="ReportTitle1" Width="1247.4" Height="37.8">
-      <TextObject Name="Text1" Width="255.15" Height="18.9" Text="硯微墨當月商品統計表"/>
+      <TextObject Name="Text1" Width="255.15" Height="18.9" Text="硯微墨月份商品統計表"/>
       <TextObject Name="Text2" Top="18.9" Width="255.15" Height="18.9" Text="日期:[P1]~[P2]"/>
     </ReportTitleBand>
     <PageHeaderBand Name="PageHeader1" Top="42.4" Width="1247.4" Height="37.8">
