@@ -21165,6 +21165,25 @@ namespace TKMQ
                                     WHERE TEMP.MB001=[TBDAILYPOSTBMONTH].MB001
                                     AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
 
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                                    SET [COMMENTS]=
+                                    (CASE WHEN OTHERSOUTNUMS>TEMP.NUMS THEN  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,TEMP.NUMS)))+' 組合成盒裝'
+                                    ELSE  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,OTHERSOUTNUMS)))+' 組合成盒裝' END )
+                                    FROM (
+	                                    SELECT TE004,MB002,SUM(TE008) AS NUMS
+	                                    FROM [TK].dbo.BOMTE,[TK].dbo.BOMTD,[TK].dbo.INVMB
+	                                    WHERE TE001=TD001 AND TE002=TD002
+	                                    AND TE004=MB001
+	                                    AND TD012='Y'
+	                                    AND TD003 LIKE '{0}%'
+	                                    AND TE004 IN (
+	                                    SELECT [MB001]
+	                                    FROM [TKMK].[dbo].[TBDAILYPOSTBCOMMENTS]
+	                                    )
+                                    GROUP BY TE004,MB002
+                                    ) AS TEMP
+                                    WHERE [MB001]=TEMP.TE004
+                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
                                     "
                                     , SMONTHS, SDATES,  EDATES, LASTMONTHDAYS, sbSql99.ToString()
                                     );
