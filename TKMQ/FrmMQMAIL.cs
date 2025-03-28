@@ -20634,14 +20634,19 @@ namespace TKMQ
         public void SENDMAIL_STORES_REPORTS() 
         {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
+            DateTime before_yesterdayDate = DateTime.Now.AddDays(-2); // 取得前天的日期
             string yesterday = yesterdayDate.ToString("yyyyMMdd");
+            string before_yesterday = before_yesterdayDate.ToString("yyyyMMdd");
             string firstDayOfMonth = new DateTime(yesterdayDate.Year, yesterdayDate.Month, 1).ToString("yyyyMMdd");
             string SMONTHS = yesterdayDate.ToString("yyyyMM");
 
+            DateTime todayDate = DateTime.Today;
+            DateTime lastDayOfLastMonthDate = new DateTime(todayDate.Year, todayDate.Month, 1).AddDays(-1); //上個月的最後一天
+            string lastDayOfLastMonthday = lastDayOfLastMonthDate.ToString("yyyyMMdd");
             //新增每日記錄
-            ADD_TBDAILYPOSTB(yesterday);
+            ADD_TBDAILYPOSTB(yesterday, before_yesterday);
             //新增當月記錄
-            ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday);
+            ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday, lastDayOfLastMonthday);
 
             DataSet ds = new DataSet();
             DataTable DT = new DataTable();
@@ -20740,7 +20745,7 @@ namespace TKMQ
             }
         }
 
-        public void ADD_TBDAILYPOSTB(string SDATES)
+        public void ADD_TBDAILYPOSTB(string SDATES, string YEATERDAYES)
         {
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
@@ -20818,7 +20823,8 @@ namespace TKMQ
                                         INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
-	                                    AND LA005 IN (1)
+	                                   	AND LA005 IN (1)
+	                                    AND LA014 IN (1)
                                         AND LA004='{0}'
                                         GROUP BY LA001, MB002
                                         HAVING SUM(LA005 * LA011) > 0
@@ -20838,8 +20844,25 @@ namespace TKMQ
 
                                     ) AS TEMP
                                     WHERE 1=1
-                                    {1}
+                                    {2}
                                     ORDER BY MB001, MB002
+
+                                    --更新前期庫存量
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
+                                    SET [PRENUMS]=NUMS
+                                    FROM 
+                                    (
+	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
+	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    WHERE LA001=MB001
+	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
+	                                    AND LA009 IN ('21002')	
+	                                    AND LA004<='{1}'
+	                                    GROUP BY  LA001,MB002
+                                    HAVING SUM(LA005*LA011)>0
+                                    ) AS TEMP
+                                    WHERE TEMP.LA001=TBDAILYPOSTB.MB001
+                                    AND TBDAILYPOSTB.SDATES='{0}'
 
                                     --更新庫存量
                                     UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
@@ -20884,7 +20907,8 @@ namespace TKMQ
                                         INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
-	                                    AND LA005 IN (1)
+	                                   	AND LA005 IN (1)
+	                                    AND LA014 IN (1)
                                         AND LA004='{0}'
                                         GROUP BY LA001, MB002
                                         HAVING SUM(LA005 * LA011) > 0
@@ -20911,8 +20935,20 @@ namespace TKMQ
                                     ) AS TEMP
                                     WHERE TEMP.MB001=[TBDAILYPOSTB].MB001
                                     AND [TBDAILYPOSTB].[SDATES]='{0}'
+
+                                    --更新轉入
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
+                                    SET OTHERSINNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)
+                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)>0
+                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
+
+                                    --更新轉入+領用
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
+                                    SET OTHERSOUTNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)*-1
+                                    WHERE(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)<0
+                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
                                     "
-                                    , SDATES, sbSql99.ToString()
+                                    , SDATES, YEATERDAYES, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -20946,7 +20982,7 @@ namespace TKMQ
 
         }
 
-        public void ADD_TBDAILYPOSTBMONTH(string SMONTHS, string SDATES,string EDATES)
+        public void ADD_TBDAILYPOSTBMONTH(string SMONTHS, string SDATES,string EDATES,string LASTMONTHDAYS)
         {
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
@@ -21043,8 +21079,24 @@ namespace TKMQ
 
                                     ) AS TEMP
                                     WHERE 1=1
-                                     {3}
+                                     {4}
                                     ORDER BY MB001, MB002
+
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                                    SET [PRENUMS]=NUMS
+                                    FROM 
+                                    (
+	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
+	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    WHERE LA001=MB001
+	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
+	                                    AND LA009 IN ('21002')	
+	                                    AND LA004<='{3}'
+	                                    GROUP BY  LA001,MB002
+	                                    HAVING SUM(LA005*LA011)>0
+                                    ) AS TEMP
+                                    WHERE TEMP.LA001=[TBDAILYPOSTBMONTH].MB001
+                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
 
                                     UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
                                     SET [NOWNUMS]=TEMP.NUMS
@@ -21114,7 +21166,7 @@ namespace TKMQ
                                     AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
 
                                     "
-                                    , SMONTHS, SDATES,  EDATES, sbSql99.ToString()
+                                    , SMONTHS, SDATES,  EDATES, LASTMONTHDAYS, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -21336,9 +21388,12 @@ namespace TKMQ
                             [SDATES] AS '日期'
                             ,[MB001] AS '品號'
                             ,[MB002] AS '品名'
+                            ,[PRENUMS] AS '前期庫存數量'
                             ,[SALENUMS] AS '銷售數量'
                             ,[INNUMS] AS '入庫數量'
                             ,[PUBNUMS] AS '試吃+公關數量'
+                            ,[OTHERSINNUMS] AS '轉入'
+                            ,[OTHERSOUTNUMS] AS '領出'
                             ,[NOWNUMS] AS '庫存數量'
                             ,[COMMENTS] AS '備註'
                             ,[ID]
@@ -21403,14 +21458,17 @@ namespace TKMQ
 
 
             SB.AppendFormat(@"   
-                           SELECT 
+                            SELECT 
                             [ID]
                             ,[SMONTHS] AS '年月'
                             ,[MB001] AS '品號'
                             ,[MB002] AS '品名'
+                            ,[PRENUMS] AS '上月底庫存數量'
                             ,[SALENUMS] AS '銷售累計總數量'
                             ,[INNUMS] AS '入庫累計總數量'
                             ,[PUBNUMS] AS '試吃+公關累計總數量'
+                            ,[OTHERSINNUMS] AS '轉入'
+                            ,[OTHERSOUTNUMS] AS '領出'
                             ,[NOWNUMS] AS '目前庫存數量'
                             ,[COMMENTS]AS '備註'
                             ,[CREATEDATES]
