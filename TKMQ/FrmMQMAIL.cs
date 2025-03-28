@@ -21166,6 +21166,16 @@ namespace TKMQ
                                     AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
 
                                     UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                                    SET OTHERSINNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)
+                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)>0
+                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
+
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                                    SET OTHERSOUTNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)*-1
+                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)<0
+                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
+
+                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
                                     SET [COMMENTS]=
                                     (CASE WHEN OTHERSOUTNUMS>TEMP.NUMS THEN  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,TEMP.NUMS)))+' 組合成盒裝'
                                     ELSE  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,OTHERSOUTNUMS)))+' 組合成盒裝' END )
