@@ -20954,7 +20954,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@" ");
 
                 cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
+                cmd.CommandTimeout = TIMEOUT_LIMITS;
                 cmd.CommandText = sbSql.ToString();
                 cmd.Transaction = tran;
                 result = cmd.ExecuteNonQuery();
@@ -21201,7 +21201,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@" ");
 
                 cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
+                cmd.CommandTimeout = TIMEOUT_LIMITS;
                 cmd.CommandText = sbSql.ToString();
                 cmd.Transaction = tran;
                 result = cmd.ExecuteNonQuery();
