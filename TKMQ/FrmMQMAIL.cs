@@ -21962,7 +21962,7 @@ namespace TKMQ
 
         private void button54_Click(object sender, EventArgs e)
         {
-            //寄送MAIL，硯微墨統計表
+            //寄送MAIL，硯微墨統計表 
             SENDMAIL_STORES_REPORTS();
             MessageBox.Show("OK");
         }
