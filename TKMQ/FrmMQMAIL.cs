@@ -1258,7 +1258,7 @@ namespace TKMQ
 
             try
             {
-
+                //Thread.Sleep(1000);
             }
 
             catch
@@ -1268,8 +1268,22 @@ namespace TKMQ
 
             try
             {
+                //進貨有效日檢查
+                //進貨單+客供料單(A11A)
+                SENDMAIL_PUR_VALIDCHECK();
+                Thread.Sleep(1000);
+            }
+
+            catch
+            {
+                MSG.AppendFormat(@"進貨有效日檢查  失敗 ||");
+            }
+
+            try
+            {
                 //採購7日前未到貨
                 SENDEMAIL_PURNOTIN();
+                Thread.Sleep(1000);
             }
 
             catch
@@ -1281,6 +1295,7 @@ namespace TKMQ
             try
             {
                 SENDMAIL_TK_UOF_DEV_NEW_SALES();
+                Thread.Sleep(1000);
             }
 
             catch
@@ -1294,6 +1309,7 @@ namespace TKMQ
             try
             {
                 SENDEMAIL_TB_DEVE_NEWLISTS();
+                Thread.Sleep(1000);
             }
 
             catch
@@ -1308,8 +1324,10 @@ namespace TKMQ
             //業務活動通知行銷-測試
             try
             {
-                SENDEMAIL_TB_SALES_PROMOTIONS(); }
+                SENDEMAIL_TB_SALES_PROMOTIONS();
+                Thread.Sleep(1000);
 
+            }
             catch
             {
                 MSG.AppendFormat(@" 業務活動通知行銷 失敗 ||");
