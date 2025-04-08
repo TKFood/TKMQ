@@ -20662,9 +20662,13 @@ namespace TKMQ
             DateTime lastDayOfLastMonthDate = new DateTime(todayDate.Year, todayDate.Month, 1).AddDays(-1); //上個月的最後一天
             string lastDayOfLastMonthday = lastDayOfLastMonthDate.ToString("yyyyMMdd");
             //新增每日記錄
-            ADD_TBDAILYPOSTB(yesterday, before_yesterday);
+            //ADD_TBDAILYPOSTB(yesterday, before_yesterday);
+            //新增每日記錄，重試機制
+            TBDAILYPOSTB_RetryAddDailyPost(yesterday, before_yesterday);
             //新增當月記錄
-            ADD_TBDAILYPOSTBMONTH(SMONTHS,firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            //ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            //新增當月記錄，重試機制
+            TBDAILYPOSTBMONTH_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
 
             DataSet ds = new DataSet();
             DataTable DT = new DataTable();
@@ -20761,6 +20765,169 @@ namespace TKMQ
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
                 //ex.ToString();
             }
+        }
+
+        public void TBDAILYPOSTB_RetryAddDailyPost(string yesterday, string beforeYesterday)
+        {
+            int maxRetries = 3;
+            int attempt = 0;
+            bool isSuccess = false;
+
+            while (attempt < maxRetries && !isSuccess)
+            {
+                attempt++;
+
+                // 先檢查是否已有 yesterday 的資料
+                if (!TBDAILYPOSTB_HasDataForDate(yesterday))
+                {
+                    try
+                    {
+                        ADD_TBDAILYPOSTB(yesterday, beforeYesterday);
+                        // 執行後再次檢查是否成功新增
+                        if (TBDAILYPOSTB_HasDataForDate(yesterday))
+                        {                           
+                            isSuccess = true;
+                        }
+                       
+                    }
+                    catch (Exception ex)
+                    {   
+                                             
+                    }
+                }
+                else
+                {                   
+                    isSuccess = true;
+                }
+            }
+
+            if (!isSuccess)
+            {
+                                
+            }
+        }
+
+        //TBDAILYPOSTB, 假設這是檢查資料是否存在的方法
+        public bool TBDAILYPOSTB_HasDataForDate(string SDATES)
+        {
+            bool YN = false;
+            SqlConnection sqlConn = null;
+
+            try
+            {
+                // 解密連線字串
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    StringBuilder sbSql = new StringBuilder();
+
+                    sbSql.AppendFormat(@"
+                                        SELECT 1
+                                        FROM [TKMK].[dbo].[TBDAILYPOSTB]
+                                        WHERE SDATES = @SDATES
+                                         ");
+
+                    using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
+                    {
+                        cmd.Parameters.AddWithValue("@SDATES", SDATES);
+                        sqlConn.Open();
+
+                        object result = cmd.ExecuteScalar();
+                        YN = (result != null);
+                    }
+                }
+            }
+            catch
+            {
+                YN = false;
+            }
+
+            return YN;
+        }
+        
+        public void TBDAILYPOSTBMONTH_RetryAddDailyPost(string SMONTHS, string firstDayOfMonth, string yesterday, string lastDayOfLastMonthday)
+        {
+            int maxRetries = 3;
+            int attempt = 0;
+            bool isSuccess = false;
+
+            while (attempt < maxRetries && !isSuccess)
+            {
+                attempt++;
+
+                // 先檢查是否已有 SMONTHS 的資料
+                if (!TBDAILYPOSTBMONTH_HasDataForDate(SMONTHS))
+                {
+                    try
+                    {
+                        ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+                        // 執行後再次檢查是否成功新增
+                        if (TBDAILYPOSTBMONTH_HasDataForDate(SMONTHS))
+                        {
+                            isSuccess = true;
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                }
+                else
+                {
+                    isSuccess = true;
+                }
+            }
+
+            if (!isSuccess)
+            {
+
+            }
+        }
+        //TBDAILYPOSTBMONTH，假設這是檢查資料是否存在的方法
+        public bool TBDAILYPOSTBMONTH_HasDataForDate(string SMONTHS)
+        {
+            bool YN = false;
+            SqlConnection sqlConn = null;
+
+            try
+            {
+                // 解密連線字串
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    StringBuilder sbSql = new StringBuilder();
+
+                    sbSql.AppendFormat(@"
+                                        SELECT 1
+                                        FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                                        WHERE [SMONTHS] = @SMONTHS
+                                         ");
+
+                    using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
+                    {
+                        cmd.Parameters.AddWithValue("@SMONTHS", SMONTHS);
+                        sqlConn.Open();
+
+                        object result = cmd.ExecuteScalar();
+                        YN = (result != null);
+                    }
+                }
+            }
+            catch
+            {
+                YN = false;
+            }
+
+            return YN;
         }
 
         public void ADD_TBDAILYPOSTB(string SDATES, string YEATERDAYES)
