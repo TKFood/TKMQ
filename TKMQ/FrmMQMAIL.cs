@@ -21073,7 +21073,6 @@ namespace TKMQ
 
 	                                    SELECT LA001 AS MB001, MB002 AS MB002
                                         FROM [TK].dbo.INVLA
-                                        FROM [TK].dbo.INVLA
                                         INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
