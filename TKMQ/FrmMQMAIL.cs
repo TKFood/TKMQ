@@ -20982,8 +20982,8 @@ namespace TKMQ
                                     FROM 
                                     (
                                         SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
                                         AND LA004<='{0}'
@@ -20993,8 +20993,8 @@ namespace TKMQ
                                         UNION ALL
 
                                         SELECT TB010 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.POSTB
-                                        INNER JOIN [TK].dbo.INVMB ON TB010 = MB001
+                                        FROM [TK].dbo.POSTB  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON TB010 = MB001
                                         WHERE (TB010 LIKE '4%' OR TB010 LIKE '5%')
                                         AND TB002   IN ( '106702')
                                         AND TB001 = '{0}'
@@ -21004,8 +21004,8 @@ namespace TKMQ
 	                                    UNION ALL
 
 	                                    SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                   	AND LA005 IN (1)
@@ -21017,8 +21017,8 @@ namespace TKMQ
                                         UNION ALL
 
 	                                    SELECT LA001 AS MB001, MB002 AS MB00
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (-1)
@@ -21038,7 +21038,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE LA001=MB001
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
 	                                    AND LA009 IN ('21002')	
@@ -21055,7 +21055,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE LA001=MB001
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
 	                                    AND LA009 IN ('21002')                                      
@@ -21071,7 +21071,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT TB010,MB002,SUM(TB019) TB019
-	                                    FROM [TK].dbo.POSTB,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.POSTB  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE TB010=MB001
 	                                    AND (TB010 LIKE '4%' OR TB010 LIKE '5%')
 	                                    AND  TB002 IN ('106702')
@@ -21088,8 +21088,8 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001, MB002,SUM(LA005*LA011) AS NUMS
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                   	AND LA005 IN (1)
@@ -21107,8 +21107,8 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001 AS MB001, MB002 AS MB002,SUM(LA005 * LA011*-1)  AS NUMS
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (-1)
@@ -21218,8 +21218,8 @@ namespace TKMQ
                                     FROM 
                                     (
                                         SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
                                         GROUP BY LA001, MB002
@@ -21228,8 +21228,8 @@ namespace TKMQ
                                         UNION ALL
 
                                         SELECT TB010 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.POSTB
-                                        INNER JOIN [TK].dbo.INVMB ON TB010 = MB001
+                                        FROM [TK].dbo.POSTB  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON TB010 = MB001
                                         WHERE (TB010 LIKE '4%' OR TB010 LIKE '5%')
                                         AND TB002   IN ( '106702')
                                         AND TB001 >= '{1}' AND TB001 <= '{2}'
@@ -21239,8 +21239,8 @@ namespace TKMQ
 	                                    UNION ALL
 
 	                                    SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB   WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (1)
@@ -21251,8 +21251,8 @@ namespace TKMQ
 	                                    UNION ALL
 
 	                                    SELECT LA001 AS MB001, MB002 AS MB00
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (-1)
@@ -21272,7 +21272,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE LA001=MB001
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
 	                                    AND LA009 IN ('21002')	
@@ -21288,7 +21288,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE LA001=MB001
 	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
 	                                    AND LA009 IN ('21002')	
@@ -21303,7 +21303,7 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT TB010,MB002,SUM(TB019) TB019
-	                                    FROM [TK].dbo.POSTB,[TK].dbo.INVMB
+	                                    FROM [TK].dbo.POSTB  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
 	                                    WHERE TB010=MB001
 	                                    AND (TB010 LIKE '4%' OR TB010 LIKE '5%')
 	                                    AND TB002 IN ('106702')
@@ -21319,8 +21319,8 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001, MB002,SUM(LA005*LA011) AS NUMS
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (1)
@@ -21336,8 +21336,8 @@ namespace TKMQ
                                     FROM 
                                     (
 	                                    SELECT LA001 AS MB001, MB002 AS MB002,SUM(LA005 * LA011*-1)  AS NUMS
-                                        FROM [TK].dbo.INVLA
-                                        INNER JOIN [TK].dbo.INVMB ON LA001 = MB001
+                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
                                         WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
                                         AND LA009  IN ( '21002')
 	                                    AND LA005 IN (-1)
