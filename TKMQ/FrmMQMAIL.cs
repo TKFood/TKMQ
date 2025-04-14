@@ -1963,11 +1963,11 @@ namespace TKMQ
                                     ,LRPTA.TA001 AS '批次計畫單號'
                                     ,(CASE WHEN ISNULL(MOCTA.TA033,'')<>''  THEN '是' ELSE ''  END )  AS '製令發放'
                                     ,(CASE WHEN CONVERT(datetime,TD013)<=CONVERT(datetime,MOCTA.TA009) THEN '是' ELSE ''  END )  AS '訂單是否延遲生產'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD
-                                    LEFT JOIN [TK].dbo.MOCTA ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003 AND TD004=MOCTA.TA006
-                                    LEFT JOIN [TK].dbo.CMSMD ON CMSMD.MD001=MOCTA.TA021
-                                    LEFT JOIN [TK].dbo.LRPTA ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003
-                                    LEFT JOIN [TKMOC].dbo.MOCCOPCHECK ON COPTA001=TD001 AND COPTA002=TD002 AND COPTA003=TD003 
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK)
+                                    LEFT JOIN [TK].dbo.MOCTA  WITH(NOLOCK) ON MOCTA.TA026=TD001 AND MOCTA.TA027=TD002 AND MOCTA.TA028=TD003 AND TD004=MOCTA.TA006
+                                    LEFT JOIN [TK].dbo.CMSMD  WITH(NOLOCK) ON CMSMD.MD001=MOCTA.TA021
+                                    LEFT JOIN [TK].dbo.LRPTA  WITH(NOLOCK) ON LRPTA.TA023=TD001 AND LRPTA.TA024=TD002 AND LRPTA.TA025=TD003
+                                    LEFT JOIN [TKMOC].dbo.MOCCOPCHECK  WITH(NOLOCK) ON COPTA001=TD001 AND COPTA002=TD002 AND COPTA003=TD003 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TD013>='{0}'
                                     AND TD004 LIKE '4%'
@@ -11117,7 +11117,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11131,7 +11131,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11147,7 +11147,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11161,7 +11161,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11177,7 +11177,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11195,7 +11195,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11213,7 +11213,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11231,7 +11231,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11245,7 +11245,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11261,7 +11261,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC  WITH(NOLOCK),[TK].dbo.COPTD  WITH(NOLOCK),[TK].dbo.COPMA  WITH(NOLOCK),[TK].dbo.CMSME  WITH(NOLOCK)
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
