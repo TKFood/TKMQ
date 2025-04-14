@@ -2286,8 +2286,8 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"
                                     SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日',TF109 AS '原訂單數量'
-                                    FROM [TKMQ].[dbo].[TRIGGERRECORD],[TK].dbo.COPTE
-                                    LEFT JOIN [TK].dbo.COPTF ON TE001=TF001 AND TE002=TF002 AND TE003=TF003
+                                    FROM [TKMQ].[dbo].[TRIGGERRECORD] WITH(NOLOCK) ,[TK].dbo.COPTE  WITH(NOLOCK)
+                                    LEFT JOIN [TK].dbo.COPTF  WITH(NOLOCK) ON TE001=TF001 AND TE002=TF002 AND TE003=TF003
                                     WHERE TE001=IDM AND TE002=IDSUB AND TE003=IDNO
                                     AND MAILYN='N'
                                     ORDER BY TE006,TE001,TE002,TF005
@@ -2569,17 +2569,17 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT TB003 AS '品號',MB002 AS '品名' 
-                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
-                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{2}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'
-                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{3}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'
-                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{4}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'
+                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WITH(NOLOCK)  WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{2}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '7天內的需求量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WITH(NOLOCK)  WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{3}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '14天內的需求量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WITH(NOLOCK)  WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{4}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '21天內的需求量'
                                     ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTB B,[TK].dbo.MOCTA A WHERE A.TA001=B.TB001 AND A.TA002=B.TB002  AND B.TB018='Y' AND (B.TB003 LIKE '1%' OR B.TB003 LIKE '2%')  AND A.TA003>='{0}'  AND A.TA003<='{5}' AND (B.TB004-B.TB005)>0  AND B.TB001 NOT  IN ('A513') AND MOCTB.TB003=B.TB003) AS '30天內的需求量'
                                     ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
-                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '總採購量'
-                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '最快採購日'
+                                    ,(SELECT ISNULL(SUM(LA005*LA011),0) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '總採購量'
+                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{1}') AS '最快採購日'
                                     ,TB009 AS '庫別'
-                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    FROM [TK].dbo.MOCTB  WITH(NOLOCK),[TK].dbo.MOCTA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
                                     WHERE TA001=TB001 AND TA002=TB002
                                     AND MB001=TB003
                                     AND TB018='Y'
@@ -2588,7 +2588,7 @@ namespace TKMQ
                                     AND (TB004-TB005)>0
                                     AND TB001 NOT  IN ('A513')
                                     GROUP BY TB003,TB007,TB009,MB002
-                                    ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009),TB003   
+                                    ORDER BY (SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009),TB003   
   
                                     ", DateTime.Now.ToString("yyyyMMdd"), SEARCHDATE2.ToString("yyyyMMdd"), SEARCHDATE3.ToString("yyyyMMdd"), SEARCHDATE4.ToString("yyyyMMdd"), SEARCHDATE5.ToString("yyyyMMdd"), SEARCHDATE6.ToString("yyyyMMdd"));
 
@@ -2655,12 +2655,12 @@ namespace TKMQ
                                     SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
                                     FROM (
                                     SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
                                     ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
                                     ,TB009 AS '庫別'
-                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    FROM [TK].dbo.MOCTB WITH(NOLOCK),[TK].dbo.MOCTA WITH(NOLOCK),[TK].dbo.INVMB WITH(NOLOCK)
                                     WHERE TA001=TB001 AND TA002=TB002
                                     AND MB001=TB003
                                     AND TB018='Y'
@@ -2674,12 +2674,12 @@ namespace TKMQ
                                     SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
                                     FROM (
                                     SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
                                     ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
                                     ,TB009 AS '庫別'
-                                    FROM [TK].dbo.MOCTB,[TK].dbo.MOCTA,[TK].dbo.INVMB
+                                    FROM [TK].dbo.MOCTB WITH(NOLOCK) ,[TK].dbo.MOCTA WITH(NOLOCK) ,[TK].dbo.INVMB WITH(NOLOCK) 
                                     WHERE TA001=TB001 AND TA002=TB002
                                     AND MB001=TB003
                                     AND TB018='Y'
@@ -2887,9 +2887,9 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')<>'' THEN '已請購' ELSE (CASE WHEN  ISNULL([COMMENT],'')<>'' THEN ''  ELSE '未請購'END ) END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ,[COMMENT] AS '備註'
-                                    FROM [TK].dbo.MOCTA
-                                    LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB] ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]
-                                    LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK] ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]
+                                    FROM [TK].dbo.MOCTA WITH(NOLOCK) 
+                                    LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB]  WITH(NOLOCK) ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]
+                                    LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK]  WITH(NOLOCK) ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]
                                     WHERE TA003>='{0}'
                                     AND TA006 LIKE '4%'
                                     AND TA001 NOT IN ('A513') 
@@ -3087,8 +3087,8 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  
                                     SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA003 AS '開單日期',TA006 AS '產品品號',TA034 AS '產品品名',CONVERT(INT,TA015,0) AS'預計產量',TA007 AS '單位','未確認' AS '確認碼',TA026 AS '訂單單別',TA027 AS '訂單單號',TA028 AS '訂單序號'
                                     ,CONVERT(INT,ISNULL([NUM],0)) AS '訂單需求量',TD010 AS '訂單單位',CONVERT(INT,(TA015-ISNULL([NUM],0)),0) AS '生產需求的差異數'
-                                    FROM [TK].dbo.MOCTA
-                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON TA026=TD001 AND TA027=TD002 AND TA028=TD003 
+                                    FROM [TK].dbo.MOCTA WITH(NOLOCK) 
+                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD]  WITH(NOLOCK) ON TA026=TD001 AND TA027=TD002 AND TA028=TD003 
                                     WHERE TA013='N'
                                     ORDER BY TA001,TA002
                  
@@ -3348,8 +3348,8 @@ namespace TKMQ
                 sbSql.AppendFormat(@"  
                                     SELECT  LA001 AS '品號' ,MB002 AS '品名',MB003 AS '規格',LA016 AS '批號'  
                                     ,CAST(SUM(LA005*LA011) AS DECIMAL(18,4)) AS '庫存量' 
-                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016) AS '製令量(批號1個月內)'
-                                    ,(CAST(SUM(LA005*LA011) AS DECIMAL(18,4))-(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA,[TK].dbo.MOCTB WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016)) AS '庫存差異量'
+                                    ,(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA WITH(NOLOCK) ,[TK].dbo.MOCTB WITH(NOLOCK)  WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016) AS '製令量(批號1個月內)'
+                                    ,(CAST(SUM(LA005*LA011) AS DECIMAL(18,4))-(SELECT ISNULL(SUM(TB004-TB005),0) FROM [TK].dbo.MOCTA WITH(NOLOCK) ,[TK].dbo.MOCTB WITH(NOLOCK)  WHERE TA001=TB001 AND TA002=TB002 AND TA011 NOT IN ('Y','y') AND TB003=LA001 AND TA003<=CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AND TA003>=LA016)) AS '庫存差異量'
                                     ,CONVERT(nvarchar,DATEADD (MONTH,1,CAST(LA016 AS datetime)),112) AS '批號製令期限日'
                                     FROM [TK].dbo.INVLA WITH (NOLOCK) 
                                     LEFT JOIN  [TK].dbo.INVMB WITH (NOLOCK) ON MB001=LA001  WHERE  (LA009='20005     ')  
@@ -3558,8 +3558,8 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
-                                    FROM [TK].dbo.PURTA,[TK].dbo.PURTB
-                                    LEFT JOIN [TK].dbo.PURMA ON MA001=TB010
+                                    FROM [TK].dbo.PURTA WITH(NOLOCK) ,[TK].dbo.PURTB WITH(NOLOCK) 
+                                    LEFT JOIN [TK].dbo.PURMA WITH(NOLOCK)  ON MA001=TB010
                                     WHERE TA001=TB001 AND TA002=TB002 
                                     AND  TA007 IN ('Y','N')
                                     AND  TB039='N'
@@ -3768,9 +3768,9 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@" 
                                     SELECT [MB001] AS '品號',[MB002] AS '品名',[NUM] AS '數量'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' 
-                                    ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'
-                                    FROM [TKMQ].[dbo].[MOCINVCHECK]
+                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=[MB001] AND LA009='20004')   AS '庫存量' 
+                                    ,((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=[MB001] AND LA009='20004')-[NUM]) AS '差異量'
+                                    FROM [TKMQ].[dbo].[MOCINVCHECK] WITH(NOLOCK) 
                                     ");
 
                 adapterMOCINVCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
@@ -3919,10 +3919,10 @@ namespace TKMQ
                                     ,ISNULL((CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,[COPTD].TD013,TA014) ELSE 999 END),0) AS '是否延遲訂單預交'
                                     ,ISNULL(CASE WHEN ISNULL(TA014,'')<>'' THEN DATEDIFF (DAY,TA010,TA014) ELSE 999 END,0)  AS '是否延遲製令完工'
                                     ,ISNULL((TA017-TA015),0) AS '製令生產數量生否>預計生產'
-                                    FROM [TK].dbo.MOCTA
-                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD] ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028
-                                    LEFT JOIN [TK].[dbo].[COPTD] ON [COPTD].TD001=TA026 AND [COPTD].TD002=TA027 AND [COPTD].TD003=TA028
-                                    LEFT JOIN [TK].[dbo].[COPTC] ON [COPTC].TC001=TA026 AND [COPTC].TC002=TA027
+                                    FROM [TK].dbo.MOCTA WITH(NOLOCK) 
+                                    LEFT JOIN [TK].[dbo].[VCOPTDINVMD]  WITH(NOLOCK) ON [VCOPTDINVMD].TD001=TA026 AND [VCOPTDINVMD].TD002=TA027 AND [VCOPTDINVMD].TD003=TA028
+                                    LEFT JOIN [TK].[dbo].[COPTD]  WITH(NOLOCK) ON [COPTD].TD001=TA026 AND [COPTD].TD002=TA027 AND [COPTD].TD003=TA028
+                                    LEFT JOIN [TK].[dbo].[COPTC]  WITH(NOLOCK) ON [COPTC].TC001=TA026 AND [COPTC].TC002=TA027
                                     WHERE TA001 IN ('A510','A511')
                                     AND TA006 LIKE '4%'
                                     AND TA009>='{0}' AND TA009<='{1}'
@@ -4125,14 +4125,14 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'
-                                    ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'
-                                    ,ISNULL(((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),0) AS '庫存差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
+                                    ,ISNULL((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE MC001=LA001 AND LA009=MC002) ,0) AS '目前庫存'
+                                    ,ISNULL(((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE MC001=LA001 AND LA009=MC002) -MC004),0) AS '庫存差異量'
+                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
                                     ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=MC001 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
-                                    FROM [TK].dbo.INVMC,[TK].dbo.INVMB
+                                    FROM [TK].dbo.INVMC WITH(NOLOCK) ,[TK].dbo.INVMB WITH(NOLOCK) 
                                     WHERE MC001=MB001
                                     AND MC002=@MC002 AND MC003='201904制定'
-                                    ORDER BY ((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WHERE MC001=LA001 AND LA009=MC002) -MC004),MC001
+                                    ORDER BY ((SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE MC001=LA001 AND LA009=MC002) -MC004),MC001
                                     ", SEARCHDATE2.ToString("yyyyMMdd"));
 
                 adapterINVMC = new SqlDataAdapter(@"" + sbSql, sqlConn);
@@ -4333,7 +4333,7 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TD004 AS '品號',TD005 AS '品名',TD006 AS '規格',TD008 AS '採購量',TD015 AS '已進貨',TD009 AS '單位',TD012 AS '預交日',TD001 AS '採購單別',TD002 AS '採購單號',TD003 AS '序號'
-                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TD016='N'
@@ -4721,7 +4721,7 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA009 AS '開工日',TA006 AS '品號',TA034 AS '品名',TA015 AS '生產量',TA007 AS '單位'
-                                    FROM [TK].dbo.MOCTA
+                                    FROM [TK].dbo.MOCTA WITH(NOLOCK) 
                                     WHERE TA013='Y' AND TA011 NOT IN ('Y','y')
                                     AND TA001 IN ('A521')
                                     ");
@@ -4867,7 +4867,7 @@ namespace TKMQ
                                     FROM 
                                     ( 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4875,7 +4875,7 @@ namespace TKMQ
                                     AND TH010<>TH036 
                                     UNION ALL 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4883,7 +4883,7 @@ namespace TKMQ
                                     AND TH010<>TH117 
                                     UNION ALL 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4891,7 +4891,7 @@ namespace TKMQ
                                     AND TH010<>TH117 
                                     UNION ALL 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4899,7 +4899,7 @@ namespace TKMQ
                                     AND TH010<>TH036 
                                     UNION ALL 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4907,7 +4907,7 @@ namespace TKMQ
                                     AND TH010<>TH036 
                                     UNION ALL 
                                     SELECT  '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
@@ -4916,7 +4916,7 @@ namespace TKMQ
                                     AND TH009 NOT LIKE '21%'
                                     UNION ALL 
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
@@ -4925,7 +4925,7 @@ namespace TKMQ
                                     AND TG017<>TG040 
                                     UNION ALL 
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
@@ -4934,7 +4934,7 @@ namespace TKMQ
 
                                     UNION ALL 
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
-                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
@@ -4943,7 +4943,7 @@ namespace TKMQ
                                     AND ISDATE(TG017)<>1
                                     UNION ALL 
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
                                     WHERE TH001=TI001 AND TH002=TI002 
                                     AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TI004 LIKE '3%'   
@@ -4952,7 +4952,7 @@ namespace TKMQ
                                     AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
                                     UNION ALL 
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
                                     WHERE TH001=TI001 AND TH002=TI002 
                                     AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TI004 LIKE '4%' 
@@ -4960,7 +4960,7 @@ namespace TKMQ
                                     AND TI010<>TI011
                                     UNION ALL 
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
                                     WHERE TH001=TI001 AND TH002=TI002 
                                     AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TI004 LIKE '4%' 
@@ -4969,21 +4969,21 @@ namespace TKMQ
                                     UNION 
 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
                                     AND TH117>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH 
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
                                     AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TH030='Y' 
                                     AND ISDATE(TH117)<>1
                                     UNION ALL
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
@@ -4992,7 +4992,7 @@ namespace TKMQ
                                     AND TG040>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG 
+                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
                                     WHERE TF001=TG001 AND TF002=TG002 
                                     AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TG022='Y' 
@@ -5001,7 +5001,7 @@ namespace TKMQ
                                     AND ISDATE(TG040)<>1
                                     UNION ALL
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
                                     WHERE TH001=TI001 AND TH002=TI002 
                                     AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TI004 LIKE '4%' 
@@ -5009,7 +5009,7 @@ namespace TKMQ
                                     AND TI061>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
                                     UNION ALL
                                     SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI 
+                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
                                     WHERE TH001=TI001 AND TH002=TI002 
                                     AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
                                     AND TI004 LIKE '4%' 
@@ -5019,7 +5019,7 @@ namespace TKMQ
                                     AS TEMP 
                                     WHERE  TH004 IN (
                                     SELECT MB001
-                                    FROM [TK].dbo.INVMB
+                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
                                     WHERE MB022 NOT IN ('N')
                                     )
                                     ORDER BY TH004  
@@ -5109,11 +5109,11 @@ namespace TKMQ
                                     ,[COPTC].TC053,[CMSMV].MV002
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
                                     ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINE]
+                                    FROM [TKMOC].[dbo].[MOCMANULINE] WITH(NOLOCK) 
                                     LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINE].[COPTD001]=[COPTD].TD001 AND [MOCMANULINE].[COPTD002]=[COPTD].TD002 AND[MOCMANULINE].[COPTD003]=[COPTD].TD003 
                                     LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002
                                     LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006
@@ -5131,11 +5131,11 @@ namespace TKMQ
                                     ,[COPTC].TC053,[CMSMV].MV002
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK)  WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK)  WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
                                     ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]  
+                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]   WITH(NOLOCK) 
                                     LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINETEMP].[COPTD001]=[COPTD].TD001 AND [MOCMANULINETEMP].[COPTD002]=[COPTD].TD002 AND[MOCMANULINETEMP].[COPTD003]=[COPTD].TD003   
                                     LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002  
                                     LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006  
@@ -5573,7 +5573,7 @@ namespace TKMQ
                                     FROM 
                                     (
                                     SELECT  DISTINCT '採購單' AS '單別','' AS '部門',TC001,TC002,'' AS SERNO,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
-                                    FROM [TK].dbo.PURTC
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) 
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TC001+TC002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
@@ -5581,7 +5581,7 @@ namespace TKMQ
                                     WHERE TC014='N' 
                                     UNION ALL
                                     SELECT  DISTINCT '採購單變更' AS '單別','' AS '部門',TE001,TE002,TE003,UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
-                                    FROM [TK].dbo.PURTE
+                                    FROM [TK].dbo.PURTE WITH(NOLOCK) 
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TE001+TE002+TE003+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
@@ -5589,7 +5589,7 @@ namespace TKMQ
                                     WHERE TE017='N' 
                                     UNION ALL
                                     SELECT  DISTINCT '採購核價單' AS '單別','' AS '部門',TL001,TL002,'',UDF01,UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
-                                    FROM [TK].dbo.PURTL
+                                    FROM [TK].dbo.PURTL WITH(NOLOCK) 
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TL001+TL002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
@@ -5598,7 +5598,7 @@ namespace TKMQ
                                     AND TL006='N'
                                     UNION ALL
                                     SELECT DISTINCT '請購單' AS '單別',ME002 AS '部門',TA001,TA002,'',PURTA.UDF01,PURTA.UDF02,View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
-                                    FROM [TK].dbo.PURTA
+                                    FROM [TK].dbo.PURTA WITH(NOLOCK) 
                                     LEFT JOIN  [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
@@ -5607,7 +5607,7 @@ namespace TKMQ
                                     WHERE TA007='N' 
                                     UNION ALL
                                     SELECT DISTINCT '請購變更單' AS '單別',ME002 AS '部門', [PURTATBCHAGE].[TA001],[PURTATBCHAGE].[TA002],[VERSIONS],'UOF','',View_TB_WKF_EXTERNAL_TASK.DOC_NBR,TB_EB_USER.NAME
-                                    FROM [TKPUR].[dbo].[PURTATBCHAGE]
+                                    FROM [TKPUR].[dbo].[PURTATBCHAGE] WITH(NOLOCK) 
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_EXTERNAL_TASK ON View_TB_WKF_EXTERNAL_TASK.EXTERNAL_FORM_NBR LIKE TA001+TA002+CONVERT(NVARCHAR,[VERSIONS])+'%' COLLATE Chinese_Taiwan_Stroke_BIN
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK ON View_TB_WKF_EXTERNAL_TASK.DOC_NBR=View_TB_WKF_TASK.DOC_NBR
                                     LEFT JOIN [192.168.1.223].[UOF].[dbo].View_TB_WKF_TASK_NODE  ON View_TB_WKF_TASK_NODE.TASK_ID=View_TB_WKF_TASK.TASK_ID AND NODE_STATUS='1' AND ISNULL(SIGN_STATUS,'')=''
@@ -5688,8 +5688,8 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT TD012,TC004,MA002,TC001,TC002,TD003,TD004,TD005,TD008,TD009,ISNULL(SUMTH007,0) SUMTH007
-                                    FROM [TK].dbo.PURMA,[TK].dbo.PURTC,[TK].dbo.PURTD
-                                    LEFT JOIN (SELECT SUM(TH007) SUMTH007,TH011,TH012,TH013 FROM [TK].dbo.PURTH GROUP BY TH011,TH012,TH013) AS TEMP  ON TH011=TD001 AND TH012=TD002 AND TH013=TD003
+                                    FROM [TK].dbo.PURMA WITH(NOLOCK) ,[TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) 
+                                    LEFT JOIN (SELECT SUM(TH007) SUMTH007,TH011,TH012,TH013 FROM [TK].dbo.PURTH WITH(NOLOCK)  GROUP BY TH011,TH012,TH013) AS TEMP  ON TH011=TD001 AND TH012=TD002 AND TH013=TD003
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TD018='Y'
                                     AND MA001=TC004
@@ -5777,11 +5777,11 @@ namespace TKMQ
                                 ,[TB012] AS '單身備註'
                                 ,[CHANGEDATES] AS '變更日期'
                                 ,CONVERT(NVARCHAR,[VERSIONS])+[TA001]+[TA002]+[TB003]
-                                FROM [TKPUR].[dbo].[PURTATBCHAGE]
+                                FROM [TKPUR].[dbo].[PURTATBCHAGE] WITH(NOLOCK) 
                                 WHERE [TB011]>='{0}'
-                                AND CONVERT(NVARCHAR,[VERSIONS])+[TA001]+[TA002]+[TB003] NOT IN (SELECT UDF01 FROM [TK].dbo.PURTF WHERE ISNULL(UDF01,'')<>'')
+                                AND CONVERT(NVARCHAR,[VERSIONS])+[TA001]+[TA002]+[TB003] NOT IN (SELECT UDF01 FROM [TK].dbo.PURTF WITH(NOLOCK)  WHERE ISNULL(UDF01,'')<>'')
 
-                                AND TA001+TA002 NOT IN (SELECT TA001+TA002 FROM [TKPUR].[dbo].[PURTATBSTOP])
+                                AND TA001+TA002 NOT IN (SELECT TA001+TA002 FROM [TKPUR].[dbo].[PURTATBSTOP] WITH(NOLOCK) )
 
                                 ORDER BY [TB011]
 
@@ -5852,10 +5852,10 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
-                                    FROM [TK].dbo.PURTA,[TK].dbo.PURTB
+                                    FROM [TK].dbo.PURTA WITH(NOLOCK) ,[TK].dbo.PURTB WITH(NOLOCK) 
                                     LEFT JOIN [TK].dbo.PURMA ON MA001=TB010
                                     WHERE TA001=TB001 AND TA002=TB002 
-                                    AND TB001+TB002+TB003 NOT  IN (SELECT TD026+TD027+TD028 FROM [TK].dbo.PURTD WHERE ISNULL(TD026+TD027,'')<>'')
+                                    AND TB001+TB002+TB003 NOT  IN (SELECT TD026+TD027+TD028 FROM [TK].dbo.PURTD  WITH(NOLOCK) WHERE ISNULL(TD026+TD027,'')<>'')
                                     AND  TA007 IN ('Y','N')
                                     AND  TB039='N'
                                     AND  TB025 NOT IN ('V')
@@ -6552,16 +6552,16 @@ namespace TKMQ
                                     ,TB_EB_USER.ACCOUNT
                                     ,USER2.NAME AS '交辨人'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND TB_EIP_SCH_WORK.WORK_STATE NOT IN ('Completed','Audit')
                                     ORDER BY TB_EIP_SCH_DEVOLVE.CREATE_TIME DESC
                                    ");
@@ -6654,12 +6654,12 @@ namespace TKMQ
                                         ,task.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""00010""]/@fieldValue)[1]', 'nvarchar(50)') AS '產品設計'
                                         ,task.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""RDFrm1002PD""]/@fieldValue)[1]', 'nvarchar(50)') AS '設計需求'
 
-                                        FROM [UOF].dbo.TB_WKF_TASK task
-                                        INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
-                                        INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
-                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
-                                        LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
-                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                        FROM [UOF].dbo.TB_WKF_TASK task WITH(NOLOCK)
+                                        INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer  WITH(NOLOCK) ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                        INNER JOIN [UOF].dbo.TB_WKF_FORM form   WITH(NOLOCK) ON  formVer.FORM_ID = form.FORM_ID 
+                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  WITH(NOLOCK) ON task.USER_GUID = usr.USER_GUID
+                                        LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] WITH(NOLOCK) ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                        LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  WITH(NOLOCK) ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
                                         WHERE
                                         1=1  
                                         AND  TASK_STATUS NOT IN ('2')
@@ -6837,16 +6837,16 @@ namespace TKMQ
                                     ,TB_EB_USER.USER_GUID
                                     ,TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     ,USER2.NAME AS '交辨人'
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK)
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
 
                                     ) AS TEMP
@@ -6931,16 +6931,16 @@ namespace TKMQ
                                     ,TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     ,USER2.NAME AS '交辨人'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
 
                                     AND TB_EIP_SCH_DEVOLVE.DIRECTOR='{0}'
@@ -7187,16 +7187,16 @@ namespace TKMQ
                                     ,TB_EB_USER.USER_GUID
                                     ,TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     ,USER2.NAME AS '交辨人'
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
 
                                     ) AS TEMP
@@ -7281,16 +7281,16 @@ namespace TKMQ
                                     ,TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     ,USER2.NAME AS '交辨人'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
                                     
                                     WHERE 1=1
                                     AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND ISNULL(TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.STATUS,'') NOT IN ('Approve')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND TB_EIP_SCH_WORK.WORK_STATE  NOT IN ('Audit')
 
                                     AND TB_EB_USER.USER_GUID='{0}'
@@ -7548,14 +7548,14 @@ namespace TKMQ
                                     ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
                                     ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
                                     ,[NODES].SIGN_STATUS
-                                    FROM [UOF].dbo.TB_WKF_TASK task
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
-                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
-                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
-                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+                                    FROM [UOF].dbo.TB_WKF_TASK task WITH(NOLOCK) 
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer  WITH(NOLOCK) ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form   WITH(NOLOCK) ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]   WITH(NOLOCK) ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES]  WITH(NOLOCK) ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]   WITH(NOLOCK) ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP]  WITH(NOLOCK) ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
+                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] WITH(NOLOCK)  ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
 
 
                                     WHERE
@@ -7564,7 +7564,7 @@ namespace TKMQ
                                     AND ISNULL([NODES].SIGN_STATUS,999)<>0
                                     AND DATEDIFF(HOUR,CONVERT(datetime,START_TIME),GETDATE())>=36
                                     AND DATEDIFF(DAY,CONVERT(datetime,START_TIME),GETDATE())<=365
-                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME]  WITH(NOLOCK) )
 
                                     )  AS TEMP 
                                     WHERE ISNULL(APPLICANT_EMAIL,'')<>''
@@ -7666,14 +7666,14 @@ namespace TKMQ
                                     ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
                                     ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
                                     ,[NODES].SIGN_STATUS
-                                    FROM [UOF].dbo.TB_WKF_TASK task
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
-                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
-                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
-                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+                                    FROM [UOF].dbo.TB_WKF_TASK task WITH(NOLOCK) 
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer  WITH(NOLOCK) ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form   WITH(NOLOCK) ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  WITH(NOLOCK)  ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES]  WITH(NOLOCK) ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]   WITH(NOLOCK) ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP]  WITH(NOLOCK) ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
+                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] WITH(NOLOCK)  ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
 
 
                                     WHERE
@@ -7683,7 +7683,7 @@ namespace TKMQ
                                  
                                     AND DATEDIFF(HOUR,CONVERT(datetime,START_TIME),GETDATE())>=36
                                     AND DATEDIFF(DAY,CONVERT(datetime,START_TIME),GETDATE())<=365
-                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME]  WITH(NOLOCK) )
 
                                     ) AS TEMP
                                     WHERE 1=1
@@ -7976,7 +7976,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"                                    
                                    SELECT CURRENT_DOC,* 
                                    
-                                    FROM [UOF].[dbo].TB_WKF_TASK ,[UOF].[dbo].[TB_EB_USER],[UOF].dbo.TB_WKF_FORM,[UOF].dbo.TB_WKF_FORM_VERSION
+                                    FROM [UOF].[dbo].TB_WKF_TASK  WITH(NOLOCK) ,[UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) ,[UOF].dbo.TB_WKF_FORM WITH(NOLOCK) ,[UOF].dbo.TB_WKF_FORM_VERSION WITH(NOLOCK) 
                                     WHERE TB_WKF_TASK.USER_GUID=[TB_EB_USER].USER_GUID
                                     AND TB_WKF_TASK.FORM_VERSION_ID=TB_WKF_FORM_VERSION.FORM_VERSION_ID
                                     AND TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID
@@ -8271,14 +8271,14 @@ namespace TKMQ
                                     ,ISNULL(formVer.DISPLAY_TITLE,'') AS VERSION_TITLE
                                     ,ISNULL(task.JSON_DISPLAY,'') AS JSON_DISPLAY
                                     ,[NODES].SIGN_STATUS
-                                    FROM [UOF].dbo.TB_WKF_TASK task
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
-                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form  ON  formVer.FORM_ID = form.FORM_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  ON task.USER_GUID = usr.USER_GUID
-                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES] ON NODES.SITE_ID=task.CURRENT_SITE_ID 
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
-                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP] ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
-                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE] ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
+                                    FROM [UOF].dbo.TB_WKF_TASK task WITH(NOLOCK) 
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM_VERSION formVer WITH(NOLOCK)  ON task.FORM_VERSION_ID = formVer.FORM_VERSION_ID
+                                    INNER JOIN [UOF].dbo.TB_WKF_FORM form  WITH(NOLOCK)  ON  formVer.FORM_ID = form.FORM_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr]  WITH(NOLOCK)  ON task.USER_GUID = usr.USER_GUID
+                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE [NODES]  WITH(NOLOCK) ON NODES.SITE_ID=task.CURRENT_SITE_ID 
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER [usr2]  WITH(NOLOCK)  ON NODES.ORIGINAL_SIGNER = [usr2].USER_GUID
+                                    LEFT JOIN [UOF].dbo.[TB_EB_EMPL_DEP]  WITH(NOLOCK) ON [TB_EB_EMPL_DEP].USER_GUID=[usr2].USER_GUID AND [TB_EB_EMPL_DEP].ORDERS='0'
+                                    LEFT JOIN [UOF].dbo.[TB_EB_JOB_TITLE]  WITH(NOLOCK) ON [TB_EB_EMPL_DEP].TITLE_ID=[TB_EB_JOB_TITLE].TITLE_ID
 
 
                                     WHERE
@@ -8288,11 +8288,11 @@ namespace TKMQ
                                  
                                     AND DATEDIFF(HOUR,CONVERT(datetime,START_TIME),GETDATE())>=36
                                     AND DATEDIFF(DAY,CONVERT(datetime,START_TIME),GETDATE())<=365
-                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME] )
+                                    AND FORM_NAME NOT IN (SELECT  [FORM_NAME]  FROM [UOF].[dbo].[Z_NOT_MQ_FORM_NAME]  WITH(NOLOCK) )
 
                                     ) AS TEMP
                                     WHERE 1=1
-                                    AND CURRENTNAME IN (SELECT  [CURRENT_NAMES]  FROM [UOF].[dbo].[Z_UOF_GRAFFIR_CURRENT_NAMES])
+                                    AND CURRENTNAME IN (SELECT  [CURRENT_NAMES]  FROM [UOF].[dbo].[Z_UOF_GRAFFIR_CURRENT_NAMES] WITH(NOLOCK) )
                                     GROUP BY APPLICANT_NAME,FORM_NAME,DOC_NBR,START_TIME,CURRENTNAME
                                     ORDER BY FORM_NAME,DOC_NBR
 
@@ -8830,16 +8830,16 @@ namespace TKMQ
                                     SELECT 
                                     TB_EB_USER.NAME AS '被交辨人'
                                     ,TB_EB_USER.EMAIL
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
                                   
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     
 
                                     GROUP BY TB_EB_USER.NAME ,TB_EB_USER.EMAIL
@@ -9233,11 +9233,11 @@ namespace TKMQ
                                     ,TB_EB_USER.EMAIL
                                     ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
 
@@ -9334,16 +9334,16 @@ namespace TKMQ
                                     ,TB_EB_USER.EMAIL
                                     ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER WITH(NOLOCK)  ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
 
                                     WHERE 1=1
 
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
 
 
@@ -9427,16 +9427,16 @@ namespace TKMQ
                                     SELECT 
                                     Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER AS '被交辨人主管'
                                     ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
-                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
                                     WHERE 1=1
                                     --AND TB_EIP_SCH_WORK.SUBJECT  LIKE '%校稿%'
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND ISNULL(Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,'')<>''
 
                                     AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
@@ -9833,16 +9833,16 @@ namespace TKMQ
                                     ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
                                     ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
-                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
                                     WHERE 1=1
 
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
                                     AND Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER='{0}'
                                     ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
@@ -9935,16 +9935,16 @@ namespace TKMQ
                                     ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
                                     ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
 
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2 ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
-                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
+                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
+                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
                                     WHERE 1=1
 
                                     AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
+                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
                                     AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
                                     AND ISNULL(Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER,'')<>''
                                     ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
@@ -10267,28 +10267,28 @@ namespace TKMQ
                                     SELECT *
                                     ,ISNULL(
                                     (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                    FROM [TK].dbo.SASLA
+                                    FROM [TK].dbo.SASLA WITH(NOLOCK) 
                                     WHERE LA005=MB001
                                     AND CONVERT(NVARCHAR,LA015,112)>=SDATES
                                     AND CONVERT(NVARCHAR,LA015,112)<='{1}')
                                     ,0) AS PERCOSTS
                                     FROM (
                                     SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH LEFT JOIN [TK].dbo.INVMD ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) LEFT JOIN [TK].dbo.INVMD WITH(NOLOCK)  ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
+                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ LEFT JOIN [TK].dbo.INVMD ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
+                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
+                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
                                     ,MB047 
                                     ,MB050
 
-                                    FROM [TK].dbo.INVMB
+                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
                                     WHERE 1=1
                                     AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
 
@@ -10467,28 +10467,28 @@ namespace TKMQ
                                     SELECT *
                                     ,ISNULL(
                                     (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                    FROM [TK].dbo.SASLA
+                                    FROM [TK].dbo.SASLA WITH(NOLOCK) 
                                     WHERE LA005=MB001
                                     AND CONVERT(NVARCHAR,LA015,112)>='{0}'
                                     AND CONVERT(NVARCHAR,LA015,112)<='{1}')
                                     ,0) AS PERCOSTS
                                     FROM (
                                     SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH LEFT JOIN [TK].dbo.INVMD ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
+                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ LEFT JOIN [TK].dbo.INVMD ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
+                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
+                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
+                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
                                     ,MB047
                                     ,MB050
 
-                                    FROM [TK].dbo.INVMB
+                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
                                     WHERE 1=1
                                     AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
                                     AND MB002 NOT LIKE '%試吃%'
@@ -10655,30 +10655,30 @@ namespace TKMQ
                                     FROM 
                                     (
                                     SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
-                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
-                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG, [TK].dbo.PURTH WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
-                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG WITH(NOLOCK) , [TK].dbo.PURTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
+                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI WITH(NOLOCK)  WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
 
                                     FROM [TK].dbo.INVLA 
                                     WHERE  (
 	                                    LA009 IN (
 		                                    SELECT
 		                                    [LA009]
-		                                    FROM [TKMQ].[dbo].[POSINV_LA009]
+		                                    FROM [TKMQ].[dbo].[POSINV_LA009] WITH(NOLOCK) 
 		                                    )
 	                                    ) 
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
                                     AND LA009+LA001+LA016 NOT IN (
 	                                    SELECT 
 	                                    [MC001]+[MB001]+[LOTNO]
-	                                    FROM [TKMQ].[dbo].[POSINV_LAOO9_NOTIN]
+	                                    FROM [TKMQ].[dbo].[POSINV_LAOO9_NOTIN] WITH(NOLOCK) 
                                     )
                                     AND ISDATE(LA016)=1
                                     GROUP BY  LA009,LA001,LA016
                                     HAVING SUM(LA005*LA011)>0
                                     ) AS TEMP
-                                    LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
-                                    LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
+                                    LEFT JOIN [TK].dbo.INVMB WITH(NOLOCK)  ON MB001=LA001
+                                    LEFT JOIN [TK].dbo.CMSMC WITH(NOLOCK)  ON MC001=LA009
                                     WHERE MB002 NOT LIKE '%暫停%'
                                     ORDER BY LA009,LA001,LA016
 
@@ -10958,11 +10958,11 @@ namespace TKMQ
                                     FROM 
                                     (
                                     SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
-                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF,[TK].dbo.MOCTG WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
-                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG, [TK].dbo.PURTH WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
-                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG040 FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) WHERE TF001=TG001 AND TF002=TG002 AND TG004=LA001 AND TG017=LA016 AND TG022='Y' ORDER BY TF003 ASC),'') AS '生產日期'
+                                    ,ISNULL((SELECT TOP 1 TG003 FROM [TK].dbo.PURTG WITH(NOLOCK) , [TK].dbo.PURTH  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND  TH004=LA001 AND TH010=LA016 AND TG013='Y' ORDER BY TH036 ASC),'') AS '進貨日期'
+                                    ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
 
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA  WITH(NOLOCK) 
                                     WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
                                     AND ISDATE(LA016)=1
@@ -11566,7 +11566,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11580,7 +11580,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11596,7 +11596,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11610,7 +11610,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11626,7 +11626,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11644,7 +11644,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11662,7 +11662,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11680,7 +11680,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11694,7 +11694,7 @@ namespace TKMQ
                                     ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
                                     ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
                                     ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11710,7 +11710,7 @@ namespace TKMQ
                                     ,'' AS '課稅別'
                                     ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
                                     ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC,[TK].dbo.COPTD,[TK].dbo.COPMA,[TK].dbo.CMSME
+                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
                                     AND TC005=ME001
@@ -11830,7 +11830,7 @@ namespace TKMQ
                             --各業務
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11851,8 +11851,8 @@ namespace TKMQ
 	                            ) AS '何姍怡銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11873,7 +11873,7 @@ namespace TKMQ
 	                            ) AS '何姍怡銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11894,8 +11894,8 @@ namespace TKMQ
 	                            ) AS '蔡顏鴻銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11916,7 +11916,7 @@ namespace TKMQ
 	                            )AS '蔡顏鴻銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11937,8 +11937,8 @@ namespace TKMQ
 	                            ) AS '洪櫻芬銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11959,7 +11959,7 @@ namespace TKMQ
 	                            )AS '洪櫻芬銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -11980,8 +11980,8 @@ namespace TKMQ
 	                            ) AS '張釋予銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12002,7 +12002,7 @@ namespace TKMQ
 	                            )AS '張釋予銷退'
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12023,8 +12023,8 @@ namespace TKMQ
 	                            ) AS '許湘舷銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12047,7 +12047,7 @@ namespace TKMQ
                             --國內小計 
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12068,8 +12068,8 @@ namespace TKMQ
 	                            ) AS '國內銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12091,7 +12091,7 @@ namespace TKMQ
                             --國外小計 
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12112,8 +12112,8 @@ namespace TKMQ
 	                            ) AS '國外銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12135,7 +12135,7 @@ namespace TKMQ
                             --國內、國外總計
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-	                            FROM [TK].dbo.COPTG,[TK].dbo.COPTH
+	                            FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK) 
 	                            WHERE TG001 = TH001
 		                            AND TG002 = TH002
 		                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12155,8 +12155,8 @@ namespace TKMQ
 	                            ) AS '總計銷貨'	
                             ,(
 	                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-	                            FROM [TK].dbo.COPTI
-		                            ,[TK].dbo.COPTJ
+	                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+		                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 	                            WHERE TI001 = TJ001
 		                            AND TI002 = TJ002
 		                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12220,7 +12220,7 @@ namespace TKMQ
 			                            NATIONS,
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG, [TK].dbo.COPTH
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) , [TK].dbo.COPTH WITH(NOLOCK) 
 				                            WHERE TG001 = TH001
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12239,7 +12239,7 @@ namespace TKMQ
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
-				                            FROM [TK].dbo.COPTI, [TK].dbo.COPTJ
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) , [TK].dbo.COPTJ WITH(NOLOCK) 
 				                            WHERE TI001 = TJ001
 					                            AND TI002 = TJ002
 					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12308,7 +12308,7 @@ namespace TKMQ
 			                            NATIONS,
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG, [TK].dbo.COPTH
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) , [TK].dbo.COPTH WITH(NOLOCK) 
 				                            WHERE TG001 = TH001
 					                            AND TG002 = TH002
 					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12327,7 +12327,7 @@ namespace TKMQ
 			                            ) AS '銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
-				                            FROM [TK].dbo.COPTI, [TK].dbo.COPTJ
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) , [TK].dbo.COPTJ WITH(NOLOCK) 
 				                            WHERE TI001 = TJ001
 					                            AND TI002 = TJ002
 					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
@@ -12416,8 +12416,8 @@ namespace TKMQ
 		                            ) AS '國外月目標業績'
 	                            ,(
 		                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-		                            FROM [TK].dbo.COPTG
-			                            ,[TK].dbo.COPTH
+		                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+			                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 		                            WHERE TG001 = TH001
 			                            AND TG002 = TH002
 			                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12431,7 +12431,7 @@ namespace TKMQ
 			                            AND (
 				                            TG004 NOT IN (
 					                            SELECT MA001
-					                            FROM [TK].dbo.COPMA
+					                            FROM [TK].dbo.COPMA WITH(NOLOCK) 
 					                            WHERE MA002 LIKE '%全聯%'
 					                            )
 				                            )
@@ -12446,8 +12446,8 @@ namespace TKMQ
 		                            ) AS '國內月總銷貨'
 	                            ,(
 		                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-		                            FROM [TK].dbo.COPTI
-			                            ,[TK].dbo.COPTJ
+		                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+			                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 		                            WHERE TI001 = TJ001
 			                            AND TI002 = TJ002
 			                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12476,8 +12476,8 @@ namespace TKMQ
 		                            ) AS '國內月總銷退'
 	                            ,(
 		                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-		                            FROM [TK].dbo.COPTG
-			                            ,[TK].dbo.COPTH
+		                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+			                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 		                            WHERE TG001 = TH001
 			                            AND TG002 = TH002
 			                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12494,8 +12494,8 @@ namespace TKMQ
 		                            ) AS '國外月總銷貨'
 	                            ,(
 		                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-		                            FROM [TK].dbo.COPTI
-			                            ,[TK].dbo.COPTJ
+		                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+			                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 		                            WHERE TI001 = TJ001
 			                            AND TI002 = TJ002
 			                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12514,8 +12514,8 @@ namespace TKMQ
 		                            (
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG
-					                            ,[TK].dbo.COPTH
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+					                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 				                            WHERE TG001 = TH001
 					                            AND TG002 = TH002
 					                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12542,8 +12542,8 @@ namespace TKMQ
 						                            )
 				                            ) + (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-				                            FROM [TK].dbo.COPTI
-					                            ,[TK].dbo.COPTJ
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+					                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 				                            WHERE TI001 = TJ001
 					                            AND TI002 = TJ002
 					                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12580,8 +12580,8 @@ namespace TKMQ
 		                            (
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG
-					                            ,[TK].dbo.COPTH
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+					                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 				                            WHERE TG001 = TH001
 					                            AND TG002 = TH002
 					                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12597,8 +12597,8 @@ namespace TKMQ
 						                            )
 				                            ) + (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-				                            FROM [TK].dbo.COPTI
-					                            ,[TK].dbo.COPTJ
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+					                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 				                            WHERE TI001 = TJ001
 					                            AND TI002 = TJ002
 					                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
@@ -12624,8 +12624,8 @@ namespace TKMQ
 		                            ,[RTSALEMONEYS] AS '全聯銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12647,8 +12647,8 @@ namespace TKMQ
 			                            ) AS '國內張釋予銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12670,8 +12670,8 @@ namespace TKMQ
 			                            ) AS '國內張釋予銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12693,8 +12693,8 @@ namespace TKMQ
 			                            ) AS '國內蔡顏鴻銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12716,8 +12716,8 @@ namespace TKMQ
 			                            ) AS '國內蔡顏鴻銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12739,8 +12739,8 @@ namespace TKMQ
 			                            ) AS '國內何姍怡銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12762,8 +12762,8 @@ namespace TKMQ
 			                            ) AS '國內何姍怡銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12785,8 +12785,8 @@ namespace TKMQ
 			                            ) AS '國內洪櫻芬銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12808,8 +12808,8 @@ namespace TKMQ
 			                            ) AS '國內洪櫻芬銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12831,8 +12831,8 @@ namespace TKMQ
 			                            ) AS '國內許湘舷銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12854,8 +12854,8 @@ namespace TKMQ
 			                            ) AS '國內許湘舷銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12890,8 +12890,8 @@ namespace TKMQ
 			                            ) AS '官網及現銷銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12926,8 +12926,8 @@ namespace TKMQ
 		                            ,'-' AS '-'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND (
@@ -12947,8 +12947,8 @@ namespace TKMQ
 			                            ) AS '國外洪櫻芬銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12962,8 +12962,8 @@ namespace TKMQ
 			                            ) AS '國外洪櫻芬銷退'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG
-				                            ,[TK].dbo.COPTH
+			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
 			                            WHERE TG001 = TH001
 				                            AND TG002 = TH002
 				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
@@ -12977,8 +12977,8 @@ namespace TKMQ
 			                            ) AS '國外葉枋俐銷貨'
 		                            ,(
 			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI
-				                            ,[TK].dbo.COPTJ
+			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
+				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
 			                            WHERE TI001 = TJ001
 				                            AND TI002 = TJ002
 				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
@@ -13543,25 +13543,25 @@ namespace TKMQ
                             SELECT *
                             ,ISNULL(
                             (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                            FROM [TK].dbo.SASLA
+                            FROM [TK].dbo.SASLA WITH(NOLOCK) 
                             WHERE LA005=MB001
                             AND CONVERT(NVARCHAR,LA015,112)>='{0}'
                             AND CONVERT(NVARCHAR,LA015,112)<='{1}')
                             ,0) AS PERCOSTS
                             FROM (
                             SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG,[TK].dbo.COPTH LEFT JOIN [TK].dbo.INVMD ON MD001=TH004  AND TH009=MD002  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}' AND TH004=MB001),0) AS SUMTH008
-                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG,[TK].dbo.COPTH WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}'  AND TH004=MB001),0) AS SUMTH037
+                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004  AND TH009=MD002  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}' AND TH004=MB001),0) AS SUMTH008
+                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}'  AND TH004=MB001),0) AS SUMTH037
 
-                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ LEFT JOIN [TK].dbo.INVMD ON MD001=TJ004  AND TJ008=MD002 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}'  AND TJ004=MB001),0) AS SUMTJ007
-                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI,[TK].dbo.COPTJ WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}' AND TJ004=MB001),0) AS SUMTJ033
+                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004  AND TJ008=MD002 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}'  AND TJ004=MB001),0) AS SUMTJ007
+                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}' AND TJ004=MB001),0) AS SUMTJ033
 
-                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}' ),0) AS SUMTB019
-                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}'),0) AS SUMTB031
-                            FROM [TK].dbo.INVMB
+                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}' ),0) AS SUMTB019
+                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}'),0) AS SUMTB031
+                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
                             WHERE 1=1
                             AND MB001 LIKE '4%'
                             AND MB002 NOT LIKE '%試吃%'
@@ -13580,7 +13580,7 @@ namespace TKMQ
                             FROM 
                             (
                             SELECT TA002,TA001,SUM(TA012) '生產入庫數',SUM(TA016-TA019) AS '本階人工成本',SUM(TA017-TA020) AS '本階製造費用'
-                            FROM [TK].dbo.CSTTA
+                            FROM [TK].dbo.CSTTA WITH(NOLOCK) 
                             WHERE TA002 LIKE '{3}%'
                             GROUP BY TA002,TA001
                             ) AS TEMP
@@ -13655,8 +13655,8 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     UPDATE [TKPUR].[dbo].[PURVERSIONSNUMS]
-                                    SET [TOTALNUMS]=(SELECT SUM(TH015) FROM[TK].dbo.PURTH,[TK].dbo.PURTG WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
-                                    WHERE [TOTALNUMS]<>(SELECT SUM(TH015) FROM[TK].dbo.PURTH,[TK].dbo.PURTG WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
+                                    SET [TOTALNUMS]=(SELECT SUM(TH015) FROM[TK].dbo.PURTH WITH(NOLOCK) ,[TK].dbo.PURTG  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
+                                    WHERE [TOTALNUMS]<>(SELECT SUM(TH015) FROM[TK].dbo.PURTH WITH(NOLOCK) ,[TK].dbo.PURTG  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG013='Y' AND TH004=MB001 ) 
 
                                     ");
 
@@ -14659,7 +14659,7 @@ namespace TKMQ
                                     ,TD006 AS '規格'
                                     ,TD008 AS '採購數量'
                                     ,TD009 AS '單位'
-                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
                                     AND TC001 NOT IN ('A334')
@@ -14681,14 +14681,14 @@ namespace TKMQ
                                     ,TD006 AS '規格'
                                     ,TD008 AS '採購數量'
                                     ,TD009 AS '單位'
-                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
                                     AND TC001 IN ('A334')
                                     AND TC014='Y'
                                     AND TD008>0
                                     AND ISNULL(TC045,'')<>''
-                                    AND TC045 NOT IN (SELECT TI013+TI014 FROM [TK].dbo.MOCTH,[TK].dbo.MOCTI WHERE TH001=TI001 AND TH002=TI002 AND TH023='Y' AND TI013=SUBSTRING(TC045,1,4)  AND TI014=SUBSTRING(TC045,5,11)  )
+                                    AND TC045 NOT IN (SELECT TI013+TI014 FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) WHERE TH001=TI001 AND TH002=TI002 AND TH023='Y' AND TI013=SUBSTRING(TC045,1,4)  AND TI014=SUBSTRING(TC045,5,11)  )
                                     AND TD012 >= CONVERT(NVARCHAR, DATEADD(DAY, -7, GETDATE()), 112)
                                     AND TD012 <= CONVERT(NVARCHAR, DATEADD(DAY, 0, GETDATE()), 112)
                                     ) AS TEMP
@@ -14982,11 +14982,11 @@ namespace TKMQ
                                     ,TD006 AS '規格'
                                     ,TD008 AS '採購數量'
                                     ,TD009 AS '單位'
-                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD,[TK].dbo.PURMA
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
                                     AND TC002 LIKE '%'+CONVERT(NVARCHAR,GETDATE(),112)+'%'
-                                    AND REPLACE([TC001]+[TC002],' ','' ) NOT IN (SELECT REPLACE([TC001]+[TC002],' ','' ) FROM [TKPUR].[dbo].[TBPURCHECKFAX] )
+                                    AND REPLACE([TC001]+[TC002],' ','' ) NOT IN (SELECT REPLACE([TC001]+[TC002],' ','' ) FROM [TKPUR].[dbo].[TBPURCHECKFAX]  WITH(NOLOCK) )
                                     ORDER BY TD001,TD002,TD003
                                     
                                     ");
@@ -15283,12 +15283,12 @@ namespace TKMQ
                                     ,[MANUPRODS] AS '一天產能量'
                                     ,CONVERT(NVARCHAR,[CARESTEDATES],112) AS '建立日期'
                                     ,[ID]
-                                    ,(SELECT TOP 1 [DOC_NBR] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'DOC_NBR'
-                                    ,(SELECT TOP 1 [F01FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F01FieldValue'
-                                    ,(SELECT TOP 1 [F09FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS] WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F9FieldValue'
+                                    ,(SELECT TOP 1 [DOC_NBR] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS]  WITH(NOLOCK) WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'DOC_NBR'
+                                    ,(SELECT TOP 1 [F01FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS]  WITH(NOLOCK) WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F01FieldValue'
+                                    ,(SELECT TOP 1 [F09FieldValue] FROM [192.168.1.223].[UOF].[dbo].[View_TKRS_TB_DEVE_NEWLISTS]  WITH(NOLOCK) WHERE [View_TKRS_TB_DEVE_NEWLISTS].[F01FieldValue]=[TB_DEVE_NEWLISTS].NO  COLLATE Chinese_Taiwan_Stroke_BIN ORDER BY [DOC_NBR] DESC) AS 'F9FieldValue'
 
 
-                                    FROM [TKRESEARCH].[dbo].[TB_DEVE_NEWLISTS]
+                                    FROM [TKRESEARCH].[dbo].[TB_DEVE_NEWLISTS] WITH(NOLOCK) 
 
  
                                     WHERE 1=1
@@ -15535,11 +15535,11 @@ namespace TKMQ
                                     ,[COPTC].TC053,[CMSMV].MV002
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
                                     ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINE]
+                                    FROM [TKMOC].[dbo].[MOCMANULINE] WITH(NOLOCK) 
                                     LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINE].[COPTD001]=[COPTD].TD001 AND [MOCMANULINE].[COPTD002]=[COPTD].TD002 AND[MOCMANULINE].[COPTD003]=[COPTD].TD003 
                                     LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002
                                     LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006
@@ -15547,7 +15547,7 @@ namespace TKMQ
                                     LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
                                     LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
                                     WHERE CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112)>='{0}' 
-                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT] WITH(NOLOCK) )
                                     UNION ALL  
                                     SELECT  [MOCMANULINETEMP].[MANU] ,CONVERT(nvarchar,dateadd(ms,-3,dateadd(yy, datediff(yy,0,getdate())+2, 0)) ,112) MANUDATE,[MOCMANULINETEMP].[MB002]
                                     ,ISNULL([MOCMANULINETEMP].[BAR],0) BAR,ISNULL([MOCMANULINETEMP].[NUM],0) NUM,ISNULL([MOCMANULINETEMP].[PACKAGE],0) PACKAGE
@@ -15557,11 +15557,11 @@ namespace TKMQ
                                     ,[COPTC].TC053,[CMSMV].MV002
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
                                     ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
+                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK)  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
                                     ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
                                     ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]  
+                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]   WITH(NOLOCK) 
                                     LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINETEMP].[COPTD001]=[COPTD].TD001 AND [MOCMANULINETEMP].[COPTD002]=[COPTD].TD002 AND[MOCMANULINETEMP].[COPTD003]=[COPTD].TD003   
                                     LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002  
                                     LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006  
@@ -15571,7 +15571,7 @@ namespace TKMQ
                                     LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
                                     WHERE CONVERT(nvarchar,[MOCMANULINETEMP].[MANUDATE],112)>='{0}' 
                                     AND [MOCMANULINETEMP].TID IS NULL  
-                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
+                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT] WITH(NOLOCK) )
                                     ) AS TEMP
                                     ORDER BY  TEMP.[MANU],CONVERT(nvarchar, TEMP.[MANUDATE],112)    
                                     ", DateTime.Now.ToString("yyyyMMdd"));
@@ -15701,8 +15701,8 @@ namespace TKMQ
                             AVG(CONVERT(decimal(16,4),[控項_4])) AS '溼度',
                             (CONVERT(NVARCHAR,DATEPART(YEAR, [日期時間])) +CONVERT(NVARCHAR,DATEPART(MONTH, [日期時間]))+CONVERT(NVARCHAR,DATEPART(DAY, [日期時間])) +CONVERT(NVARCHAR,DATEPART(HOUR, [日期時間]) )) AS 'DATETIMES'
 
-                            FROM [TK_FOOD].[dbo].[log_table]
-                            LEFT JOIN [TK_FOOD].[dbo].[Machine] ON [Machine].[機台名稱] = [log_table].[機台名稱]
+                            FROM [TK_FOOD].[dbo].[log_table] WITH(NOLOCK) 
+                            LEFT JOIN [TK_FOOD].[dbo].[Machine] WITH(NOLOCK)  ON [Machine].[機台名稱] = [log_table].[機台名稱]
                             WHERE [Machine].[機台名稱] IN ( '溫濕度13', '溫濕度14')
                             AND CONVERT(NVARCHAR,[日期時間],112)='{0}'
                             GROUP BY 
@@ -16034,7 +16034,7 @@ namespace TKMQ
                                         C.value('(Cell[@fieldId=""GG002""]/@fieldValue)[1]', 'VARCHAR(100)') AS GG002,
                                         C.value('(Cell[@fieldId=""EXTERNAL_FORM_NBR""]/@fieldValue)[1]', 'VARCHAR(100)') AS EXTERNAL_FORM_NBR
                                     FROM
-                                        [UOF].[dbo].TB_WKF_TASK
+                                        [UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
                                     CROSS APPLY
                                         CURRENT_DOC.nodes('//Row') AS T(C)
                                     WHERE 1 = 1
@@ -16050,16 +16050,16 @@ namespace TKMQ
                                         MAX(CASE WHEN x1.field_id.value('@fieldId', 'VARCHAR(50)') = 'GA002'
                                                  THEN x1.field_id.value('@fieldValue', 'VARCHAR(200)') END) AS GA002_value
                                     FROM
-                                        [UOF].[dbo].TB_WKF_TASK
+                                        [UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
                                     CROSS APPLY
                                         TB_WKF_TASK.CURRENT_DOC.nodes('/Form/FormFieldValue/FieldItem') AS x1(field_id)
                                     WHERE 1 = 1
                                     AND TB_WKF_TASK.CURRENT_DOC.exist('//Row') = 0
                                     GROUP BY TB_WKF_TASK.DOC_NBR
                                     ) AS TEMPALL
-                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK1 ON TB_WKF_TASK1.DOC_NBR=TEMPALL.DOC_NBR
-                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK2 ON TB_WKF_TASK2.DOC_NBR= TEMPALL.EXTERNAL_FORM_NBR
-                                    LEFT JOIN [UOF].[dbo].TB_EB_USER ON TB_EB_USER.USER_GUID= TB_WKF_TASK2.USER_GUID
+                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK1  WITH(NOLOCK) ON TB_WKF_TASK1.DOC_NBR=TEMPALL.DOC_NBR
+                                    LEFT JOIN[UOF].[dbo].TB_WKF_TASK TB_WKF_TASK2  WITH(NOLOCK) ON TB_WKF_TASK2.DOC_NBR= TEMPALL.EXTERNAL_FORM_NBR
+                                    LEFT JOIN [UOF].[dbo].TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID= TB_WKF_TASK2.USER_GUID
                                     WHERE 1=1
                                     AND TB_WKF_TASK1.TASK_RESULT= '0' AND TB_WKF_TASK1.TASK_STATUS= '2'
                                     AND TEMPALL.DOC_NBR LIKE 'GA1005%'
@@ -16419,26 +16419,26 @@ namespace TKMQ
 
                                     FROM [UOF].[dbo].TB_WKF_TASK_NODE  WITH(NOLOCK)
                                     LEFT JOIN [UOF].[dbo].TB_WKF_TASK  WITH(NOLOCK) ON TB_WKF_TASK.TASK_ID=TB_WKF_TASK_NODE.TASK_ID
-                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM_VERSION ON TB_WKF_FORM_VERSION.FORM_VERSION_ID=TB_WKF_TASK.FORM_VERSION_ID
-                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM ON TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID
-                                    LEFT JOIN [UOF].[dbo].TB_EB_USER ON TB_EB_USER.USER_GUID=TB_WKF_TASK.USER_GUID
-                                    LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP ON TB_EB_EMPL_DEP.USER_GUID=TB_EB_USER.USER_GUID AND ORDERS=0
-                                    LEFT JOIN [UOF].[dbo].TB_EB_GROUP ON TB_EB_GROUP.GROUP_ID=TB_EB_EMPL_DEP.GROUP_ID
-                                    LEFT JOIN [UOF].[dbo].TB_EB_USER USER2 ON USER2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
-                                    LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP DEP2 ON DEP2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
-                                    LEFT JOIN [UOF].[dbo].TB_EB_JOB_TITLE ON TB_EB_JOB_TITLE.TITLE_ID=DEP2.TITLE_ID
+                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM_VERSION  WITH(NOLOCK) ON TB_WKF_FORM_VERSION.FORM_VERSION_ID=TB_WKF_TASK.FORM_VERSION_ID
+                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM  WITH(NOLOCK) ON TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID
+                                    LEFT JOIN [UOF].[dbo].TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_WKF_TASK.USER_GUID
+                                    LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP  WITH(NOLOCK) ON TB_EB_EMPL_DEP.USER_GUID=TB_EB_USER.USER_GUID AND ORDERS=0
+                                    LEFT JOIN [UOF].[dbo].TB_EB_GROUP  WITH(NOLOCK) ON TB_EB_GROUP.GROUP_ID=TB_EB_EMPL_DEP.GROUP_ID
+                                    LEFT JOIN [UOF].[dbo].TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
+                                    LEFT JOIN [UOF].[dbo].TB_EB_EMPL_DEP DEP2 WITH(NOLOCK)  ON DEP2.USER_GUID=TB_WKF_TASK_NODE.ACTUAL_SIGNER
+                                    LEFT JOIN [UOF].[dbo].TB_EB_JOB_TITLE  WITH(NOLOCK) ON TB_EB_JOB_TITLE.TITLE_ID=DEP2.TITLE_ID
 
                                     WHERE START_TIME>='2024/1/1'
                                     AND ACTUAL_SIGNER IN 
                                     (
-                                    SELECT [ACTUAL_SIGNER] FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS_ACTUAL_SIGNER]
+                                    SELECT [ACTUAL_SIGNER] FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS_ACTUAL_SIGNER] WITH(NOLOCK) 
                                     )
                                     AND ISNULL(CONVERT(NVARCHAR(MAX), COMMENT),'')<>''
                                     AND TB_WKF_TASK.DOC_NBR NOT IN 
                                     (
                                     SELECT 
                                     [DOC_NBR]
-                                    FROM  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
+                                    FROM  [UOF].[dbo].[Z_UOF_FORMS_COMMENTS] WITH(NOLOCK) 
                                     )
                                     ORDER BY 
                                     CONVERT(NVARCHAR,TB_WKF_TASK_NODE.START_TIME,112)
@@ -16643,7 +16643,7 @@ namespace TKMQ
                             ,[NAME]
                             ,[TITLE_NAME]
                             ,[EMAIL]
-                            FROM [UOF].[dbo].[View_DEP_ALL_MANAGERS]
+                            FROM [UOF].[dbo].[View_DEP_ALL_MANAGERS] WITH(NOLOCK) 
                             WHERE [GROUP_ID]='{0}'
                             ", GROUP_ID);
 
@@ -16893,7 +16893,7 @@ namespace TKMQ
                                     ,[MANAGERS_NAME]
                                     ,[MANAGERS_EMAIL]
                                     ,[ISEMAIL]
-                                    FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS]
+                                    FROM [UOF].[dbo].[Z_UOF_FORMS_COMMENTS] WITH(NOLOCK) 
                                     WHERE [ISEMAIL] IN ('N')
                             ");
 
@@ -17161,9 +17161,9 @@ namespace TKMQ
                                         TASK_ID,
                                         TASK_STATUS,
                                         TASK_RESULT
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] WITH(NOLOCK)   ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                         WHERE[FORM_NAME] = 'PURA0.進貨-進貨品質驗收單'
                                         AND TASK_STATUS = '1'
 
@@ -17179,9 +17179,9 @@ namespace TKMQ
                                         TASK_STATUS,
                                         TASK_RESULT
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                         WHERE[FORM_NAME] = 'PURMOCA2.進貨-託外進貨品質驗收單'
                                         AND TASK_STATUS = '1'
 
@@ -17196,9 +17196,9 @@ namespace TKMQ
                                         TASK_STATUS,
                                         TASK_RESULT
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                         WHERE[FORM_NAME] = 'PURA1.客供進貨-進貨品質驗收單'
                                         AND TASK_STATUS = '1')
 
@@ -17206,28 +17206,28 @@ namespace TKMQ
 
 
                                     SELECT '進貨單' AS 類別, TG001 AS '單別' ,TG002 AS '單號', MA002 AS '廠商',TH001_FieldValue,TH002_FieldValue,DOC_NBR AS 'UOF表單號碼', BEGIN_TIME,(DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'UOF停留時間(未核小時)'
-                                      FROM[192.168.1.105].[TK].dbo.PURMA,[192.168.1.105].[TK].dbo.PURTG
+                                      FROM[192.168.1.105].[TK].dbo.PURMA WITH(NOLOCK) ,[192.168.1.105].[TK].dbo.PURTG WITH(NOLOCK) 
                                       LEFT JOIN TEMP ON TH001_FieldValue = TG001 AND TH002_FieldValue = TG002
                                       WHERE TG005 = MA001
                                       AND TG013 IN('N')
-                                      AND TG001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+                                      AND TG001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
   
 
                                       UNION ALL
                                       SELECT '託外進貨單' AS KINDS, TH001, TH002, MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
-                                      FROM[192.168.1.105].[TK].dbo.PURMA,[192.168.1.105].[TK].dbo.MOCTH
+                                      FROM[192.168.1.105].[TK].dbo.PURMA WITH(NOLOCK) ,[192.168.1.105].[TK].dbo.MOCTH WITH(NOLOCK) 
                                       LEFT JOIN TEMP ON TH001_FieldValue = TH001 AND TH002_FieldValue = TH002
                                       WHERE TH005 = MA001
                                       AND TH023 IN('N')
-                                      AND TH001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+                                      AND TH001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
   
 
                                       UNION ALL
                                       SELECT '客供入料單' AS KINDS, TA001, TA002, ''MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
-                                      FROM[192.168.1.105].[TK].dbo.INVTA
+                                      FROM[192.168.1.105].[TK].dbo.INVTA WITH(NOLOCK) 
                                       LEFT JOIN TEMP ON TH001_FieldValue = TA001 AND TH002_FieldValue = TA002
                                       WHERE TA006 IN('N')
-                                      AND TA001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS])
+                                      AND TA001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
   
 
                                       ");
@@ -17512,11 +17512,11 @@ namespace TKMQ
                                     ,TB_WKF_TASK.DOC_NBR AS 'UOF單號'
                                     ,CONVERT(NVARCHAR,TB_WKF_TASK.BEGIN_TIME,112) AS 'UOF表單日期'
 
-                                    FROM [UOF].dbo.TB_EB_USER
-                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE ON ORIGINAL_SIGNER=USER_GUID
+                                    FROM [UOF].dbo.TB_EB_USER WITH(NOLOCK) 
+                                    LEFT JOIN [UOF].dbo.TB_WKF_TASK_NODE  WITH(NOLOCK) ON ORIGINAL_SIGNER=USER_GUID
                                     LEFT JOIN [UOF].[dbo].TB_WKF_TASK  WITH(NOLOCK) ON TB_WKF_TASK.TASK_ID=TB_WKF_TASK_NODE.TASK_ID AND TASK_STATUS NOT  IN ('2')
-                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM_VERSION ON TB_WKF_FORM_VERSION.FORM_VERSION_ID=TB_WKF_TASK.FORM_VERSION_ID
-                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM ON TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID 
+                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM_VERSION  WITH(NOLOCK) ON TB_WKF_FORM_VERSION.FORM_VERSION_ID=TB_WKF_TASK.FORM_VERSION_ID
+                                    LEFT JOIN [UOF].[dbo].TB_WKF_FORM  WITH(NOLOCK) ON TB_WKF_FORM.FORM_ID=TB_WKF_FORM_VERSION.FORM_ID 
                                     WHERE 1=1
                                     --AND NAME LIKE '%易%'
                                     AND ISNULL(CONVERT(NVARCHAR,EXPIRE_DATE,112),'')<>'99991231'
@@ -17812,9 +17812,9 @@ namespace TKMQ
                                     TASK_STATUS,
                                     TASK_RESULT,
                                     END_TIME
-                                    FROM[UOF].[dbo].TB_WKF_TASK
-                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                    FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                     WHERE[FORM_NAME] = 'PUR40.採購單'
                                     AND TASK_STATUS = '2'
                                     AND TASK_RESULT = '0'
@@ -17831,9 +17831,9 @@ namespace TKMQ
                                     TASK_STATUS,
                                     TASK_RESULT,
                                     END_TIME
-                                    FROM[UOF].[dbo].TB_WKF_TASK
-                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                    FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK)  ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                    LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                     WHERE[FORM_NAME] = 'PUR50.採購變更單'
                                     AND TASK_STATUS = '2'
                                     AND TASK_RESULT = '0'
@@ -17853,8 +17853,8 @@ namespace TKMQ
                                         , TEMP.DOC_NBR
                                         , (
                                             SELECT TOP 1 [TB_EB_USER].ACCOUNT
-                                            FROM[UOF].[dbo].TB_WKF_TASK_NODE
-                                            LEFT JOIN[UOF].[dbo].[TB_EB_USER]
+                                            FROM[UOF].[dbo].TB_WKF_TASK_NODE WITH(NOLOCK) 
+                                            LEFT JOIN[UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) 
                                             ON[TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ACTUAL_SIGNER
                                             WHERE 1 = 1
                                             AND ISNULL([TB_WKF_TASK_NODE].ACTUAL_SIGNER, '') <> ''
@@ -17875,7 +17875,7 @@ namespace TKMQ
 	                                    ,'' AS 'FORM_NAME'
 	                                    ,'' AS 'DOC_NBR'
 	                                    , '' AS 'ACCOUNT'
-                                        FROM[192.168.1.105].[TK].dbo.PURTC
+                                        FROM[192.168.1.105].[TK].dbo.PURTC WITH(NOLOCK) 
                                         WHERE TC014 IN ('N')
                                         AND UDF01 IN ('UOF')
                                         AND TC002 LIKE '{0}%'
@@ -17888,7 +17888,7 @@ namespace TKMQ
 	                                    ,'' AS 'FORM_NAME'
 	                                    ,'' AS 'DOC_NBR'
 	                                    , '' AS 'ACCOUNT'
-                                        FROM [192.168.1.105].[TK].dbo.PURTC
+                                        FROM [192.168.1.105].[TK].dbo.PURTC WITH(NOLOCK) 
                                         WHERE TC014 IN ('N')
                                         AND UDF01 NOT IN ('Y', 'UOF')
 	                                    AND TC002 LIKE '{0}%'
@@ -17901,7 +17901,7 @@ namespace TKMQ
 	                                    ,'' AS 'FORM_NAME'
 	                                    ,'' AS 'DOC_NBR'
 	                                    , '' AS 'ACCOUNT'
-                                        FROM [192.168.1.105].[TK].dbo.PURTE
+                                        FROM [192.168.1.105].[TK].dbo.PURTE WITH(NOLOCK) 
                                         WHERE TE017 IN('N')
                                         AND UDF01 IN('UOF')
                                         AND TE002 LIKE '{0}%'
@@ -17914,7 +17914,7 @@ namespace TKMQ
 	                                    ,'' AS 'FORM_NAME'
 	                                    ,'' AS 'DOC_NBR'
 	                                    , '' AS 'ACCOUNT'
-                                        FROM [192.168.1.105].[TK].dbo.PURTE
+                                        FROM [192.168.1.105].[TK].dbo.PURTE WITH(NOLOCK) 
                                         WHERE TE017 IN('N')
                                         AND UDF01 NOT IN ('Y', 'UOF')
 	                                    AND TE002 LIKE '{0}%'
@@ -18211,9 +18211,9 @@ namespace TKMQ
                                         TASK_RESULT,
                                         CONVERT(NVARCHAR, BEGIN_TIME, 112) BEGIN_TIME,
                                         USER_GUID
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                         WHERE[FORM_NAME] = '1006.樣品試吃回覆單'
                                         AND TASK_STATUS = '1'
 
@@ -18223,11 +18223,11 @@ namespace TKMQ
                                     SELECT TEMP.*
                                     ,(
                                         SELECT TOP 1[TB_EB_USER].ACCOUNT
-                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE
-                                        LEFT JOIN[UOF].[dbo].[TB_EB_USER]
+                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) 
 
                                             ON[TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ACTUAL_SIGNER
-                                    WHERE[TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
+                                    WHERE [TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
                                     ORDER BY FINISH_TIME DESC
                                     ) AS NOWSIGNACCOUNT
                                     FROM TEMP
@@ -18549,9 +18549,9 @@ namespace TKMQ
                                         CONVERT(NVARCHAR, BEGIN_TIME, 112) BEGIN_TIME,
                                         USER_GUID
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
 
                                         WHERE[FORM_NAME] = 'PUR10.請購單申請'
                                         AND TASK_STATUS = '1'
@@ -18571,9 +18571,9 @@ namespace TKMQ
                                         CONVERT(NVARCHAR, BEGIN_TIME, 112) BEGIN_TIME,
                                         USER_GUID
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN [UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
 
 
                                         WHERE[FORM_NAME] = 'PUR20.請購單變更單'
@@ -18588,15 +18588,15 @@ namespace TKMQ
                                     ,[TB_EB_USER].EMAIL AS 'EMAIL'
                                     ,(
                                         SELECT TOP 1[TB_EB_USER].NAME
-                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE
-                                        LEFT JOIN[UOF].[dbo].[TB_EB_USER]
+                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) 
                                             ON [TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ORIGINAL_SIGNER
                                             WHERE [TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
                                             AND NODE_STATUS = '1'
                                             ORDER BY NODE_SEQ DESC
                                     ) AS '目前簽核人還未核'
                                     FROM TEMP
-                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER]
+                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) 
                                             ON [TB_EB_USER].USER_GUID=TEMP.USER_GUID
                                     WHERE 1=1
                                     AND ISNULL([TB_EB_USER].EMAIL,' ')<>''
@@ -18683,9 +18683,9 @@ namespace TKMQ
                                         RowData.value('(Cell[@fieldId=""TB011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB011,
 	                                    RowData.value('(Cell[@fieldId=""SUMLA011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS SUMLA011
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK)  ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
 	                                    CROSS APPLY [CURRENT_DOC].nodes('/Form/FormFieldValue/FieldItem[@fieldId=""TB""]/DataGrid/Row') AS Rows(RowData)
                                         WHERE[FORM_NAME] = 'PUR10.請購單申請'
                                         AND TASK_STATUS = '1'
@@ -18707,9 +18707,9 @@ namespace TKMQ
                                         RowData.value('(Cell[@fieldId=""TB011""]/@fieldValue)[1]', 'NVARCHAR(200)') AS TB011,
 	                                    RowData.value('(Cell[@fieldId=""TB009""]/@fieldValue)[1]', 'NVARCHAR(200)') AS SUMLA011
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON  [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
 		                                    CROSS APPLY [CURRENT_DOC].nodes('/Form/FormFieldValue/FieldItem[@fieldId=""TB""]/DataGrid/Row') AS Rows(RowData)
                                         WHERE[FORM_NAME] = 'PUR20.請購單變更單'
                                         AND TASK_STATUS = '1'
@@ -18723,8 +18723,8 @@ namespace TKMQ
                                     ,[TB_EB_USER].EMAIL AS 'EMAIL'
                                     ,(
                                         SELECT TOP 1 [TB_EB_USER].NAME
-                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE
-                                        LEFT JOIN [UOF].[dbo].[TB_EB_USER]
+                                        FROM[UOF].[dbo].TB_WKF_TASK_NODE WITH(NOLOCK) 
+                                        LEFT JOIN [UOF].[dbo].[TB_EB_USER] WITH(NOLOCK) 
 	
                                         ON [TB_EB_USER].USER_GUID = [TB_WKF_TASK_NODE].ORIGINAL_SIGNER
 	                                    WHERE [TB_WKF_TASK_NODE].TASK_ID = TEMP.TASK_ID
@@ -18732,7 +18732,7 @@ namespace TKMQ
 	                                    ORDER BY NODE_SEQ DESC
                                     ) AS '目前簽核人還未核'
                                     FROM TEMP
-                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER] ON [TB_EB_USER].USER_GUID=TEMP.USER_GUID
+                                    LEFT JOIN [UOF].[dbo].[TB_EB_USER]  WITH(NOLOCK) ON [TB_EB_USER].USER_GUID=TEMP.USER_GUID
                                     WHERE 1=1
                                     AND  TEMP.[DOC_NBR]='{0}'
                                     ORDER BY [DOC_NBR]
@@ -18964,9 +18964,9 @@ namespace TKMQ
                                     TI005,
                                     TI007,
                                     TI008
-                                    FROM [TK].dbo.PURTC
-                                    LEFT JOIN [TK].dbo.MOCTA ON TA001+TA002=TC045
-                                    LEFT JOIN [TK].dbo.MOCTI ON TI013=TA001 AND TI014=TA002
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) 
+                                    LEFT JOIN [TK].dbo.MOCTA  WITH(NOLOCK) ON TA001+TA002=TC045
+                                    LEFT JOIN [TK].dbo.MOCTI  WITH(NOLOCK) ON TI013=TA001 AND TI014=TA002
                                     WHERE ISNULL(TC045,'')<>''
                                     AND TC001='A334'
                                     AND TC014 NOT IN ('V')
@@ -19266,10 +19266,10 @@ namespace TKMQ
                                     ,TD009  AS '單位'
                                     ,ISNULL(TEMP.TH007,0) AS '已入庫'
                                     ,(TD008-TD015-ISNULL(TEMP.TH007,0)) AS '未到貨量'
-                                    FROM [TK].dbo.PURTC,[TK].dbo.PURTD
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) 
                                     LEFT JOIN 
                                     (SELECT TH011,TH012,TH013,TH004,SUM(TH007) AS TH007
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH
+                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002
                                     AND TG013 IN ('Y','N')
                                     GROUP BY TH011,TH012,TH013,TH004
@@ -19593,9 +19593,9 @@ namespace TKMQ
                                         TASK_RESULT,
                                         END_TIME,
                                         [CURRENT_DOC]
-                                        FROM[UOF].[dbo].TB_WKF_TASK
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION] ON[TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] ON[TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
+                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
+                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
                                         WHERE[FORM_NAME] = '9001.新品號通知單'
                                         AND TASK_STATUS = '1'
                                         --AND TASK_RESULT = '0'
@@ -19607,8 +19607,8 @@ namespace TKMQ
                                         ,TB_EB_USER.NAME
                                         ,TB_EB_USER.EMAIL
                                         FROM TEMP
-                                        LEFT JOIN[UOF].dbo.TB_WKF_TASK_NODE ON TB_WKF_TASK_NODE.TASK_ID = TEMP.TASK_ID AND ISNULL(TB_WKF_TASK_NODE.FINISH_TIME, '')= ''
-                                        LEFT JOIN[UOF].dbo.TB_EB_USER ON TB_EB_USER.USER_GUID = TB_WKF_TASK_NODE.ORIGINAL_SIGNER
+                                        LEFT JOIN[UOF].dbo.TB_WKF_TASK_NODE  WITH(NOLOCK) ON TB_WKF_TASK_NODE.TASK_ID = TEMP.TASK_ID AND ISNULL(TB_WKF_TASK_NODE.FINISH_TIME, '')= ''
+                                        LEFT JOIN[UOF].dbo.TB_EB_USER WITH(NOLOCK)  ON TB_EB_USER.USER_GUID = TB_WKF_TASK_NODE.ORIGINAL_SIGNER
                                         ORDER BY TB_EB_USER.NAME,TEMP.DOC_NBR
                                     ");
 
@@ -20244,8 +20244,8 @@ namespace TKMQ
                                     ,TH002
                                     ,TH004
                                     ,TH007
-                                    FROM [TKWAREHOUSE].[dbo].[TBPURINCHECK]
-                                    LEFT JOIN [TK].dbo.PURTH ON TH011=TC001 AND TH012=TC002 AND TH013=TD003
+                                    FROM [TKWAREHOUSE].[dbo].[TBPURINCHECK] WITH(NOLOCK) 
+                                    LEFT JOIN [TK].dbo.PURTH  WITH(NOLOCK) ON TH011=TC001 AND TH012=TC002 AND TH013=TD003
                                     WHERE 1=1
                                     AND TD004=TH004
                                     AND NUMS<>TH007
@@ -20539,8 +20539,8 @@ namespace TKMQ
                                     ,TH002
                                     ,TH004
                                     ,TH007
-                                    FROM [TKWAREHOUSE].[dbo].[TBPURINCHECK]
-                                    LEFT JOIN [TK].dbo.PURTH ON TH011=TC001 AND TH012=TC002 AND TH013=TD003
+                                    FROM [TKWAREHOUSE].[dbo].[TBPURINCHECK] WITH(NOLOCK) 
+                                    LEFT JOIN [TK].dbo.PURTH  WITH(NOLOCK) ON TH011=TC001 AND TH012=TC002 AND TH013=TD003
                                     WHERE 1=1
                                     AND TD004=TH004
                                     AND ISNULL(TH001,'')=''
@@ -21612,7 +21612,7 @@ namespace TKMQ
                             ,[COMMENTS] AS '備註'
                             ,[ID]
                             ,[CREATEDATES]
-                            FROM [TKMK].[dbo].[TBDAILYPOSTB]
+                            FROM [TKMK].[dbo].[TBDAILYPOSTB] WITH(NOLOCK) 
                             WHERE [SDATES]='{0}'
                             ORDER BY [MB001]
 
@@ -21686,7 +21686,7 @@ namespace TKMQ
                             ,[NOWNUMS] AS '目前庫存數量'
                             ,[COMMENTS]AS '備註'
                             ,[CREATEDATES]
-                            FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH]
+                            FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH] WITH(NOLOCK) 
                             WHERE [SMONTHS]='{0}'
                             ORDER BY [MB001]                         
 
@@ -21916,7 +21916,7 @@ namespace TKMQ
                                     ,CONVERT(NVARCHAR,GETDATE(),112) AS 'TODAYS'
                                     ,(CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,TH117,TH036) ELSE 0 END) AS '製造有效天數'
                                     ,(CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,GETDATE(),TH036) ELSE 0 END) AS '本日有效天數'
-                                    FROM [TK].dbo.PURTG,[TK].dbo.PURTH,[TK].dbo.PURMA
+                                    FROM [TK].dbo.PURTG,[TK] WITH(NOLOCK) .dbo.PURTH WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002
                                     AND TG005=MA001
                                     AND PURTG.CREATE_DATE LIKE '{0}%'
@@ -21927,7 +21927,7 @@ namespace TKMQ
                                     ,CONVERT(NVARCHAR,GETDATE(),112) AS 'TODAYS'
                                     ,(CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,TB033,TB015) ELSE 0 END) AS 'VALIDDAYS'
                                     ,(CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,GETDATE(),TB015) ELSE 0 END) AS 'STILLDAYS'
-                                    FROM [TK].dbo.INVTA,[TK].dbo.INVTB
+                                    FROM [TK].dbo.INVTA WITH(NOLOCK) ,[TK].dbo.INVTB WITH(NOLOCK) 
                                     WHERE TA001=TB001 AND TA002=TB002
                                     AND TA001 IN ('A11A')
                                     AND INVTA.CREATE_DATE LIKE '{0}%'
