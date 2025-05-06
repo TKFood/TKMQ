@@ -1519,7 +1519,16 @@ namespace TKMQ
         public void HRAUTORUN_currentTime4()
         {
             StringBuilder MSG = new StringBuilder();
-
+            try
+            {
+                // 商品專案通知
+                SENDMAIL_TB_PROJECTS_PRODUCTS();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@"商品專案通知失敗 ||");
+            }
             try
             {
                 //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
