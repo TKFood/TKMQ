@@ -22079,41 +22079,45 @@ namespace TKMQ
                     {
                         BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
-                        BODY.AppendFormat(@"<table> ");
-                        BODY.AppendFormat(@"<tr >");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">專案編號</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">分類</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">項目名稱</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">專案負責人</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">研發進度回覆</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務進度回覆</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">設計負責人</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">設計回覆</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">專案階段</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否結案</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單編號</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">更新日</th>");
-         
-                        BODY.AppendFormat(@"</tr> ");
+                        BODY.AppendFormat(@"<table style='width:100%; border-collapse:collapse;'> ");
+                        BODY.AppendFormat(@"<tr>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>專案編號</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>分類</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>項目名稱</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>專案負責人</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>研發進度回覆</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>業務進度回覆</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>設計負責人</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>設計回覆</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>專案階段</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>是否結案</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:8%;'>更新日</th>");
+                        BODY.AppendFormat(@"</tr>");
+
 
                         foreach (DataRow DR in DT_DATAS.Rows)
                         {
 
-                            BODY.AppendFormat(@"<tr >");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["專案編號"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["分類"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["項目名稱"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["專案負責人"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["研發進度回覆"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["業務進度回覆"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["設計負責人"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["設計回覆"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["專案階段"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["是否結案"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單編號"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["更新日"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<tr>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>" + DR["專案編號"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>" + DR["分類"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:9%;'>" + DR["項目名稱"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["專案負責人"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
+                                + DR["研發進度回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
+                                + "</td>");                            
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
+                                + DR["業務進度回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
+                                + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["設計負責人"] + "</td>");                            
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
+                                + DR["設計回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
+                                + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["專案階段"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["是否結案"] + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:8%;'>" + DR["更新日"] + "</td>");
+                            BODY.AppendFormat(@"</tr>");
 
-                            BODY.AppendFormat(@"</tr> ");
 
 
                         }
@@ -22233,9 +22237,9 @@ namespace TKMQ
                                     ,CONVERT(NVARCHAR,[UPDATEDATES],112) AS '更新日'                                        
                                     ,[ID]
                                         
-                                    FROM [TKRESEARCH].[dbo].[TB_PROJECTS_PRODUCTS]
+                                    FROM [TKRESEARCH].[dbo].[TB_PROJECTS_PRODUCTS] WITH(NOLOCK)
                                     WHERE 1=1
-                                    AND [ISCLOSED] IN ('Y')
+                                    AND [ISCLOSED] IN ('N')
                                     ORDER BY [OWNER],[NO]
 
 
