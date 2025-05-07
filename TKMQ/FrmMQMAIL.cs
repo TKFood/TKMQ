@@ -1376,63 +1376,79 @@ namespace TKMQ
         /// //每星期一~星期五寄送
         /// 一般用08:31
         /// </summary>
-        public void HRAUTORUN_currentTime1()
+        public async Task HRAUTORUN_currentTime1()
         {
             StringBuilder MSG = new StringBuilder();
 
+            // 設定最多同時執行 5 個任務
+            var semaphore = new SemaphoreSlim(5); 
+            var tasks = new List<Task>();
             try
             {
-                //Thread.Sleep(1000*60);
-            }
-            catch
-            {
-                //MSG.AppendFormat(@" PUR10.請購單申請+PUR20.請購單變更單  失敗 ||");
-            }
-            finally
-            {
+                // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
+                tasks.Add(RunWithSemaphore(semaphore, async () =>
+                {
+                    try
+                    {
+                        await SENDEMAIL_DAILY_SALES_MONEY();
+                        await Task.Delay(1000 * 60); // 等待 1 分鐘
+                    }
+                    catch (Exception ex)
+                    {
+                        // 捕獲 SENDEMAIL_DAILY_SALES_MONEY 執行中的異常
+                        //Console.WriteLine($"SENDEMAIL_DAILY_SALES_MONEY 失敗: {ex.Message}");
+                    }
+                }));
 
-            }           
+                // 呼叫 SENDEMAIL_STORES_REPORTS 並在執行後等待 1 分鐘
+                tasks.Add(RunWithSemaphore(semaphore, async () =>
+                {
+                    try
+                    {
+                        await SENDMAIL_STORES_REPORTS();
+                        await Task.Delay(1000 * 60); // 等待 1 分鐘
+                    }
+                    catch (Exception ex)
+                    {
+                        // 捕獲 SENDEMAIL_STORES_REPORTS 執行中的異常
+                        //Console.WriteLine($"SENDEMAIL_STORES_REPORTS 失敗: {ex.Message}");
+                    }
+                }));
 
-            //
-            try
+                // 可以添加更多的非同步任務...
+
+                await Task.WhenAll(tasks); // 等待所有任務完成
+            }
+            catch (Exception ex)
             {
-                // 國內、外業務部業績日報表    
-                SENDEMAIL_DAILY_SALES_MONEY();
-
-                //Thread.Sleep(1000 * 60); 的作用是在執行緒（Thread）中暫停執行 60 秒（1 分鐘）。
-                //因為HRAUTORUN_currentTime1排程在1分鐘內跑完，會重覆執行，所以sleep暫停1分鐘再繼續排程
-                Thread.Sleep(1000*60);
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
+                //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
             }
-            catch
-            {               
-                MSG.AppendFormat(@"國內、外業務部業績日報表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //寄送MAIL，硯微墨統計表
-                SENDMAIL_STORES_REPORTS();
-                Thread.Sleep(1000 * 60);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"硯微墨統計表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
+            
 
             if (!string.IsNullOrEmpty(MSG.ToString()))
             {
                 MessageBox.Show(MSG.ToString());
             }
 
+        }
+
+        public async Task RunWithSemaphore(SemaphoreSlim semaphore, Func<Task> taskFunc)
+        {
+            await semaphore.WaitAsync(); // 等待可用的並行槽
+            try
+            {
+                await taskFunc(); // 執行非同步任務
+            }
+            catch (Exception ex)
+            {
+                // 捕獲執行中異常
+                //Console.WriteLine($"RunWithSemaphore 執行異常: {ex.Message}");
+            }
+            finally
+            {
+                semaphore.Release(); // 完成後釋放槽
+            }
         }
         /// <summary>
         /// HRAUTORUN_currentTime3
@@ -13010,7 +13026,7 @@ namespace TKMQ
             return SB;
              
         }
-        public void SENDEMAIL_DAILY_SALES_MONEY()
+        public async Task SENDEMAIL_DAILY_SALES_MONEY()
         {
             DataSet dsSALESMONEYS = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -13117,19 +13133,17 @@ namespace TKMQ
                             throw; // 最後一次仍失敗則拋出異常
                     }
 
-                    System.Threading.Thread.Sleep(5000); // 等待 5 秒再試
+                    await Task.Delay(5000); // 等待 5 秒再試
                 }
-                              
 
                 //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
-
-
             }
             catch (Exception ex)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
                 //ex.ToString();
             }
+
         }
 
 
@@ -20658,8 +20672,8 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_STORES_REPORTS() 
-        {
+        public async Task SENDMAIL_STORES_REPORTS() 
+        {   
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
             DateTime before_yesterdayDate = DateTime.Now.AddDays(-2); // 取得前天的日期
             string yesterday = yesterdayDate.ToString("yyyyMMdd");
