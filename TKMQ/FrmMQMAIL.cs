@@ -50,6 +50,8 @@ namespace TKMQ
         private static readonly List<Task> tasks = new List<Task>();
         // 全域共用的錯誤訊息紀錄
         private static readonly StringBuilder errorMessages = new StringBuilder();
+        // 設定 Timeout 時間
+        private const int TimeoutInMilliseconds = 3 * 60 * 1000;
 
         int TIMEOUT_LIMITS = 240;
         private System.Timers.Timer timer;
@@ -203,21 +205,28 @@ namespace TKMQ
         #region FUNCTION
         /// <summary>
         /// 是控制同時執行的非同步任務數量，並確保不會超過我們設定的並行限制
+        /// TimeoutInMilliseconds 超時判斷，當時間超過設定的值，就會自動取消該任務
         /// </summary>
         /// <param name="taskFunc"></param>
         /// <returns></returns>
-        public async Task EnqueueTask(Func<Task> taskFunc)
+        public async Task EnqueueTask(Func<CancellationToken, Task> taskFunc)
         {
             await semaphore.WaitAsync();
+            var cancellationTokenSource = new CancellationTokenSource();
             var task = Task.Run(async () =>
             {
                 try
                 {
-                    await taskFunc();
+                    var completedTask = await Task.WhenAny(taskFunc(cancellationTokenSource.Token), Task.Delay(TimeoutInMilliseconds));
+                    if (completedTask != taskFunc(cancellationTokenSource.Token))
+                    {
+                        cancellationTokenSource.Cancel(); // 超時取消
+                        //throw new TimeoutException($"執行時間超過 {TimeoutInMilliseconds / 1000} 秒，已自動取消");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    //errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
+                    errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
                 }
                 finally
                 {
@@ -1419,7 +1428,7 @@ namespace TKMQ
             try
             {
                 // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
-                await EnqueueTask(async () =>
+                await EnqueueTask(async (token) =>
                 {
                     try
                     {
@@ -1434,7 +1443,7 @@ namespace TKMQ
                 });
 
                 // 呼叫 SENDEMAIL_STORES_REPORTS 並在執行後等待 1 分鐘
-                await EnqueueTask(async () =>
+                await EnqueueTask(async (token) =>
                 {
                     try
                     {
