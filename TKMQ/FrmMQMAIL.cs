@@ -226,7 +226,7 @@ namespace TKMQ
                 }
                 catch (Exception ex)
                 {
-                    errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
+                    //errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
                 }
                 finally
                 {
