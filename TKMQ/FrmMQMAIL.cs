@@ -42,6 +42,15 @@ namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
     {
+        // 設定最多同時執行 5 個任務
+        // 全域共用的 SemaphoreSlim，設定最大併發數 5
+        // semaphore 要搭配 EnqueueTask 使用
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(5);
+        // 全域共用的任務列表
+        private static readonly List<Task> tasks = new List<Task>();
+        // 全域共用的錯誤訊息紀錄
+        private static readonly StringBuilder errorMessages = new StringBuilder();
+
         int TIMEOUT_LIMITS = 240;
         private System.Timers.Timer timer;
 
@@ -192,6 +201,32 @@ namespace TKMQ
             SETPATH();
         }
         #region FUNCTION
+        /// <summary>
+        /// 是控制同時執行的非同步任務數量，並確保不會超過我們設定的並行限制
+        /// </summary>
+        /// <param name="taskFunc"></param>
+        /// <returns></returns>
+        public async Task EnqueueTask(Func<Task> taskFunc)
+        {
+            await semaphore.WaitAsync();
+            var task = Task.Run(async () =>
+            {
+                try
+                {
+                    await taskFunc();
+                }
+                catch (Exception ex)
+                {
+                    errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
+            tasks.Add(task);
+        }
+
         private void timer3_Tick(object sender, EventArgs e)
         {
             // 檢查是否為每季度的1號
@@ -1380,15 +1415,10 @@ namespace TKMQ
         {
             StringBuilder MSG = new StringBuilder();
 
-            // 設定最多同時執行 5 個任務
-            //semaphore要搭配RunWithSemaphore使用
-            var semaphore = new SemaphoreSlim(5); 
-            var tasks = new List<Task>();
-
             try
             {
                 // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
-                tasks.Add(RunWithSemaphore(semaphore, async () =>
+                await EnqueueTask(async () =>
                 {
                     try
                     {
@@ -1398,12 +1428,12 @@ namespace TKMQ
                     catch (Exception ex)
                     {
                         // 捕獲 SENDEMAIL_DAILY_SALES_MONEY 執行中的異常
-                        //Console.WriteLine($"SENDEMAIL_DAILY_SALES_MONEY 失敗: {ex.Message}");
+                        errorMessages.AppendLine($"國內、外業務部業績測試 失敗: {ex.Message}");
                     }
-                }));
+                });
 
                 // 呼叫 SENDEMAIL_STORES_REPORTS 並在執行後等待 1 分鐘
-                tasks.Add(RunWithSemaphore(semaphore, async () =>
+                await EnqueueTask(async () =>
                 {
                     try
                     {
@@ -1413,13 +1443,9 @@ namespace TKMQ
                     catch (Exception ex)
                     {
                         // 捕獲 SENDEMAIL_STORES_REPORTS 執行中的異常
-                        //Console.WriteLine($"SENDEMAIL_STORES_REPORTS 失敗: {ex.Message}");
+                        errorMessages.AppendLine($"硯微墨商品銷進 失敗: {ex.Message}");
                     }
-                }));
-
-                // 可以添加更多的非同步任務...
-
-                await Task.WhenAll(tasks); // 等待所有任務完成
+                });          
             }
             catch (Exception ex)
             {
@@ -1429,33 +1455,11 @@ namespace TKMQ
 
             if (!string.IsNullOrEmpty(MSG.ToString()))
             {
-                MessageBox.Show(MSG.ToString());
+                //MessageBox.Show(MSG.ToString());
             }
 
         }
-        /// <summary>
-        /// RunWithSemaphore 的作用是控制同時執行的非同步任務數量，並確保不會超過我們設定的並行限制
-        /// </summary>
-        /// <param name="semaphore"></param>
-        /// <param name="taskFunc"></param>
-        /// <returns></returns>
-        public async Task RunWithSemaphore(SemaphoreSlim semaphore, Func<Task> taskFunc)
-        {
-            await semaphore.WaitAsync(); // 等待可用的並行槽
-            try
-            {
-                await taskFunc(); // 執行非同步任務
-            }
-            catch (Exception ex)
-            {
-                // 捕獲執行中異常
-                //Console.WriteLine($"RunWithSemaphore 執行異常: {ex.Message}");
-            }
-            finally
-            {
-                semaphore.Release(); // 完成後釋放槽
-            }
-        }
+       
         /// <summary>
         /// HRAUTORUN_currentTime3
         /// 15:00
