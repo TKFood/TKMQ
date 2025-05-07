@@ -217,7 +217,7 @@ namespace TKMQ
                 }
                 catch (Exception ex)
                 {
-                    errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
+                    //errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
                 }
                 finally
                 {
@@ -1413,7 +1413,8 @@ namespace TKMQ
         /// </summary>
         public async Task HRAUTORUN_currentTime1()
         {
-            StringBuilder MSG = new StringBuilder();
+            // 每次排程開始前清空錯誤訊息
+            errorMessages.Clear();
 
             try
             {
@@ -1453,11 +1454,10 @@ namespace TKMQ
                 //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
             }            
 
-            if (!string.IsNullOrEmpty(MSG.ToString()))
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                //MessageBox.Show(MSG.ToString());
+                MessageBox.Show(errorMessages.ToString());               
             }
-
         }
        
         /// <summary>
