@@ -1381,8 +1381,10 @@ namespace TKMQ
             StringBuilder MSG = new StringBuilder();
 
             // 設定最多同時執行 5 個任務
+            //semaphore要搭配RunWithSemaphore使用
             var semaphore = new SemaphoreSlim(5); 
             var tasks = new List<Task>();
+
             try
             {
                 // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
@@ -1423,8 +1425,7 @@ namespace TKMQ
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
                 //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
-            }
-            
+            }            
 
             if (!string.IsNullOrEmpty(MSG.ToString()))
             {
@@ -1432,7 +1433,12 @@ namespace TKMQ
             }
 
         }
-
+        /// <summary>
+        /// RunWithSemaphore 的作用是控制同時執行的非同步任務數量，並確保不會超過我們設定的並行限制
+        /// </summary>
+        /// <param name="semaphore"></param>
+        /// <param name="taskFunc"></param>
+        /// <returns></returns>
         public async Task RunWithSemaphore(SemaphoreSlim semaphore, Func<Task> taskFunc)
         {
             await semaphore.WaitAsync(); // 等待可用的並行槽
