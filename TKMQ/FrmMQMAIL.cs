@@ -15539,8 +15539,6 @@ namespace TKMQ
                                     SELECT  [MOCMANULINE].[MANU] ,CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112) MANUDATE,[MOCMANULINE].[MB002]
                                     ,ISNULL([MOCMANULINE].[BAR],0) BAR,ISNULL([MOCMANULINE].[NUM],0) NUM,ISNULL([MOCMANULINE].[PACKAGE],0) PACKAGE
                                     ,[MOCMANULINE].[COPTD001] AS TD001
-                                    ,[MOCMANULINE].[COPTD001] AS TD001
-                                    ,[MOCMANULINE].[COPTD001] AS TD001
                                     ,[MOCMANULINE].[COPTD002] AS TD002
                                     ,[MOCMANULINE].[COPTD003] AS TD003
                                     ,[COPTC].TC053,[CMSMV].MV002
