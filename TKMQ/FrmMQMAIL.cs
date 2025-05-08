@@ -42,6 +42,13 @@ namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
     {
+        //記錄 currentTime1 最近被執行的日期
+        private DateTime lastExecutionDate_currentTime1 = DateTime.MinValue;
+        //今天已執行過就不執行        
+        private string YN_today_currentTime1 = "N"; // 初始設置為 N，表示未執行過       
+        //避免 currentTime1 中同時重覆執行
+        private static bool isRunning_currentTime1 = false;
+
         // 設定最多同時執行 5 個任務
         // 全域共用的 SemaphoreSlim，設定最大併發數 5
         // semaphore 要搭配 EnqueueTask 使用
@@ -293,12 +300,12 @@ namespace TKMQ
         }
 
         private void timer1_Tick(object sender, EventArgs e)
-        {
+        {          
             // 取得目前日期和時間
             DateTime now = DateTime.Now;
 
             
-            string targetTime1 = "08:31";
+            string targetTime1 = "11:03";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
             string targetTime2 = "08:50";
@@ -330,16 +337,34 @@ namespace TKMQ
 
             //targetTime1
             //一般用08:31
-            if (currentTime1 == targetTime1)
+            // 檢查是否到達目標時間，並且是星期一到星期五
+            if (currentTime1 == targetTime1 &&
+                now.DayOfWeek >= DayOfWeek.Monday &&
+                now.DayOfWeek <= DayOfWeek.Friday)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                // 如果當前正在執行，直接跳出
+                if (isRunning_currentTime1) return;
+
+                // 如果是新的一天，重置 YN_today_currentTime1 為 "N"
+                if (YN_today_currentTime1.Equals("Y") && now.Date != lastExecutionDate_currentTime1.Date)
                 {
-                    HRAUTORUN_currentTime1();
+                    YN_today_currentTime1 = "N"; // 重新設置為未執行狀態
                 }
 
+                // 只在 YN_today_currentTime1 尚未執行過的情況下，才允許執行
+                if (YN_today_currentTime1.Equals("N"))
+                {
+                    // 執行非同步排程
+                    isRunning_currentTime1 = true; // 標記為正在執行                  
+                    HRAUTORUN_currentTime1();
+                    lastExecutionDate_currentTime1 = DateTime.Now; // 標記執行的日期時間
+                    YN_today_currentTime1 = "Y";
+                }
 
+              
             }
+
+            
 
             //targetTime2
             //一般用08:50
@@ -423,7 +448,7 @@ namespace TKMQ
                 {
                     HRAUTORUN_currentTime7();
                 }
-            }
+            }                  
 
         }
 
@@ -1421,10 +1446,10 @@ namespace TKMQ
         /// 一般用08:31
         /// </summary>
         public async Task HRAUTORUN_currentTime1()
-        {
+        {      
             // 每次排程開始前清空錯誤訊息
             errorMessages.Clear();
-
+          
             try
             {
                 // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
@@ -1433,7 +1458,7 @@ namespace TKMQ
                     try
                     {
                         await SENDEMAIL_DAILY_SALES_MONEY();
-                        await Task.Delay(1000 * 60); // 等待 1 分鐘
+                        await Task.Delay(1000 * 60 * 1); // 等待 1 分，避免MAIL主機過載                 
                     }
                     catch (Exception ex)
                     {
@@ -1448,7 +1473,7 @@ namespace TKMQ
                     try
                     {
                         await SENDMAIL_STORES_REPORTS();
-                        await Task.Delay(1000 * 60); // 等待 1 分鐘
+                        await Task.Delay(1000 * 60 * 1); // 等待 1 分，避免MAIL主機過載           
                     }
                     catch (Exception ex)
                     {
@@ -1461,7 +1486,12 @@ namespace TKMQ
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
                 //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
-            }            
+            }
+            finally
+            {
+                // 執行完成，解除旗標              
+                isRunning_currentTime1 = false;
+            }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
