@@ -305,7 +305,7 @@ namespace TKMQ
             DateTime now = DateTime.Now;
 
             
-            string targetTime1 = "11:03";
+            string targetTime1 = "08:31";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
             string targetTime2 = "08:50";
