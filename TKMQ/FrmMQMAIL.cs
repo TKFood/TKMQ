@@ -41,44 +41,7 @@ using System.Net.Mime;
 namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
-    {
-        //記錄 currentTime 最近被執行的日期
-        private DateTime lastExecutionDate_currentTime1 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime2 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime3 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime4 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime5 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime6 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime7 = DateTime.MinValue;
-        private DateTime lastExecutionDate_currentTime8 = DateTime.MinValue;
-
-        // YN_today_currentTime 今天已執行過就不執行        
-        private string YN_today_currentTime1 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime2 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime3 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime4 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime5 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime6 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime7 = "N"; // 初始設置為 N，表示未執行過       
-        private string YN_today_currentTime8 = "N"; // 初始設置為 N，表示未執行過       
-
-        //避免 currentTime 中同時重覆執行
-        private static bool isRunning_currentTime1 = false;
-        private static bool isRunning_currentTime2 = false;
-        private static bool isRunning_currentTime3 = false;
-        private static bool isRunning_currentTime4 = false;
-        private static bool isRunning_currentTime5 = false;
-        private static bool isRunning_currentTime6 = false;
-        private static bool isRunning_currentTime7 = false;
-        private static bool isRunning_currentTime8 = false;
-
-
-        // 設定最多同時執行 5 個任務
-        // 全域共用的 SemaphoreSlim，設定最大併發數 5
-        // semaphore 要搭配 EnqueueTask 使用
-        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(5);
-        // 全域共用的任務列表
-        private static readonly List<Task> tasks = new List<Task>();
+    {       
         // 全域共用的錯誤訊息紀錄
         private static readonly StringBuilder errorMessages = new StringBuilder();
         // 設定 Timeout 時間
@@ -233,40 +196,7 @@ namespace TKMQ
 
             SETPATH();
         }
-        #region FUNCTION
-        /// <summary>
-        /// 是控制同時執行的非同步任務數量，並確保不會超過我們設定的並行限制
-        /// TimeoutInMilliseconds 超時判斷，當時間超過設定的值，就會自動取消該任務
-        /// </summary>
-        /// <param name="taskFunc"></param>
-        /// <returns></returns>
-        public async Task EnqueueTask(Func<CancellationToken, Task> taskFunc)
-        {
-            await semaphore.WaitAsync();
-            var cancellationTokenSource = new CancellationTokenSource();
-            var task = Task.Run(async () =>
-            {
-                try
-                {
-                    var completedTask = await Task.WhenAny(taskFunc(cancellationTokenSource.Token), Task.Delay(TimeoutInMilliseconds));
-                    if (completedTask != taskFunc(cancellationTokenSource.Token))
-                    {
-                        cancellationTokenSource.Cancel(); // 超時取消
-                        //throw new TimeoutException($"執行時間超過 {TimeoutInMilliseconds / 1000} 秒，已自動取消");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //errorMessages.AppendLine($"{taskFunc.Method.Name} 失敗: {ex.Message}");
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
-            });
-            tasks.Add(task);
-        }
-
+        #region FUNCTION      
         private void timer3_Tick(object sender, EventArgs e)
         {
             // 檢查是否為每季度的1號
@@ -302,7 +232,7 @@ namespace TKMQ
 
             // 檢查是否為每季度的1號、15號
 
-            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15 )
+            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15)
             {
                 if (currentTime1 == targetTime1)
                 {
@@ -310,7 +240,7 @@ namespace TKMQ
                     {
                         //採購每月1號、15號未到貨通知
                         SENDMAIL_TK_PUR_MONTHS_NO_IN();
-                      
+
                     }
                     catch
                     {
@@ -324,15 +254,15 @@ namespace TKMQ
         }
 
         private void timer1_Tick(object sender, EventArgs e)
-        {          
+        {
             // 取得目前日期和時間
             DateTime now = DateTime.Now;
 
-            
+
             string targetTime1 = "08:31";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
-            string targetTime2 = "13:40";
+            string targetTime2 = "08:50";
             string currentTime2 = DateTime.Now.ToString("HH:mm");
 
             string targetTime8 = "09:31";
@@ -352,7 +282,7 @@ namespace TKMQ
 
             string targetTime5 = "18:00";
             string currentTime5 = DateTime.Now.ToString("HH:mm");
-            
+
             label2.Text = DateTime.Now.ToString();
 
             //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
@@ -366,59 +296,28 @@ namespace TKMQ
                 now.DayOfWeek >= DayOfWeek.Monday &&
                 now.DayOfWeek <= DayOfWeek.Friday)
             {
-                // 如果當前正在執行，直接跳出
-                if (isRunning_currentTime1) return;
-
-                // 如果是新的一天，重置 YN_today_currentTime1 為 "N"
-                if (YN_today_currentTime1.Equals("Y") && now.Date != lastExecutionDate_currentTime1.Date)
-                {
-                    YN_today_currentTime1 = "N"; // 重新設置為未執行狀態
-                }
-
-                // 只在 YN_today_currentTime1 尚未執行過的情況下，才允許執行
-                if (YN_today_currentTime1.Equals("N"))
-                {
-                    // 執行非同步排程
-                    isRunning_currentTime1 = true; // 標記為正在執行                  
-                    HRAUTORUN_currentTime1();
-                    lastExecutionDate_currentTime1 = DateTime.Now; // 標記執行的日期時間
-                    YN_today_currentTime1 = "Y";
-                }              
+                HRAUTORUN_currentTime1();
+                // 執行完，暫停 1 分，避免太快重覆執行
+                System.Threading.Thread.Sleep(1000*60*1);
             }
+
             //targetTime2
-            //一般用08:50   
+            //一般用08:50
             if (currentTime2 == targetTime2)
             {
-                //每星期一寄送，另外寄送 HRAUTORUN_targetTime2
+                //每星期一寄送
                 if (now.DayOfWeek == DayOfWeek.Monday)
                 {
-                    //HRAUTORUN_targetTime2();
+                    HRAUTORUN_targetTime2();
                 }
 
-                // 如果當前正在執行，直接跳出
-                if (isRunning_currentTime2) return;
+                //每日寄送               
+                HRAUTORUN();
 
-                // 如果是新的一天，重置 YN_today_currentTime1 為 "N"
-                if (YN_today_currentTime2.Equals("Y") && now.Date != lastExecutionDate_currentTime2.Date)
-                {
-                    YN_today_currentTime2 = "N"; // 重新設置為未執行狀態
-                }
-
-                // 只在 YN_today_currentTime1 尚未執行過的情況下，才允許執行
-                if (YN_today_currentTime2.Equals("N"))
-                {
-                    // 執行非同步排程
-                    isRunning_currentTime2 = true; // 標記為正在執行                  
-                    //每日寄送               
-                    HRAUTORUN();
-                    //每日LINE通知
-                    ASYNC_HRAUTORUN5();
-                    lastExecutionDate_currentTime2 = DateTime.Now; // 標記執行的日期時間
-                    YN_today_currentTime2 = "Y";
-                }
-
-
+                //每日LINE通知
+                ASYNC_HRAUTORUN5();
             }
+
             //09:29 通知
             if (currentTime8 == targetTime8)
             {
@@ -484,7 +383,7 @@ namespace TKMQ
                 {
                     HRAUTORUN_currentTime7();
                 }
-            }                  
+            }
 
         }
 
@@ -492,736 +391,866 @@ namespace TKMQ
         /// <summary>
         ///  //每日寄送
         /// </summary>
-        public async Task HRAUTORUN()
-        {            
+        public void HRAUTORUN()
+        {
+            StringBuilder MSG = new StringBuilder();
             SETPATH();
+
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
-            // 每次排程開始前清空錯誤訊息
-            errorMessages.Clear();
+            try
+            {
+                //Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            { }
 
             try
             {
-                //await EnqueueTask(async (token) =>
-                //{
-                //    try
-                //    {
-                //        //是否有建進貨單
-                //        await  
-                //        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                //    }
-                //    catch (Exception ex)
-                //    {
-                //        errorMessages.AppendLine($" 失敗: {ex.Message}");
-                //    }
-                //});
-
-                //資訊用 
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //IT檢查網站是否正常      
-                        await PREPAREITCHECK();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"IT檢查網站是否正常 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //通知交辨人      
-                        await PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"通知交辨人 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //通知各別的被交辨人
-                        await PREPARE_TB_EIP_PRIV_MESS();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"通知各別的被交辨人 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //通知各表單申請人      
-                        await PREPARE_UOF_TASK_TASK_APPLICATION();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"通知各表單申請人 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //測試主管UOF交辨未完成
-                        await CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"測試主管UOF交辨未完成 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //測試UOF交辨未完成
-                        await CHECK_TB_EIP_SCH_DEVOLVE();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"測試UOF交辨未完成 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //溫濕度-測試
-                        await SENDEMAIL_DAILY_QC_CHECK();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"溫濕度 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //溫濕度明細
-                        await SENDEMAIL_DAILY_QC_TEMP_CHECK();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"溫濕度明細 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //離職人員的未結案表單
-                        await SENDEMAIL_TK_IT_CHECK_FORMS();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"離職人員的未結案表單 失敗: {ex.Message}");
-                    }
-                });
-
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //資訊用 
-                        //總經理簽核意見，轉MAIL給申請者及部門主管
-                        //新增總經理簽核意見
-                        await ADD_TO_UOF_Z_UOF_FORMS_COMMENTS();
-                        //更新上層主管
-                        await UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
-                        //寄送通知
-                        await SEND_UOF_Z_UOF_FORMS_COMMENTS();
-                        //已寄EAMIL，更新
-                        await  UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"總經理簽核意見，轉MAIL給申請者及部門主管 失敗: {ex.Message}");
-                    }
-                });
-                //行企用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //行企用
-                        //校稿追踨
-                        await PREPAREPROOFREAD();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"校稿追踨 失敗: {ex.Message}");
-                    }
-                });
-                //研發用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //研發用
-                        //本年新品的銷售報表
-                        await SETPATH();
-                        await SETFILE_NEWSLAES(path_File_NEWSLAES);
-                        await CLEAREXCEL();
-                        await PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"新品的銷售報表 失敗: {ex.Message}");
-                    }
-                });
-               
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //研發用
-                        //研發每日通知新品售價簽核
-                        await SENDMAIL_DEC_NEW_PRODUCT_PRICES();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"研發每日通知新品售價簽核 失敗: {ex.Message}");
-                    }
-                });
-                //倉儲用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //倉儲用
-                        //每日批號檢查表
-                        await SETPATH();
-                        await SETFILELOTCHECK();
-                        await SERACHMAILLOTCHECK();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日批號檢查表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //倉儲用
-                        //派車
-                        await SENDEMAIL_DAILY_TKWH_CALENDAR();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"派車報表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //倉儲用
-                        //批號錯誤
-                        await SETFILELOTCHECK();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"批號錯誤 失敗: {ex.Message}");
-                    }
-                });
-                //總務用 
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //總務用
-                        //通知原請購人，總務已完成採購           
-                        await FIND_UOF_GRAFFAIRS_1005();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"通知原請購人，總務已完成採購 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //總務用
-                        //針對昨天核單的 總務採購單，給申請人發出公告
-                        await NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"針對昨天核單的 總務採購單，給申請人發出公告 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //總務用 
-                        //通知副總，總務未簽核的表單  
-                        await PREPARE_UOF_TASK_TASK_GRAFFIR();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"通知副總，總務未簽核的表單 失敗: {ex.Message}");
-                    }
-                });
-                //門市+觀光用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //門市+觀光用
-                        //營銷各庫庫存通知
-                        await SETPATH();
-                        await SETFILE_POSINV(path_File_POSINV);
-                        await CLEAREXCEL();
-                        await PREPARESENDEMAIL_POSINV(path_File_POSINV);
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"營銷各庫庫存通知 失敗: {ex.Message}");
-                    }
-                });
-                //生管用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //製令追踨表，是否有訂單未開製令
-                        await SERACHMAIL();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-                        await SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"製令追踨表，是否有訂單未開製令 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //請購表，是否有製令已開但未請購
-                        await SERACHMAILPURTA();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令-請購表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"請購表，是否有製令已開但未請購 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //每日追踨訂單變更追踨表
-                        await SERACHMAILCOPTE();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日追踨訂單變更追踨表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //每日追踨製令未確認表
-                        await SERACHMAILMOCTA();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日追踨製令未確認表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //每日追踨半成品-製令的比對表
-                        await SERACHMAILINVMOCTA();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日追踨半成品-製令的比對表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //每日重工單未結案表
-                        await SERACHMAILMOCTARE();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日重工單未結案表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //訂單
-                        await SETFILE();
-                        await CLEAREXCEL();
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"訂單 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //訂單變更
-                        await SETFILECOPTE();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"訂單變更 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //製令-訂單
-                        await SETFILEMOCTA();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"製令-訂單 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //半成品-製令
-                        await SETFILEINVMOCTA();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"半成品-製令 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //未完重工單
-                        await SETFILEMOCTARE();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"未完重工單 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //每日訂單明細表
-                        await SETPATH();
-                        await SETFILE_COPTCD(path_File_COPTCD);
-                        await CLEAREXCEL();
-                        await PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日訂單明細表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //生管用
-                        //預排製令
-                        await SENDEMAIL_DAILY_MOCMANULINE();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"預排製令 失敗: {ex.Message}");
-                    }
-                });
-                //採購用
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //每日已請購未採購表                                         
-                        await SERACHMAILPURTB();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日已請購未採購表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //每日每日採購單未結案表                                         
-                        await SERACHMAILPURTD();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
-                        await SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"每日每日採購單未結案表 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //請購                                         
-                        await SETFILEPURTA();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"請購 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //已請購未採購                                         
-                        await SETFILEPURTB();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"已請購未採購 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //測試已採購未結案                                         
-                        await SETFILEPURTD();
-                        await CLEAREXCEL();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"測試已採購未結案 失敗: { ex.Message} ");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //給採購人員，ERP未核單的單別、單號                                         
-                        await PREPARESENDEMAILERPPURCHECK();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"給採購人員，ERP未核單的單別、單號 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //UOF請購相關未核準明細
-                        //PUR10.請購單申請+PUR20.請購單變更單                       
-                        await SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"PUR10.請購單申請+PUR20.請購單變更單 失敗: {ex.Message}");
-                    }
-                });
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //到貨數量是否等同進貨數量
-                        await SENDMAIL_STOCK_TBPURINCHECK();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"到貨數量是否等同進貨數量 失敗: {ex.Message}");
-                    }
-                });
-
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知           
-                        await SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
-                        await Task.Delay(1000 * 10); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {
-                        errorMessages.AppendLine($"託外未到貨通知 失敗: {ex.Message}");
-                    }
-                });
-
-                await EnqueueTask(async (token) =>
-                {
-                    try
-                    {
-                        //採購用
-                        //是否有建進貨單
-                        await SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();
-                        await Task.Delay(1000 * 10 ); // 等待 10 秒，避免MAIL主機過載    
-                    }
-                    catch (Exception ex)
-                    {                        
-                        errorMessages.AppendLine($"到貨是否有建進貨單 失敗: {ex.Message}");
-                    }
-                });              
+                //是否有建進貨單
+                SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();
             }
-            catch (Exception ex)
+            catch
             {
-                // 捕獲 HRAUTORUN_currentTime1 中的異常
-                //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
+                MSG.AppendFormat(@" 到貨是否有建進貨單 失敗 ||");
+            }
+            finally
+            { }
+
+            try
+            {
+                //到貨數量是否等同進貨數量
+                SENDMAIL_STOCK_TBPURINCHECK();
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 到貨數量是否等同進貨數量失敗 ||");
+            }
+            finally
+            { }
+
+
+            try
+            {
+                //研發每日通知新品售價
+                SENDMAIL_DEC_NEW_PRODUCT_PRICES();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 研發每日通知新品售價 失敗 ||");
             }
             finally
             {
-                // 執行完成，解除旗標              
-                isRunning_currentTime2 = false;
+
             }
 
-            if (!string.IsNullOrEmpty(errorMessages.ToString()))
+            try
             {
-                MessageBox.Show(errorMessages.ToString());
+                //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知              
+                SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
+                Thread.Sleep(5000);
             }
-            
+            catch
+            {
+                MSG.AppendFormat(@" 託外未到貨通知 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //UOF請購相關未核準明細
+                //PUR10.請購單申請+PUR20.請購單變更單
+                SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" PUR10.請購單申請+PUR20.請購單變更單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //查離職人員的未結案表單
+                SENDEMAIL_TK_IT_CHECK_FORMS();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 查離職人員的未結案表單 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //總經理簽核意見，轉MAIL給申請者及部門主管
+                //新增總經理簽核意見
+                ADD_TO_UOF_Z_UOF_FORMS_COMMENTS();
+                //更新上層主管
+                UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
+                //寄送通知
+                SEND_UOF_Z_UOF_FORMS_COMMENTS();
+
+                //已寄EAMIL，更新
+                UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 總經理簽核意見，轉MAIL給申請者及部門主管 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            try
+            {
+                //針對昨天核單的 總務採購單，給申請人發出公告
+                NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 針對昨天核單的 總務採購單，給申請人發出公告 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            try
+            {
+                //溫濕度明細
+                SENDEMAIL_DAILY_QC_TEMP_CHECK();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 溫濕度明細 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            try
+            {
+                //派車
+                SENDEMAIL_DAILY_TKWH_CALENDAR();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 派車報表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //溫濕度-測試
+            try
+            {
+                SENDEMAIL_DAILY_QC_CHECK();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 溫濕度 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //每日訂單明細表
+            try
+            {
+                //path_File_COPTCD
+                //每日訂單明細表
+                SETPATH();
+                SETFILE_COPTCD(path_File_COPTCD);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                MSG.AppendFormat(@" 每日訂單明細表 失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //營銷各庫庫存通知
+            try
+            {
+                SETPATH();
+                SETFILE_POSINV(path_File_POSINV);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_POSINV(path_File_POSINV);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 營銷各庫庫存通知");
+                MSG.AppendFormat(@" 營銷各庫庫存通知 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///本年新品的銷售報表
+            try
+            {
+
+                SETPATH();
+                SETFILE_NEWSLAES(path_File_NEWSLAES);
+                CLEAREXCEL();
+
+                PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 本年新品的銷售報表");
+                MSG.AppendFormat(@" 本年新品的銷售報表 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試UOF交辨未完成");
+                MSG.AppendFormat(@" 測試UOF交辨未完成 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試主管UOF交辨未完成
+            try
+            {
+                CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
+                MSG.AppendFormat(@" 測試主管UOF交辨未完成 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知副總，總務未簽核的表單           
+            try
+            {
+                PREPARE_UOF_TASK_TASK_GRAFFIR();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
+                MSG.AppendFormat(@"  通知副總，總務未簽核的表單 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            //通知原請購人，總務已完成採購           
+            try
+            {
+                FIND_UOF_GRAFFAIRS_1005();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
+                MSG.AppendFormat(@"  通知原請購人，總務已完成採購 失敗 ||");
+
+            }
+            finally
+            {
+
+            }
+
+            //通知各表單申請人           
+            try
+            {
+                PREPARE_UOF_TASK_TASK_APPLICATION();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知各表單申請人");
+                MSG.AppendFormat(@"  通知各表單申請人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知各別的被交辨人
+            try
+            {
+                PREPARE_TB_EIP_PRIV_MESS();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知各別的被交辨人");
+                MSG.AppendFormat(@"  通知各別的被交辨人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //通知交辨人         
+            try
+            {
+                PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 通知交辨人");
+                MSG.AppendFormat(@"  通知交辨人 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //校稿追踨          
+            try
+            {
+                PREPAREPROOFREAD();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 校稿追踨");
+                MSG.AppendFormat(@"  校稿追踨 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //IT檢查網站是否正常           
+            try
+            {
+                PREPAREITCHECK();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 IT檢查網站是否正常");
+                MSG.AppendFormat(@"  IT檢查網站是否正常 失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //給採購人員，ERP未核單的單別、單號           
+            try
+            {
+                PREPARESENDEMAILERPPURCHECK();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //essageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
+                MSG.AppendFormat(@"  給採購人員，ERP未核單的單別、單號  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試預排製令
+            ///SENDEMAIL_DAILY_MOCMANULINE
+            try
+            {
+                SENDEMAIL_DAILY_MOCMANULINE();
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試預排製令");
+                MSG.AppendFormat(@"  測試預排製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試批號錯誤
+            ///SETFILELOTCHECK
+            try
+            {
+                SETFILELOTCHECK();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試批號錯誤");
+                MSG.AppendFormat(@"  測試批號錯誤  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試未完重工單
+            ///SETFILEMOCTARE
+            try
+            {
+                SETFILEMOCTARE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試未完重工單");
+                MSG.AppendFormat(@"  測試未完重工單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///測試已採購未結案
+            ///SETFILEPURTD
+            try
+            {
+                SETFILEPURTD();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試已採購未結案");
+                MSG.AppendFormat(@"  測試已採購未結案  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試物料安全水位
+            ///SETFILEINVMC
+            try
+            {
+                SETFILEINVMC();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試物料安全水位 ");
+                MSG.AppendFormat(@"  測試物料安全水位  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //測試已請購未採購
+            ///SETFILEPURTB
+            try
+            {
+                SETFILEPURTB();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試已請購未採購");
+                MSG.AppendFormat(@"  測試已請購未採購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試半成品-製令
+            ///SETFILEINVMOCTA
+            try
+            {
+                SETFILEINVMOCTA();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試半成品-製令");
+                MSG.AppendFormat(@"  測試半成品-製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試製令-訂單
+            ///SETFILEMOCTA            
+            try
+            {
+                SETFILEMOCTA();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試製令-訂單");
+                MSG.AppendFormat(@"  測試製令-訂單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試訂單變更
+            /// SETFILECOPTE
+            try
+            {
+                SETFILECOPTE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試訂單變更");
+                MSG.AppendFormat(@"  測試訂單變更  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試請購
+            ///SETFILEPURTA
+            try
+            {
+                SETFILEPURTA();
+                //SETFILEPURTA2();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試請購");
+                MSG.AppendFormat(@"  測試請購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+            //測試訂單
+            ///SETFILE
+            try
+            {
+                SETFILE();
+                CLEAREXCEL();
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 測試訂單");
+                MSG.AppendFormat(@"  測試訂單  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日批號檢查表         
+            try
+            {
+                SETPATH();
+                SETFILELOTCHECK();
+                SERACHMAILLOTCHECK();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日批號檢查表");
+                MSG.AppendFormat(@"  每日批號檢查表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日重工單未結案表       
+            try
+            {
+                SERACHMAILMOCTARE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日重工單未結案表");
+                MSG.AppendFormat(@"  每日重工單未結案表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日每日採購單未結案表
+            try
+            {
+                //PURTD
+                SERACHMAILPURTD();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日每日採購單未結案表");
+                MSG.AppendFormat(@"  每日每日採購單未結案表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            /////每日物料安全水位表
+            //try
+            //{
+            //    //INVMC
+            //    //SERACHMAILINVMC();
+            //    //SUBJEST.Clear();
+            //    //BODY.Clear();
+            //    //SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
+            //    //SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
+            //}
+            //catch
+            //{
+
+            //}
+            //finally
+            //{
+
+            //}
+
+            ///系統通知-每日已請購未採購表
+            try
+            {
+                SERACHMAILPURTB();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日已請購未採購表");
+                MSG.AppendFormat(@"  每日已請購未採購表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯
+            try
+            {
+                SERACHMAILINVMOCTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
+                MSG.AppendFormat(@"  每日追踨半成品-製令的比對表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+
+            ///系統通知-每日追踨製令未確認表
+            try
+            {
+                SERACHMAILMOCTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨製令未確認表");
+                MSG.AppendFormat(@"  每日追踨製令未確認表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨訂單變更追踨表
+            try
+            {
+                SERACHMAILCOPTE();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
+                MSG.AppendFormat(@"  每日追踨訂單變更追踨表  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            ///系統通知-每日追踨製令-請購表，是否有製令已開但未請購
+            try
+            {
+                SERACHMAILPURTA();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令-請購表，請查收" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
+                MSG.AppendFormat(@"  請購表，是否有製令已開但未請購  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            //系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令
+            try
+            {
+                SERACHMAIL();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+
+                Thread.Sleep(5000);
+            }
+            catch
+            {
+                //MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
+                MSG.AppendFormat(@" 製令追踨表，是否有訂單未開製令  失敗 ||");
+            }
+            finally
+            {
+
+            }
+
+            if (!string.IsNullOrEmpty(MSG.ToString()))
+            {
+                MessageBox.Show(MSG.ToString());
+            }
+
+
+
         }
         /// <summary>
         /// //每星期一寄送
@@ -1351,42 +1380,33 @@ namespace TKMQ
         /// //每星期一~星期五寄送
         /// 一般用08:31
         /// </summary>
-        public async Task HRAUTORUN_currentTime1()
-        {      
+        public void HRAUTORUN_currentTime1()
+        {
             // 每次排程開始前清空錯誤訊息
             errorMessages.Clear();
-          
+
             try
             {
-                // 呼叫 SENDEMAIL_DAILY_SALES_MONEY 並在執行後等待 1 分鐘
-                await EnqueueTask(async (token) =>
+                try
                 {
-                    try
-                    {
-                        await SENDEMAIL_DAILY_SALES_MONEY();
-                        await Task.Delay(1000 * 60 * 1); // 等待 1 分，避免MAIL主機過載                 
-                    }
-                    catch (Exception ex)
-                    {
-                        // 捕獲 SENDEMAIL_DAILY_SALES_MONEY 執行中的異常
-                        errorMessages.AppendLine($"國內、外業務部業績測試 失敗: {ex.Message}");
-                    }
-                });
-
-                // 呼叫 SENDEMAIL_STORES_REPORTS 並在執行後等待 1 分鐘
-                await EnqueueTask(async (token) =>
+                    //國內、外業務部業績
+                    SENDEMAIL_DAILY_SALES_MONEY();
+                }
+                catch
                 {
-                    try
-                    {
-                        await SENDMAIL_STORES_REPORTS();
-                        await Task.Delay(1000 * 60 * 1); // 等待 1 分，避免MAIL主機過載           
-                    }
-                    catch (Exception ex)
-                    {
-                        // 捕獲 SENDEMAIL_STORES_REPORTS 執行中的異常
-                        errorMessages.AppendLine($"硯微墨商品銷進 失敗: {ex.Message}");
-                    }
-                });          
+                    errorMessages.AppendLine($"國內、外業務部業績 失敗");
+                }
+                try
+                {
+                    //硯微墨商品銷進
+                    SENDMAIL_STORES_REPORTS();
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"硯微墨商品銷進 失敗");
+                }
+                
+                
             }
             catch (Exception ex)
             {
@@ -1394,17 +1414,15 @@ namespace TKMQ
                 //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
             }
             finally
-            {
-                // 執行完成，解除旗標              
-                isRunning_currentTime1 = false;
+            { 
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());               
+                MessageBox.Show(errorMessages.ToString());
             }
         }
-       
+
         /// <summary>
         /// HRAUTORUN_currentTime3
         /// 15:00
@@ -1560,7 +1578,7 @@ namespace TKMQ
             {
             }
 
-            
+
         }
 
         /// <summary>
@@ -1729,7 +1747,7 @@ namespace TKMQ
             }
         }
         //SETPATH
-        public async Task SETPATH()
+        public void SETPATH()
         {
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
@@ -1756,7 +1774,7 @@ namespace TKMQ
             pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
         }
 
-        public async Task CLEAREXCEL()
+        public void CLEAREXCEL()
         {
             System.Diagnostics.Process[] p = System.Diagnostics.Process.GetProcesses();
             for (int i = 0; i < p.Length; i++)
@@ -1765,7 +1783,7 @@ namespace TKMQ
                     p[i].Kill();
             }
         }
-        public async Task SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
+        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
         {
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
@@ -1843,7 +1861,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILE()
+        public void SETFILE()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -2113,7 +2131,7 @@ namespace TKMQ
             Marshal.ReleaseComObject(excelApp);
         }
 
-        public async Task SERACHMAIL()
+        public void SERACHMAIL()
         {
             try
             {
@@ -2173,7 +2191,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILECOPTE()
+        public void SETFILECOPTE()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -2390,7 +2408,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILCOPTE()
+        public void SERACHMAILCOPTE()
         {
             try
             {
@@ -2455,7 +2473,7 @@ namespace TKMQ
 
 
 
-        public async Task SETFILEPURTA()
+        public void SETFILEPURTA()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -2912,7 +2930,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILPURTA()
+        public void SERACHMAILPURTA()
         {
             try
             {
@@ -2975,7 +2993,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILEMOCTA()
+        public void SETFILEMOCTA()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3117,7 +3135,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILMOCTA()
+        public void SERACHMAILMOCTA()
         {
             try
             {
@@ -3234,7 +3252,7 @@ namespace TKMQ
             { }
         }
 
-        public async Task SETFILEINVMOCTA()
+        public void SETFILEINVMOCTA()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3382,7 +3400,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILINVMOCTA()
+        public void SERACHMAILINVMOCTA()
         {
             try
             {//20210902密
@@ -3444,7 +3462,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILEPURTB()
+        public void SETFILEPURTB()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3592,7 +3610,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILPURTB()
+        public void SERACHMAILPURTB()
         {
             try
             {
@@ -4223,7 +4241,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILEPURTD()
+        public void SETFILEPURTD()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -4367,7 +4385,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILMOCTARE()
+        public void SERACHMAILMOCTARE()
         {
             try
             {
@@ -4487,7 +4505,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILLOTCHECK()
+        public void SERACHMAILLOTCHECK()
         {
             try
             {
@@ -4548,7 +4566,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SERACHMAILPURTD()
+        public void SERACHMAILPURTD()
         {
             try
             {
@@ -4611,7 +4629,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILEMOCTARE()
+        public void SETFILEMOCTARE()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -4753,7 +4771,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILELOTCHECK()
+        public void SETFILELOTCHECK()
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -5179,7 +5197,7 @@ namespace TKMQ
 
 
         public void ADDLOG(DateTime DATES, string SOURCE, string EX)
-        {         
+        {
 
             try
             {
@@ -5244,7 +5262,7 @@ namespace TKMQ
         /// 準備寄給採購人員跟生管
         /// ERP 採購相關單別、單號未核準的明細 及 昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量
         /// </summary>
-        public async Task PREPARESENDEMAILERPPURCHECK()
+        public void PREPARESENDEMAILERPPURCHECK()
         {
             DataSet DSPURCHECK = ERPPURCHECK();
             DataSet DSPURTDCHECK = ERPPURTDCHECK();
@@ -6189,7 +6207,7 @@ namespace TKMQ
         /// <summary>
         /// 資訊的每日檢查
         /// </summary>
-        public async Task PREPAREITCHECK()
+        public void PREPAREITCHECK()
         {
             DataTable DTWEBLINKS = SEARCHLINKS();
 
@@ -6344,7 +6362,7 @@ namespace TKMQ
 
         }
 
-        public async Task PREPAREPROOFREAD()
+        public void PREPAREPROOFREAD()
         {
             DataSet DSPROOFREAD = UOFPROOFREAD();
             DataSet DSUOFUOFFORM1002 = UOFUOFFORM1002();
@@ -6754,7 +6772,7 @@ namespace TKMQ
 
         }
 
-        public async Task PREPARE_TB_EIP_PRIV_MESS_DIRECTOR()
+        public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR()
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_DIRECTOR();
             string MESS = null;
@@ -7104,7 +7122,7 @@ namespace TKMQ
 
         }
 
-        public async Task PREPARE_TB_EIP_PRIV_MESS()
+        public void PREPARE_TB_EIP_PRIV_MESS()
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID();
             string MESS = null;
@@ -7454,7 +7472,7 @@ namespace TKMQ
 
         }
 
-        public async Task PREPARE_UOF_TASK_TASK_APPLICATION()
+        public void PREPARE_UOF_TASK_TASK_APPLICATION()
         {
             DataTable DT_FIND_UOF_TASK_APPLICATION = FIND_UOF_TASK_APPLICATION();
             DataTable DT_FIND_UOF_TASK_APPLICATION_FORM = new DataTable();
@@ -7843,7 +7861,7 @@ namespace TKMQ
         /// <summary>
         /// 找出昨天核準過的採購單，通知原請購人到貨了
         /// </summary>
-        public async Task FIND_UOF_GRAFFAIRS_1005()
+        public void FIND_UOF_GRAFFAIRS_1005()
         {
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005();
 
@@ -8168,7 +8186,7 @@ namespace TKMQ
             }
         }
 
-        public async Task PREPARE_UOF_TASK_TASK_GRAFFIR()
+        public void PREPARE_UOF_TASK_TASK_GRAFFIR()
         {
             DataTable DT_OF_TASK_TASK_GRAFFIR = new DataTable();
             DataTable GRAFFIR_TO_EMAIL = new DataTable();
@@ -8558,7 +8576,7 @@ namespace TKMQ
             }
         }
 
-       
+
         public async Task SEND_LINE_CALL_MESSAGE_API(string message)
         {
             //2025年3月31日結束本服務
@@ -8566,17 +8584,17 @@ namespace TKMQ
 
             DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='MESSAGEAPI'");
             string accessToken = dt.Rows[0]["TOKEN"].ToString();
-    
+
             //message是CHECK，就檢查網站
             //message不是CHECK，就傳送訊息
 
-            if (!string.IsNullOrEmpty(message)&&message.Equals("CHECK"))
+            if (!string.IsNullOrEmpty(message) && message.Equals("CHECK"))
             {
                 message = CHECK_DTWEBLINKS();
             }
             else
             {
-                message = message;               
+                message = message;
 
             }
             // 發送訊息
@@ -8584,7 +8602,7 @@ namespace TKMQ
             {
                 await SendBroadcastMessage(message, accessToken);
             }
-            
+
         }
 
         public string CHECK_DTWEBLINKS()
@@ -8604,7 +8622,7 @@ namespace TKMQ
                         DR["WEBLINKS"].ToString());
                 }
                 else
-                {                    
+                {
                     LINE_NESSAGE.AppendFormat(@"{0}\n此網站正常\n{1}\n{2}",
                         DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"),
                         DR["COMMENTS"].ToString(),
@@ -8765,7 +8783,7 @@ namespace TKMQ
         }
 
         //交辨未完成meail
-        public async Task CHECK_TB_EIP_SCH_DEVOLVE()
+        public void CHECK_TB_EIP_SCH_DEVOLVE()
         {
             //找出所有被交辨人  
             DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES();
@@ -9364,7 +9382,7 @@ namespace TKMQ
         }
 
         //交辨未完成meail
-        public async Task CHECK_TB_EIP_SCH_DEVOLVE_MANAGER()
+        public void CHECK_TB_EIP_SCH_DEVOLVE_MANAGER()
         {
             //找出所有被交辨人的主管
             DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER();
@@ -9967,7 +9985,7 @@ namespace TKMQ
         /// <summary>
         /// 本年新品的銷售報表
         /// </summary>
-        public async Task PREPARESENDEMAIL_NEWSLAES(string path_File)
+        public void PREPARESENDEMAIL_NEWSLAES(string path_File)
         {
             SETPATH();
 
@@ -10316,7 +10334,7 @@ namespace TKMQ
             }
 
         }
-        public async Task SETFILE_NEWSLAES(string pathFile)
+        public void SETFILE_NEWSLAES(string pathFile)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -10523,7 +10541,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SETFILE_POSINV(string pathFile)
+        public void SETFILE_POSINV(string pathFile)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -10711,7 +10729,7 @@ namespace TKMQ
         /// <summary>
         /// 營銷各庫庫存通知
         /// </summary>
-        public async Task PREPARESENDEMAIL_POSINV(string path_File)
+        public void PREPARESENDEMAIL_POSINV(string path_File)
         {
             DataSet DS_POSINV = ERP_POSINV();
 
@@ -10738,6 +10756,56 @@ namespace TKMQ
                     + "<br>" + "營銷各庫庫存通知的明細如下(含附件)"
 
                     );
+
+
+                if (DS_POSINV != null && DS_POSINV.Tables[0].Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別代號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫存數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">生產-進貨日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">在倉日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效天數</th>");
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DS_POSINV.Tables[0].Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫別代號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["庫存數量"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["生產-進貨日期"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["在倉日期"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效天數"].ToString() + "</td>");
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
 
                 BODY.AppendFormat(" "
                              + "<br>" + "謝謝"
@@ -10943,7 +11011,7 @@ namespace TKMQ
 
         }
 
-        public async Task SETFILE_COPTCD(string pathFile)
+        public void SETFILE_COPTCD(string pathFile)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -11254,7 +11322,7 @@ namespace TKMQ
         /// <summary>
         /// 訂單明細及金額報表
         /// </summary>
-        public async Task PREPARESENDEMAIL_COPTCD(string path_File)
+        public void PREPARESENDEMAIL_COPTCD(string path_File)
         {
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
@@ -12109,7 +12177,7 @@ namespace TKMQ
                             ORDER BY CONVERT(VARCHAR(8), DateValue, 112)
                             OPTION (MAXRECURSION 31);
                             ");
-             
+
 
             return SB;
         }
@@ -12929,7 +12997,7 @@ namespace TKMQ
 
 
             return SB;
-             
+
         }
         public async Task SENDEMAIL_DAILY_SALES_MONEY()
         {
@@ -13070,7 +13138,7 @@ namespace TKMQ
             //新日報用業務+國內外，matrix表
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
-            SQL_OUT = SETSQLNEW_OUT(); 
+            SQL_OUT = SETSQLNEW_OUT();
             report1.Load(@"REPORT\國內、外業務部業績日報表NEWV5.frx");
 
             //20210902密
@@ -13128,7 +13196,7 @@ namespace TKMQ
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
 
-                 
+
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
@@ -13233,7 +13301,7 @@ namespace TKMQ
 
         }
 
-        public async Task SENDEMAIL_DAILY_QC_CHECK()
+        public void SENDEMAIL_DAILY_QC_CHECK()
         {
             DataSet ds = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -13286,7 +13354,7 @@ namespace TKMQ
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
-           
+
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
@@ -13803,7 +13871,7 @@ namespace TKMQ
             finally { }
         }
 
-        public async Task SENDEMAIL_DAILY_TKWH_CALENDAR()
+        public void SENDEMAIL_DAILY_TKWH_CALENDAR()
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
             DataTable DT_CALENDAR1 = new DataTable();
@@ -14409,7 +14477,7 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PURNOTIN();
                 DT_PURNOTIN = SERACH_PURNOTIN();
 
-              
+
                 SUBJEST.Clear();
                 BODY.Clear();
 
@@ -14467,7 +14535,7 @@ namespace TKMQ
 
                     }
                     BODY.AppendFormat(@"</table> ");
-                    
+
                 }
                 else
                 {
@@ -14527,7 +14595,7 @@ namespace TKMQ
                 {
 
                 }
-                
+
 
 
 
@@ -14738,20 +14806,20 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TBPURCHECKFAX();
                 DT_DATAS = SERACH_TBPURCHECKFAX();
 
-                
-                    SUBJEST.Clear();
-                    BODY.Clear();
+
+                SUBJEST.Clear();
+                BODY.Clear();
 
 
-                    SUBJEST.AppendFormat(@"系統通知-請查收-每日-預計採購未傳真明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+                SUBJEST.AppendFormat(@"系統通知-請查收-每日-預計採購未傳真明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
-                    //ERP 採購相關單別、單號未核準的明細
-                    //
-                    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                        + "<br>" + "系統通知-請查收-每日-預計採購未傳真明細，謝謝"
-                        + " <br>"
-                        );
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-每日-預計採購未傳真明細，謝謝"
+                    + " <br>"
+                    );
 
 
 
@@ -14856,7 +14924,7 @@ namespace TKMQ
                 {
 
                 }
-               
+
 
 
 
@@ -15327,7 +15395,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SENDEMAIL_DAILY_MOCMANULINE()
+        public void SENDEMAIL_DAILY_MOCMANULINE()
         {
             DataSet dsSALESMONEYS = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -15510,7 +15578,7 @@ namespace TKMQ
 
         }
 
-        public async Task SENDEMAIL_DAILY_QC_TEMP_CHECK()
+        public void SENDEMAIL_DAILY_QC_TEMP_CHECK()
         {
             DataSet ds = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -15565,7 +15633,7 @@ namespace TKMQ
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
-           
+
             MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
 
             //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
@@ -15681,7 +15749,7 @@ namespace TKMQ
         }
 
         //針對昨天核單的 總務採購單，給申請人發出公告
-        public async Task NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN()
+        public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN()
         {
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW();
             string xmlString = "";
@@ -15706,7 +15774,7 @@ namespace TKMQ
                     xmlString = stringWriter.GetStringBuilder().ToString();
 
                     // 輸出字串
-                   // Console.WriteLine(xmlString);
+                    // Console.WriteLine(xmlString);
                 }
             }
 
@@ -15774,7 +15842,7 @@ namespace TKMQ
             string IS_STICKY = "";
             string RECOMMEND_NUM = "";
 
-           
+
             string ROLE_ID = "BulletinBrowser";
             string USER_SET = xmlString_UserSet;
 
@@ -15790,7 +15858,7 @@ namespace TKMQ
                         new XElement("Element",
                             new XAttribute("type", "user"),
                             new XElement("userId", DR["USER_GUID"].ToString())
-                            //new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
+                        //new XElement("userId", "b6f50a95-17ec-47f2-b842-4ad12512b431")
                         )
                     );
                     // 創建 XDocument 並添加 <UserSet>
@@ -15814,7 +15882,7 @@ namespace TKMQ
                     //每筆總務採購單，都發1張公告
                     BULLETIN_GUID = Guid.NewGuid().ToString();
                     RM_ID = Guid.NewGuid().ToString();
-                    TOPIC = "請購物品: "+DR["請購物品"].ToString()+" ，已採購";
+                    TOPIC = "請購物品: " + DR["請購物品"].ToString() + " ，已採購";
                     CONTEXT = "請購物品: " + DR["請購物品"].ToString() + " ，已採購" + ", 總務請購單:" + DR["總務請購單"].ToString() + ", 總務採購單:" + DR["總務採購單"].ToString();
                     USER_SET = xmlString_UserSet;
 
@@ -16226,7 +16294,7 @@ namespace TKMQ
         public void ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
             string RM_ID,
             string ROLE_ID,
-            string USER_SET            
+            string USER_SET
             )
         {
             try
@@ -16272,7 +16340,7 @@ namespace TKMQ
                         cmd.Parameters.AddWithValue("@RM_ID", RM_ID);
                         cmd.Parameters.AddWithValue("@ROLE_ID", ROLE_ID);
                         cmd.Parameters.AddWithValue("@USER_SET", USER_SET);
-                       
+
                         // 開啟連接並執行命令
                         conn.Open();
                         cmd.ExecuteNonQuery();
@@ -16288,7 +16356,7 @@ namespace TKMQ
 
             }
         }
-        public async Task ADD_TO_UOF_Z_UOF_FORMS_COMMENTS()
+        public void ADD_TO_UOF_Z_UOF_FORMS_COMMENTS()
         {
             try
             {
@@ -16402,7 +16470,7 @@ namespace TKMQ
                 sqlConn.Close();
             }
         }
-        public async Task UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS()
+        public void UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS()
         {
             try
             {
@@ -16609,7 +16677,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SEND_UOF_Z_UOF_FORMS_COMMENTS()
+        public void SEND_UOF_Z_UOF_FORMS_COMMENTS()
         {
             DataTable DT_DATAS = new DataTable();
 
@@ -16617,7 +16685,7 @@ namespace TKMQ
             StringBuilder BODY = new StringBuilder();
 
             try
-            {                
+            {
                 DT_DATAS = FIND_Z_UOF_FORMS_COMMENTS_ISEMAIL();
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
@@ -16631,19 +16699,19 @@ namespace TKMQ
                     string APPLY_NAME = "";
                     string APPLY_EMAIL = "";
                     string MANAGERS_NAME = "";
-                    string MANAGERS_EMAIL = "";                    
+                    string MANAGERS_EMAIL = "";
                     string LINK = "";
-                
+
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
-                        
+
                         SUBJEST.Clear();
                         BODY.Clear();
 
 
                         //SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                        SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收 " );
+                        SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收 ");
                         //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
                         //ERP 採購相關單別、單號未核準的明細
@@ -16652,8 +16720,8 @@ namespace TKMQ
                             + "<br>" + "系統通知-表單的主管簽核意見-請查收，謝謝"
                             + " <br>"
                             );
-                        
-                  
+
+
                         BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
                         BODY.AppendFormat(@"<table> ");
@@ -16681,10 +16749,10 @@ namespace TKMQ
                             MANAGERS_NAME = DR["MANAGERS_NAME"].ToString();
                             MANAGERS_EMAIL = DR["MANAGERS_EMAIL"].ToString();
                             TASKID = DR["TASKID"].ToString();
-                            LINK = "https://eip.tkfood.com.tw/UOF/WKF/FormUse/PersonalBox/MyFormList.aspx?item=SignSelf&formNumber="+ DOC_NBR + "&taskId="+ TASKID;
-                            
+                            LINK = "https://eip.tkfood.com.tw/UOF/WKF/FormUse/PersonalBox/MyFormList.aspx?item=SignSelf&formNumber=" + DOC_NBR + "&taskId=" + TASKID;
+
                             //MAIL的主旨
-                            SUBJEST.Append(@" 表單: "+ FORM_NAME+"  表單編號: "+ DOC_NBR+ " ，謝謝。" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                            SUBJEST.Append(@" 表單: " + FORM_NAME + "  表單編號: " + DOC_NBR + " ，謝謝。" + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
 
                             BODY.AppendFormat(@"<tr >");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + SIGNER + "</td>");
@@ -16694,7 +16762,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + START_TIME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + APPLY_NAME + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + MANAGERS_NAME + "</td>");
-                            
+
                             BODY.AppendFormat(@"</tr> ");
 
 
@@ -16851,7 +16919,7 @@ namespace TKMQ
             }
         }
 
-        public async Task UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL()
+        public void UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL()
         {
             StringBuilder EXE_SQL = new StringBuilder();
             try
@@ -17262,7 +17330,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SENDEMAIL_TK_IT_CHECK_FORMS()
+        public void SENDEMAIL_TK_IT_CHECK_FORMS()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -17562,7 +17630,7 @@ namespace TKMQ
         /// <summary>
         /// 程式新增-採購-TKMQ，每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
         /// </summary>
-        public void  SENDEMAIL_TK_UOF_ERP_PURTC_PURTE()
+        public void SENDEMAIL_TK_UOF_ERP_PURTC_PURTE()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -17605,7 +17673,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF單號</th>");                       
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF單號</th>");
 
 
 
@@ -18269,7 +18337,7 @@ namespace TKMQ
         }
         //UOF請購相關未核準明細
         //PUR10.請購單申請+PUR20.請購單變更單
-        public async Task SENDMAIL_TK_UOF_PUR_NOT_APPROVED()
+        public void SENDMAIL_TK_UOF_PUR_NOT_APPROVED()
         {
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
@@ -18280,17 +18348,17 @@ namespace TKMQ
             DT_TK_UOF_PUR_NOT_APPROVED_MAIN = FIND_TK_UOF_PUR_NOT_APPROVED_MAIN();
 
             //如果有主檔，再用[DOC_NBR]找明細，寄給該申請人
-            if(DT_TK_UOF_PUR_NOT_APPROVED_MAIN!=null && DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows.Count>=1)
+            if (DT_TK_UOF_PUR_NOT_APPROVED_MAIN != null && DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows.Count >= 1)
             {
-                foreach(DataRow DR_MAIN in DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows)
+                foreach (DataRow DR_MAIN in DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows)
                 {
                     //找明細
                     DT_TK_UOF_PUR_NOT_APPROVED_DETAILS = FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS(DR_MAIN["DOC_NBR"].ToString());
 
-                    if(DT_TK_UOF_PUR_NOT_APPROVED_DETAILS!=null && DT_TK_UOF_PUR_NOT_APPROVED_DETAILS.Rows.Count>=1)
+                    if (DT_TK_UOF_PUR_NOT_APPROVED_DETAILS != null && DT_TK_UOF_PUR_NOT_APPROVED_DETAILS.Rows.Count >= 1)
                     {
                         try
-                        {                           
+                        {
                             DataTable DT_DATAS = DT_TK_UOF_PUR_NOT_APPROVED_DETAILS;
 
                             if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
@@ -18328,7 +18396,7 @@ namespace TKMQ
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">請購品名</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求日</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求數量</th>");
-                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人名</th>");                                    
+                                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人名</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人還未核</th>");
 
 
@@ -18347,7 +18415,7 @@ namespace TKMQ
                                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TB005"].ToString() + "</td>");
                                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TB011"].ToString() + "</td>");
                                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["SUMLA011"].ToString() + "</td>");
-                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請人名"].ToString() + "</td>");                                        
+                                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請人名"].ToString() + "</td>");
                                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核人還未核"].ToString() + "</td>");
 
                                         BODY.AppendFormat(@"</tr> ");
@@ -18387,7 +18455,7 @@ namespace TKMQ
 
                                     try
                                     {
-                                        
+
                                         MyMail.To.Add(DR_MAIN["EMAIL"].ToString()); //設定收件者Email，多筆mail                                        
 
                                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
@@ -18429,13 +18497,13 @@ namespace TKMQ
 
                     }
                 }
-              
+
             }
 
         }
 
         public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_MAIN()
-        {           
+        {
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -18563,7 +18631,7 @@ namespace TKMQ
             {
 
             }
-            
+
         }
 
         public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS(string DOC_NBR)
@@ -18702,7 +18770,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SENDMAIL_TK_PUR_MOC_OUT_NOTIN()
+        public void SENDMAIL_TK_PUR_MOC_OUT_NOTIN()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -19317,7 +19385,7 @@ namespace TKMQ
             }
         }
 
-        public async Task SENDMAIL_DEC_NEW_PRODUCT_PRICES()
+        public void SENDMAIL_DEC_NEW_PRODUCT_PRICES()
         {
             string IS_SPECIAL = "N";
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -19471,7 +19539,7 @@ namespace TKMQ
 
                     }
                 }
-                    
+
             }
             catch
             {
@@ -19983,7 +20051,7 @@ namespace TKMQ
         }
 
 
-        public async Task SENDMAIL_STOCK_TBPURINCHECK()
+        public void SENDMAIL_STOCK_TBPURINCHECK()
         {
 
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -20282,7 +20350,7 @@ namespace TKMQ
 
             }
         }
-        public async Task SENDMAIL_STOCK_TBPURINCHECK_CONFIRM()
+        public void SENDMAIL_STOCK_TBPURINCHECK_CONFIRM()
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -20577,8 +20645,8 @@ namespace TKMQ
             }
         }
 
-        public async Task SENDMAIL_STORES_REPORTS() 
-        {   
+        public async Task SENDMAIL_STORES_REPORTS()
+        {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
             DateTime before_yesterdayDate = DateTime.Now.AddDays(-2); // 取得前天的日期
             string yesterday = yesterdayDate.ToString("yyyyMMdd");
@@ -20612,7 +20680,7 @@ namespace TKMQ
             //pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
             string pathFile_DAILY = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日硯微墨統計表" + DATES.ToString() + ".pdf";
             string pathFile_MONTH = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份硯微墨統計表" + DATES.ToString() + ".pdf";
-            
+
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
             {
@@ -20644,11 +20712,11 @@ namespace TKMQ
             BODY.AppendFormat(Environment.NewLine);
 
 
-            string emailBody = BODY.ToString();            
+            string emailBody = BODY.ToString();
 
             // 将 HTML 视图添加到邮件
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-          
+
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -20713,25 +20781,25 @@ namespace TKMQ
                         ADD_TBDAILYPOSTB(yesterday, beforeYesterday);
                         // 執行後再次檢查是否成功新增
                         if (TBDAILYPOSTB_HasDataForDate(yesterday))
-                        {                           
+                        {
                             isSuccess = true;
                         }
-                       
+
                     }
                     catch (Exception ex)
-                    {   
-                                             
+                    {
+
                     }
                 }
                 else
-                {                   
+                {
                     isSuccess = true;
                 }
             }
 
             if (!isSuccess)
             {
-                                
+
             }
         }
 
@@ -20776,7 +20844,7 @@ namespace TKMQ
 
             return YN;
         }
-        
+
         public void TBDAILYPOSTBMONTH_RetryAddDailyPost(string SMONTHS, string firstDayOfMonth, string yesterday, string lastDayOfLastMonthday)
         {
             int maxRetries = 3;
@@ -21095,7 +21163,7 @@ namespace TKMQ
 
         }
 
-        public void ADD_TBDAILYPOSTBMONTH(string SMONTHS, string SDATES,string EDATES,string LASTMONTHDAYS)
+        public void ADD_TBDAILYPOSTBMONTH(string SMONTHS, string SDATES, string EDATES, string LASTMONTHDAYS)
         {
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
@@ -21308,7 +21376,7 @@ namespace TKMQ
                                     WHERE [MB001]=TEMP.TE004
                                     AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
                                     "
-                                    , SMONTHS, SDATES,  EDATES, LASTMONTHDAYS, sbSql99.ToString()
+                                    , SMONTHS, SDATES, EDATES, LASTMONTHDAYS, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -21489,7 +21557,7 @@ namespace TKMQ
             SQL1 = SETSQL_STORES_REPORTS_DAILY(SDAYS);
             Report report1 = new Report();
 
-            report1.Load(@"REPORT\硯微墨每日商品統計表.frx"); 
+            report1.Load(@"REPORT\硯微墨每日商品統計表.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
@@ -21552,7 +21620,7 @@ namespace TKMQ
             return SB;
         }
 
-        public void SAVEREPORT_STORES_REPORTS_MONTH(string pathFile, string SMONTHS,string SDATES,string EDATES)
+        public void SAVEREPORT_STORES_REPORTS_MONTH(string pathFile, string SMONTHS, string SDATES, string EDATES)
         {
             string FILENAME = pathFile;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
@@ -21677,7 +21745,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
-;
+                        ;
                         BODY.AppendFormat(@"</tr> ");
 
                         foreach (DataRow DR in DT_DATAS.Rows)
@@ -22031,11 +22099,11 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["專案負責人"] + "</td>");
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
                                 + DR["研發進度回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
-                                + "</td>");                            
+                                + "</td>");
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
                                 + DR["業務進度回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
                                 + "</td>");
-                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["設計負責人"] + "</td>");                            
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["設計負責人"] + "</td>");
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
                                 + DR["設計回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
                                 + "</td>");
@@ -22146,7 +22214,7 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-               
+
                 sbSql.AppendFormat(@"                                   
                                     SELECT 
                                     [NO] AS '專案編號'
@@ -22371,7 +22439,7 @@ namespace TKMQ
 
             SETPATH();
             SETFILELOTCHECK();
-            
+
             CLEAREXCEL();
 
             StringBuilder SUBJEST = new StringBuilder();
@@ -22383,7 +22451,7 @@ namespace TKMQ
             SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
             SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-       
+
 
             MessageBox.Show("OK");
         }
@@ -22392,11 +22460,11 @@ namespace TKMQ
         {
             SENDEMAIL_DAILY_MOCMANULINE();
             MessageBox.Show("OK");
-            
+
         }
         private void button14_Click(object sender, EventArgs e)
         {
-            ADDLOG(DateTime.Now,"TEST","EX");
+            ADDLOG(DateTime.Now, "TEST", "EX");
         }
         private void button16_Click(object sender, EventArgs e)
         {
@@ -22438,19 +22506,19 @@ namespace TKMQ
 
 
         }
-        private async  void button23_Click(object sender, EventArgs e)
+        private async void button23_Click(object sender, EventArgs e)
         {
             //用notify
             //2025/3月停止
             //SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-           
+
         }
         private void button24_Click(object sender, EventArgs e)
         {
             SEND_TEST_MAIL();
             //SEND_TEST_MAIL_2();
-           
+
 
         }
         private void button25_Click(object sender, EventArgs e)
@@ -22485,7 +22553,7 @@ namespace TKMQ
         {
             //path_File_COPTCD
             //每日訂單明細表
-            SETPATH(); 
+            SETPATH();
             SETFILE_COPTCD(path_File_COPTCD);
             CLEAREXCEL();
 
@@ -22494,7 +22562,7 @@ namespace TKMQ
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
             MessageBox.Show("OK");
         }
-       
+
 
         private void button31_Click(object sender, EventArgs e)
         {
@@ -22537,7 +22605,7 @@ namespace TKMQ
         private void button37_Click(object sender, EventArgs e)
         {
             SENDEMAIL_PURNOTIN();
-           
+
             MessageBox.Show("完成");
         }
         private void button38_Click(object sender, EventArgs e)
@@ -22573,7 +22641,7 @@ namespace TKMQ
 
             MessageBox.Show("successfully");
         }
-   
+
         private void button43_Click(object sender, EventArgs e)
         {
             //總經理簽核意見，轉MAIL給申請者及部門主管
@@ -22678,11 +22746,11 @@ namespace TKMQ
 
             //檢查當日是否有寄送失敗
             //[TKMQ].[dbo].[LOG]
-            DataTable DT= SERACH_IT_FAIL_DOTIFY();
+            DataTable DT = SERACH_IT_FAIL_DOTIFY();
 
-            if(DT!=null && DT.Rows.Count>=1)
+            if (DT != null && DT.Rows.Count >= 1)
             {
-                foreach(DataRow DR in DT.Rows)
+                foreach (DataRow DR in DT.Rows)
                 {
                     //找出是那些mail寄送失敗
                     string SOURCE = DR["SOURCE"].ToString();
@@ -22715,7 +22783,7 @@ namespace TKMQ
 
                 }
 
-               
+
             }
 
             MessageBox.Show("OK");
