@@ -5051,7 +5051,7 @@ namespace TKMQ
                         // 當讀取資料時，檢查是否被取消
                         if (cancellationToken.IsCancellationRequested)
                         {
-                            MessageBox.Show("操作已被取消");
+                            //MessageBox.Show("操作已被取消");
                             sqlConn.Close();
                             return;
                         }
