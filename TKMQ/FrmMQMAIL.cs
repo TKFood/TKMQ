@@ -841,7 +841,11 @@ namespace TKMQ
             ///SETFILELOTCHECK
             try
             {
-                SETFILELOTCHECK();
+                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+
+                SETFILELOTCHECK(cts.Token);
                 CLEAREXCEL();
 
                 Thread.Sleep(5000);
@@ -1024,8 +1028,12 @@ namespace TKMQ
             //系統通知-每日批號檢查表         
             try
             {
+                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+
                 SETPATH();
-                SETFILELOTCHECK();
+                SETFILELOTCHECK(cts.Token);
                 SERACHMAILLOTCHECK();
                 SUBJEST.Clear();
                 BODY.Clear();
@@ -1671,6 +1679,10 @@ namespace TKMQ
         {
             StringBuilder MSG = new StringBuilder();
 
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+
             try
             {
                 //資訊-寄送失敗的重寄
@@ -1697,7 +1709,7 @@ namespace TKMQ
                         if (SOURCE.Contains("每日批號檢查表"))
                         {
                             SETPATH();
-                            SETFILELOTCHECK();
+                            SETFILELOTCHECK(cts.Token);
 
                             CLEAREXCEL();
 
@@ -4773,7 +4785,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILELOTCHECK()
+        public void SETFILELOTCHECK(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -4828,9 +4840,8 @@ namespace TKMQ
             GC.Collect();
 
             Console.Read();
-
-            CancellationTokenSource cts = new CancellationTokenSource();
-            Task.Run(() => SEARCHLOTCHECK(cts.Token));
+            
+            Task.Run(() => SEARCHLOTCHECK(cancellationToken));
            // SEARCHLOTCHECK();
 
             //if (!File.Exists(pathFile + ".xlsx"))
@@ -22468,13 +22479,14 @@ namespace TKMQ
 
             var task = Task.Run(() =>
             {
-                // 模擬延遲 35 秒
+                // 模擬延遲  秒
                 //Thread.Sleep(1000*61);
                 try
                 {
                     SETPATH();
                     // 執行批號檢查作業
-                    SEARCHLOTCHECK(cts.Token);                    
+
+                    SETFILELOTCHECK(cts.Token);                    
                     CLEAREXCEL();
 
                     StringBuilder SUBJEST = new StringBuilder();
@@ -22812,6 +22824,10 @@ namespace TKMQ
 
         private void button53_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+
             //資訊-寄送失敗的重寄
             //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
 
@@ -22836,7 +22852,7 @@ namespace TKMQ
                     if (SOURCE.Contains("每日批號檢查表"))
                     {
                         SETPATH();
-                        SETFILELOTCHECK();
+                        SETFILELOTCHECK(cts.Token);
 
                         CLEAREXCEL();
 
