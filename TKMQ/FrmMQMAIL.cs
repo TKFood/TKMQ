@@ -20806,6 +20806,9 @@ namespace TKMQ
             int attempt = 0;
             bool isSuccess = false;
 
+            //先執行1次
+            ADD_TBDAILYPOSTB(yesterday, beforeYesterday);
+            //再檢查
             while (attempt < maxRetries && !isSuccess)
             {
                 attempt++;
@@ -20888,6 +20891,9 @@ namespace TKMQ
             int attempt = 0;
             bool isSuccess = false;
 
+            //先執行1次
+            ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            //再檢查
             while (attempt < maxRetries && !isSuccess)
             {
                 attempt++;
@@ -21420,7 +21426,7 @@ namespace TKMQ
 
                 cmd.Connection = sqlConn;
                 cmd.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                cmd.CommandText = sbSql.ToString();
+                cmd.CommandText = sbSql.ToString(); 
                 cmd.Transaction = tran;
                 result = cmd.ExecuteNonQuery();
 
