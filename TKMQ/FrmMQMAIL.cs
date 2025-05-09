@@ -22469,7 +22469,7 @@ namespace TKMQ
             var task = Task.Run(() =>
             {
                 // 模擬延遲 35 秒
-                Thread.Sleep(1000*61);
+                //Thread.Sleep(1000*61);
                 try
                 {
                     SETPATH();
