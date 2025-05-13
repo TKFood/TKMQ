@@ -13036,7 +13036,7 @@ namespace TKMQ
             return SB;
 
         }
-        public async Task SENDEMAIL_DAILY_SALES_MONEY()
+        public void SENDEMAIL_DAILY_SALES_MONEY()
         {
             DataSet dsSALESMONEYS = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -13143,7 +13143,7 @@ namespace TKMQ
                             throw; // 最後一次仍失敗則拋出異常
                     }
 
-                    await Task.Delay(5000); // 等待 5 秒再試
+                    Task.Delay(5000); // 等待 5 秒再試
                 }
 
                 //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
