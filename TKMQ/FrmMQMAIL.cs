@@ -1392,6 +1392,9 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_currentTime1()
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
             // 每次排程開始前清空錯誤訊息
             errorMessages.Clear();
 
@@ -1400,7 +1403,7 @@ namespace TKMQ
                 try
                 {
                     //國內、外業務部業績
-                    SENDEMAIL_DAILY_SALES_MONEY();
+                    SENDEMAIL_DAILY_SALES_MONEY(cts.Token);
                 }
                 catch
                 {
@@ -1409,7 +1412,7 @@ namespace TKMQ
                 try
                 {
                     //硯微墨商品銷進
-                    SENDMAIL_STORES_REPORTS();
+                    SENDMAIL_STORES_REPORTS(cts.Token);
                 }
                 catch
                 {
@@ -1677,88 +1680,88 @@ namespace TKMQ
         //currentTime8        
         public void HRAUTORUN_currentTime8()
         {
-            StringBuilder MSG = new StringBuilder();
+            //StringBuilder MSG = new StringBuilder();
 
-            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+            //int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            //CancellationTokenSource cts = new CancellationTokenSource();
+            //cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
-            try
-            {
-                //資訊-寄送失敗的重寄
-                //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
+            //try
+            //{
+            //    //資訊-寄送失敗的重寄
+            //    //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
 
-                //檢查當日是否有寄送失敗
-                //[TKMQ].[dbo].[LOG]
-                DataTable DT = SERACH_IT_FAIL_DOTIFY();
+            //    //檢查當日是否有寄送失敗
+            //    //[TKMQ].[dbo].[LOG]
+            //    DataTable DT = SERACH_IT_FAIL_DOTIFY();
 
-                if (DT != null && DT.Rows.Count >= 1)
-                {
-                    foreach (DataRow DR in DT.Rows)
-                    {
-                        //找出是那些mail寄送失敗
-                        string SOURCE = DR["SOURCE"].ToString();
+            //    if (DT != null && DT.Rows.Count >= 1)
+            //    {
+            //        foreach (DataRow DR in DT.Rows)
+            //        {
+            //            //找出是那些mail寄送失敗
+            //            string SOURCE = DR["SOURCE"].ToString();
 
-                        //國內外業務業績日報
-                        if (SOURCE.Contains("國內外業務業績日報"))
-                        {
-                            SENDEMAIL_DAILY_SALES_MONEY();
-                        }
+            //            //國內外業務業績日報
+            //            if (SOURCE.Contains("國內外業務業績日報"))
+            //            {
+            //                SENDEMAIL_DAILY_SALES_MONEY();
+            //            }
 
-                        //每日批號檢查表
-                        if (SOURCE.Contains("每日批號檢查表"))
-                        {
-                            SETPATH();
-                            SETFILELOTCHECK(cts.Token);
+            //            //每日批號檢查表
+            //            if (SOURCE.Contains("每日批號檢查表"))
+            //            {
+            //                SETPATH();
+            //                SETFILELOTCHECK(cts.Token);
 
-                            CLEAREXCEL();
+            //                CLEAREXCEL();
 
-                            StringBuilder SUBJEST = new StringBuilder();
-                            StringBuilder BODY = new StringBuilder();
-                            //LOTCHECK
-                            SERACHMAILLOTCHECK();
-                            SUBJEST.Clear();
-                            BODY.Clear();
-                            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                            SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-                        }
+            //                StringBuilder SUBJEST = new StringBuilder();
+            //                StringBuilder BODY = new StringBuilder();
+            //                //LOTCHECK
+            //                SERACHMAILLOTCHECK();
+            //                SUBJEST.Clear();
+            //                BODY.Clear();
+            //                SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+            //                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+            //            }
 
 
-                    }
+            //        }
 
-                    Thread.Sleep(1000 * 60);
-                }
-            }
-            catch
-            {
-                MSG.AppendFormat(@"寄送失敗的重寄  失敗 ||");
-            }
-            finally
-            {
-            }
+            //        Thread.Sleep(1000 * 60);
+            //    }
+            //}
+            //catch
+            //{
+            //    MSG.AppendFormat(@"寄送失敗的重寄  失敗 ||");
+            //}
+            //finally
+            //{
+            //}
 
-            try
-            {
-                //寄送失敗的通知
-                SENDMAIL_IT_FAIL_DOTIFY();
+            //try
+            //{
+            //    //寄送失敗的通知
+            //    SENDMAIL_IT_FAIL_DOTIFY();
 
-                //Thread.Sleep(1000 * 60); 的作用是在執行緒（Thread）中暫停執行 60 秒（1 分鐘）。
-                //因為HRAUTORUN_currentTime1排程在1分鐘內跑完，會重覆執行，所以sleep暫停1分鐘再繼續排程
-                Thread.Sleep(1000 * 60);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"寄送失敗的通知  失敗 ||");
-            }
-            finally
-            {
-            }
+            //    //Thread.Sleep(1000 * 60); 的作用是在執行緒（Thread）中暫停執行 60 秒（1 分鐘）。
+            //    //因為HRAUTORUN_currentTime1排程在1分鐘內跑完，會重覆執行，所以sleep暫停1分鐘再繼續排程
+            //    Thread.Sleep(1000 * 60);
+            //}
+            //catch
+            //{
+            //    MSG.AppendFormat(@"寄送失敗的通知  失敗 ||");
+            //}
+            //finally
+            //{
+            //}
 
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
+            //if (!string.IsNullOrEmpty(MSG.ToString()))
+            //{
+            //    MessageBox.Show(MSG.ToString());
+            //}
         }
         //SETPATH
         public void SETPATH()
@@ -4840,9 +4843,9 @@ namespace TKMQ
             GC.Collect();
 
             Console.Read();
-            
-            Task.Run(() => SEARCHLOTCHECK(cancellationToken));
-           // SEARCHLOTCHECK();
+
+            SEARCHLOTCHECK(cancellationToken);
+         
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -13036,7 +13039,7 @@ namespace TKMQ
             return SB;
 
         }
-        public void SENDEMAIL_DAILY_SALES_MONEY()
+        public void SENDEMAIL_DAILY_SALES_MONEY(CancellationToken cancellationToken)
         {
             DataSet dsSALESMONEYS = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -13057,7 +13060,7 @@ namespace TKMQ
             }
 
 
-            SAVEREPORT(pathFile_SALES_MONEYS);
+            SAVEREPORT(pathFile_SALES_MONEYS, cancellationToken);
 
             dsSALESMONEYS = SERACHMAILSALESMONEYS();
 
@@ -13157,7 +13160,7 @@ namespace TKMQ
         }
 
 
-        public void SAVEREPORT(string pathFileSALESMONEYS)
+        public void SAVEREPORT(string pathFileSALESMONEYS, CancellationToken cancellationToken)
         {
             Report report1 = new Report();
             string FILENAME = pathFileSALESMONEYS;
@@ -20682,7 +20685,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_STORES_REPORTS()  
+        public void SENDMAIL_STORES_REPORTS(CancellationToken cancellationToken)  
         {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
             DateTime before_yesterdayDate = DateTime.Now.AddDays(-2); // 取得前天的日期
@@ -22483,48 +22486,37 @@ namespace TKMQ
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
-            var task = Task.Run(() =>
+            // 模擬延遲  秒
+            //Thread.Sleep(1000*61);
+            try
             {
-                // 模擬延遲  秒
-                //Thread.Sleep(1000*61);
-                try
-                {
-                    SETPATH();
-                    // 執行批號檢查作業
+                SETPATH();
+                // 執行批號檢查作業
 
-                    SETFILELOTCHECK(cts.Token);                    
-                    CLEAREXCEL();
+                SETFILELOTCHECK(cts.Token);
+                CLEAREXCEL();
 
-                    StringBuilder SUBJEST = new StringBuilder();
-                    StringBuilder BODY = new StringBuilder();
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
 
-                    SERACHMAILLOTCHECK();
-                    SUBJEST.Clear();
-                    BODY.Clear();
-                    SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                    BODY.AppendFormat("Dear SIR" + Environment.NewLine +
-                                      "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                    SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-                }
-                catch (OperationCanceledException)
-                {
-                    //MessageBox.Show("資料查詢超時，操作已被取消。");
-                }
-                catch (Exception ex)
-                {
-                    //MessageBox.Show("發生錯誤：" + ex.Message);
-                }
-            });
-
-            // 等待 Task 完成或超時
-            if (!task.Wait(timeoutMilliseconds))
-            {
-                MessageBox.Show("批號檢查超時未完成，請稍後再試。");
+                SERACHMAILLOTCHECK();
+                SUBJEST.Clear();
+                BODY.Clear();
+                SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                BODY.AppendFormat("Dear SIR" + Environment.NewLine +
+                                  "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
             }
-            else
+            catch (OperationCanceledException)
             {
-                MessageBox.Show("OK");
+                //MessageBox.Show("資料查詢超時，操作已被取消。");
             }
+            catch (Exception ex)
+            {
+                //MessageBox.Show("發生錯誤：" + ex.Message);
+            }
+
+            MessageBox.Show("OK");
 
             //SETPATH();
             //SETFILELOTCHECK();
@@ -22655,8 +22647,11 @@ namespace TKMQ
 
         private void button31_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
             //SETFASTREPORT(); 
-            SENDEMAIL_DAILY_SALES_MONEY();
+            SENDEMAIL_DAILY_SALES_MONEY(cts.Token);
 
             MessageBox.Show("完成");
         }
@@ -22830,63 +22825,66 @@ namespace TKMQ
 
         private void button53_Click(object sender, EventArgs e)
         {
-            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-            CancellationTokenSource cts = new CancellationTokenSource();
-            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+            //int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            //CancellationTokenSource cts = new CancellationTokenSource();
+            //cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
-            //資訊-寄送失敗的重寄
-            //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
+            ////資訊-寄送失敗的重寄
+            ////先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
 
-            //檢查當日是否有寄送失敗
-            //[TKMQ].[dbo].[LOG]
-            DataTable DT = SERACH_IT_FAIL_DOTIFY();
+            ////檢查當日是否有寄送失敗
+            ////[TKMQ].[dbo].[LOG]
+            //DataTable DT = SERACH_IT_FAIL_DOTIFY();
 
-            if (DT != null && DT.Rows.Count >= 1)
-            {
-                foreach (DataRow DR in DT.Rows)
-                {
-                    //找出是那些mail寄送失敗
-                    string SOURCE = DR["SOURCE"].ToString();
+            //if (DT != null && DT.Rows.Count >= 1)
+            //{
+            //    foreach (DataRow DR in DT.Rows)
+            //    {
+            //        //找出是那些mail寄送失敗
+            //        string SOURCE = DR["SOURCE"].ToString();
 
-                    //國內外業務業績日報
-                    if (SOURCE.Contains("國內外業務業績日報"))
-                    {
-                        SENDEMAIL_DAILY_SALES_MONEY();
-                    }
+            //        //國內外業務業績日報
+            //        if (SOURCE.Contains("國內外業務業績日報"))
+            //        {
+            //            SENDEMAIL_DAILY_SALES_MONEY();
+            //        }
 
-                    //每日批號檢查表
-                    if (SOURCE.Contains("每日批號檢查表"))
-                    {
-                        SETPATH();
-                        SETFILELOTCHECK(cts.Token);
+            //        //每日批號檢查表
+            //        if (SOURCE.Contains("每日批號檢查表"))
+            //        {
+            //            SETPATH();
+            //            SETFILELOTCHECK(cts.Token);
 
-                        CLEAREXCEL();
+            //            CLEAREXCEL();
 
-                        StringBuilder SUBJEST = new StringBuilder();
-                        StringBuilder BODY = new StringBuilder();
-                        //LOTCHECK
-                        SERACHMAILLOTCHECK();
-                        SUBJEST.Clear();
-                        BODY.Clear();
-                        SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-                    }
-
-
-                }
+            //            StringBuilder SUBJEST = new StringBuilder();
+            //            StringBuilder BODY = new StringBuilder();
+            //            //LOTCHECK
+            //            SERACHMAILLOTCHECK();
+            //            SUBJEST.Clear();
+            //            BODY.Clear();
+            //            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            //            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+            //            SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+            //        }
 
 
-            }
+            //    }
 
-            MessageBox.Show("OK");
+
+            //}
+
+            //MessageBox.Show("OK");
 
         }
 
         private void button54_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
             //寄送MAIL，硯微墨統計表 
-            SENDMAIL_STORES_REPORTS();
+            SENDMAIL_STORES_REPORTS(cts.Token);
             MessageBox.Show("OK");
         }
 
