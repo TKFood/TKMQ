@@ -1402,8 +1402,12 @@ namespace TKMQ
             {
                 try
                 {
-                    //國內、外業務部業績
-                    SENDEMAIL_DAILY_SALES_MONEY(cts.Token);
+                    // 國內、外業務部業績
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_DAILY_SALES_MONEY(cts1.Token);
+                    }
                 }
                 catch
                 {
@@ -1411,8 +1415,12 @@ namespace TKMQ
                 }
                 try
                 {
-                    //硯微墨商品銷進
-                    SENDMAIL_STORES_REPORTS(cts.Token);
+                    // 硯微墨商品銷進
+                    using (CancellationTokenSource cts2 = new CancellationTokenSource())
+                    {
+                        cts2.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_STORES_REPORTS(cts2.Token);
+                    }
                 }
                 catch
                 {
