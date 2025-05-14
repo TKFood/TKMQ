@@ -395,870 +395,581 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN()
         {
-            StringBuilder MSG = new StringBuilder();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
+           
             SETPATH();
-
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
 
-            try
-            {
-                //Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MSG.AppendFormat(@" 溫濕度 失敗 ||");
-            }
-            finally
-            { }
+            //關閉excel
+            CLEAREXCEL();
 
             try
             {
-                //是否有建進貨單
-                SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();
+                //資訊用
+                try
+                {
+                    //總經理簽核意見，轉MAIL給申請者及部門主管                  
+                    using (CancellationTokenSource cts14 = new CancellationTokenSource())
+                    {
+                        cts14.CancelAfter(timeoutMilliseconds);
+                        //新增總經理簽核意見
+                        ADD_TO_UOF_Z_UOF_FORMS_COMMENTS(cts14.Token);
+                        //更新上層主管
+                        UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
+                        //寄送通知
+                        SEND_UOF_Z_UOF_FORMS_COMMENTS();
+
+                        //已寄EAMIL，更新
+                        UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"總經理簽核意見，轉MAIL給申請者及部門主管  失敗");
+                }
+                try
+                {
+                    //查離職人員的未結案表單
+                    using (CancellationTokenSource cts13 = new CancellationTokenSource())
+                    {
+                        cts13.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_IT_CHECK_FORMS(cts13.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"查離職人員的未結案表單  失敗");
+                }
+                try
+                {
+                    //溫濕度明細
+                    using (CancellationTokenSource cts15 = new CancellationTokenSource())
+                    {
+                        cts15.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_DAILY_QC_TEMP_CHECK(cts15.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"溫濕度明細  失敗");
+                }
+                try
+                {
+                    //溫濕度
+                    using (CancellationTokenSource cts16 = new CancellationTokenSource())
+                    {
+                        cts16.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_DAILY_QC_CHECK(cts16.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"溫濕度  失敗");
+                }
+                try
+                {
+                    //UOF交辨未完成
+                    using (CancellationTokenSource cts17 = new CancellationTokenSource())
+                    {
+                        cts17.CancelAfter(timeoutMilliseconds);
+                        CHECK_TB_EIP_SCH_DEVOLVE(cts17.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"UOF交辨未完成  失敗");
+                }
+                try
+                {
+                    //主管UOF交辨未完成
+                    using (CancellationTokenSource cts18 = new CancellationTokenSource())
+                    {
+                        cts18.CancelAfter(timeoutMilliseconds);
+                        CHECK_TB_EIP_SCH_DEVOLVE_MANAGER(cts18.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"主管UOF交辨未完成  失敗");
+                }
+                try
+                {
+                    //通知各表單申請人
+                    using (CancellationTokenSource cts19 = new CancellationTokenSource())
+                    {
+                        cts19.CancelAfter(timeoutMilliseconds);
+                        PREPARE_UOF_TASK_TASK_APPLICATION(cts19.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"通知各表單申請人  失敗");
+                }
+                try
+                {
+                    //通知各別的被交辨人
+                    using (CancellationTokenSource cts20 = new CancellationTokenSource())
+                    {
+                        cts20.CancelAfter(timeoutMilliseconds);
+                        PREPARE_TB_EIP_PRIV_MESS(cts20.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"通知各別的被交辨人  失敗");
+                }
+                try
+                {
+                    //通知交辨人
+                    using (CancellationTokenSource cts21 = new CancellationTokenSource())
+                    {
+                        cts21.CancelAfter(timeoutMilliseconds);
+                        PREPARE_TB_EIP_PRIV_MESS_DIRECTOR(cts21.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"通知交辨人  失敗");
+                }
+                try
+                {
+                    //IT檢查網站是否正常
+                    using (CancellationTokenSource cts22 = new CancellationTokenSource())
+                    {
+                        cts22.CancelAfter(timeoutMilliseconds);
+                        PREPAREITCHECK(cts22.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"IT檢查網站是否正常  失敗");
+                }
+                //營銷用
+                try
+                {
+                    //營銷各庫庫存通知
+                    using (CancellationTokenSource cts24 = new CancellationTokenSource())
+                    {
+                        cts24.CancelAfter(timeoutMilliseconds);
+
+                        SETPATH();
+                        SETFILE_POSINV(path_File_POSINV, cts24.Token);
+                        CLEAREXCEL();
+
+                        PREPARESENDEMAIL_POSINV(path_File_POSINV);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"營銷各庫庫存通知  失敗");
+                }
+
+                //行企用
+                try
+                {
+                    //校稿追踨  
+                    using (CancellationTokenSource cts28 = new CancellationTokenSource())
+                    {
+                        cts28.CancelAfter(timeoutMilliseconds);
+                        PREPAREPROOFREAD(cts28.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"校稿追踨  失敗");
+                }
+
+                //倉儲用
+                try
+                {
+                    //派車  
+                    using (CancellationTokenSource cts28 = new CancellationTokenSource())
+                    {
+                        cts28.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_DAILY_TKWH_CALENDAR(cts28.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"派車  失敗");
+                }
+                try
+                {
+                    //批號錯誤  
+                    using (CancellationTokenSource cts29 = new CancellationTokenSource())
+                    {
+                        cts29.CancelAfter(timeoutMilliseconds); 
+                        SETPATH();
+                        // 執行批號檢查作業
+
+                        SETFILELOTCHECK(cts29.Token);
+                        CLEAREXCEL();
+                        
+                        SERACHMAILLOTCHECK();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine +
+                                          "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"批號錯誤  失敗");
+                }
+
+                //總務用
+                try
+                {
+                    //針對昨天核單的 總務採購單，給申請人發出公告
+                    using (CancellationTokenSource cts23 = new CancellationTokenSource())
+                    {
+                        cts23.CancelAfter(timeoutMilliseconds);
+                        NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN(cts23.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"針對昨天核單的 總務採購單，給申請人發出公告  失敗");
+                }
+                try
+                {
+                    //通知副總，總務未簽核的表單    
+                    using (CancellationTokenSource cts25 = new CancellationTokenSource())
+                    {
+                        cts25.CancelAfter(timeoutMilliseconds);
+                        PREPARE_UOF_TASK_TASK_GRAFFIR(cts25.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"通知副總，總務未簽核的表單      失敗");
+                }
+                try
+                {
+                    //通知原請購人，總務已完成採購         
+                    using (CancellationTokenSource cts26 = new CancellationTokenSource())
+                    {
+                        cts26.CancelAfter(timeoutMilliseconds);
+                        FIND_UOF_GRAFFAIRS_1005(cts26.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"通知原請購人，總務已完成採購         失敗");
+                }
+
+                //採購用
+                try
+                {
+                    //是否有建進貨單
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_STOCK_TBPURINCHECK_CONFIRM(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"到貨是否有建進貨單  失敗");
+                }
+                try
+                {
+                    //是否有建進貨單
+                    using (CancellationTokenSource cts2 = new CancellationTokenSource())
+                    {
+                        cts2.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_STOCK_TBPURINCHECK(cts2.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"到貨數量是否等同進貨數量  失敗");
+                }
+                try
+                {
+                    //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知           
+                    using (CancellationTokenSource cts3 = new CancellationTokenSource())
+                    {
+                        cts3.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_TK_PUR_MOC_OUT_NOTIN(cts3.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"託外未到貨通知  失敗");
+                }
+                try
+                {
+                    //UOF請購相關未核準明細
+                    //PUR10.請購單申請+PUR20.請購單變更單       
+                    using (CancellationTokenSource cts4 = new CancellationTokenSource())
+                    {
+                        cts4.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_TK_UOF_PUR_NOT_APPROVED(cts4.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"PUR10.請購單申請+PUR20.請購單變更單  失敗");
+                }
+                try
+                {
+                    //給採購人員，ERP未核單的單別、單號        
+                    using (CancellationTokenSource cts5 = new CancellationTokenSource())
+                    {
+                        cts5.CancelAfter(timeoutMilliseconds);
+                        PREPARESENDEMAILERPPURCHECK(cts5.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"給採購人員，ERP未核單的單別、單號  失敗");
+                }  
+                try
+                {
+                    //請購        
+                    using (CancellationTokenSource cts8 = new CancellationTokenSource())
+                    {
+                        cts8.CancelAfter(timeoutMilliseconds);
+                        SETFILEPURTA(cts8.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAILPURTA();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令-請購表，請查收" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"請購  失敗");
+                }
+                try
+                {
+                    //每日採購單未結案表                           
+                    using (CancellationTokenSource cts9 = new CancellationTokenSource())
+                    {
+                        cts9.CancelAfter(timeoutMilliseconds);                        
+                        SETFILEPURTD(cts9.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAILPURTD();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日採購單未結案表  失敗");
+                }
+                try
+                {
+                    //每日已請購未採購表                           
+                    using (CancellationTokenSource cts10 = new CancellationTokenSource())
+                    {
+                        cts10.CancelAfter(timeoutMilliseconds);     
+                        SETFILEPURTB(cts10.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAILPURTB();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日已請購未採購表  失敗");
+                }
+
+                //研發用
+                try
+                {
+                    //研發每日通知新品售價                           
+                    using (CancellationTokenSource cts11 = new CancellationTokenSource())
+                    {
+                        cts11.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_DEC_NEW_PRODUCT_PRICES(cts11.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"研發每日通知新品售價  失敗");
+                }
+                try
+                {
+                    //本年新品的銷售報表                           
+                    using (CancellationTokenSource cts12 = new CancellationTokenSource())
+                    {
+                        cts12.CancelAfter(timeoutMilliseconds);
+                        SETPATH();
+                        SETFILE_NEWSLAES(path_File_NEWSLAES, cts12.Token);
+                        CLEAREXCEL();
+
+                        PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES, cts12.Token);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"本年新品的銷售報表  失敗");
+                }
+
+                //生管用
+                try
+                {
+                    //每日訂單明細表                           
+                    using (CancellationTokenSource cts30 = new CancellationTokenSource())
+                    {
+                        cts30.CancelAfter(timeoutMilliseconds);
+                        SETPATH();
+                        SETFILE_COPTCD(path_File_COPTCD, cts30.Token);
+                        CLEAREXCEL();
+
+                        PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日訂單明細表  失敗");
+                }
+                try
+                {
+                    //每日訂單明細表                           
+                    using (CancellationTokenSource cts31 = new CancellationTokenSource())
+                    {
+                        cts31.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_DAILY_MOCMANULINE(cts31.Token);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日訂單明細表  失敗");
+                }            
+                try
+                {
+                    //訂單變更                           
+                    using (CancellationTokenSource cts35 = new CancellationTokenSource())
+                    {
+                        cts35.CancelAfter(timeoutMilliseconds);
+                        SETFILECOPTE(cts35.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAILCOPTE();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
+                        SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"訂單變更  失敗");
+                }
+                try
+                {
+                    //訂單                         
+                    using (CancellationTokenSource cts36 = new CancellationTokenSource())
+                    {
+                        cts36.CancelAfter(timeoutMilliseconds);
+                        SETFILE(cts36.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAIL();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
+                        SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"訂單  失敗");
+                }
+                try
+                {
+                    //每日追踨製令未確認表                         
+                    using (CancellationTokenSource cts37 = new CancellationTokenSource())
+                    {
+                        cts37.CancelAfter(timeoutMilliseconds);
+                        SETFILEMOCTA(cts37.Token);
+                        CLEAREXCEL();
+
+                        SERACHMAILMOCTA();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
+
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日追踨製令未確認表  失敗");
+                }
+                
+
+            }
+            catch (Exception ex)
+            {
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
+            }
+
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
+            {
+                MessageBox.Show(errorMessages.ToString());
             }
-            catch
-            {
-                MSG.AppendFormat(@" 到貨是否有建進貨單 失敗 ||");
-            }
-            finally
-            { }
-
-            try
-            {
-                //到貨數量是否等同進貨數量
-                SENDMAIL_STOCK_TBPURINCHECK();
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 到貨數量是否等同進貨數量失敗 ||");
-            }
-            finally
-            { }
-
-
-            try
-            {
-                //研發每日通知新品售價
-                SENDMAIL_DEC_NEW_PRODUCT_PRICES();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 研發每日通知新品售價 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知              
-                SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 託外未到貨通知 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //UOF請購相關未核準明細
-                //PUR10.請購單申請+PUR20.請購單變更單
-                SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" PUR10.請購單申請+PUR20.請購單變更單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //查離職人員的未結案表單
-                SENDEMAIL_TK_IT_CHECK_FORMS();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 查離職人員的未結案表單 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //總經理簽核意見，轉MAIL給申請者及部門主管
-                //新增總經理簽核意見
-                ADD_TO_UOF_Z_UOF_FORMS_COMMENTS();
-                //更新上層主管
-                UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
-                //寄送通知
-                SEND_UOF_Z_UOF_FORMS_COMMENTS();
-
-                //已寄EAMIL，更新
-                UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 總經理簽核意見，轉MAIL給申請者及部門主管 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            try
-            {
-                //針對昨天核單的 總務採購單，給申請人發出公告
-                NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 針對昨天核單的 總務採購單，給申請人發出公告 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            try
-            {
-                //溫濕度明細
-                SENDEMAIL_DAILY_QC_TEMP_CHECK();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 溫濕度明細 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            try
-            {
-                //派車
-                SENDEMAIL_DAILY_TKWH_CALENDAR();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 派車報表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //溫濕度-測試
-            try
-            {
-                SENDEMAIL_DAILY_QC_CHECK();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 溫濕度 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //每日訂單明細表
-            try
-            {
-                //path_File_COPTCD
-                //每日訂單明細表
-                SETPATH();
-                SETFILE_COPTCD(path_File_COPTCD);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 每日訂單明細表 失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //營銷各庫庫存通知
-            try
-            {
-                SETPATH();
-                SETFILE_POSINV(path_File_POSINV);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_POSINV(path_File_POSINV);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 營銷各庫庫存通知");
-                MSG.AppendFormat(@" 營銷各庫庫存通知 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///本年新品的銷售報表
-            try
-            {
-
-                SETPATH();
-                SETFILE_NEWSLAES(path_File_NEWSLAES);
-                CLEAREXCEL();
-
-                PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 本年新品的銷售報表");
-                MSG.AppendFormat(@" 本年新品的銷售報表 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試UOF交辨未完成
-            try
-            {
-                CHECK_TB_EIP_SCH_DEVOLVE();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試UOF交辨未完成");
-                MSG.AppendFormat(@" 測試UOF交辨未完成 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試主管UOF交辨未完成
-            try
-            {
-                CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試主管UOF交辨未完成");
-                MSG.AppendFormat(@" 測試主管UOF交辨未完成 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知副總，總務未簽核的表單           
-            try
-            {
-                PREPARE_UOF_TASK_TASK_GRAFFIR();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知副總，總務未簽核的表單");
-                MSG.AppendFormat(@"  通知副總，總務未簽核的表單 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            //通知原請購人，總務已完成採購           
-            try
-            {
-                FIND_UOF_GRAFFAIRS_1005();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知原請購人，總務已完成採購  ");
-                MSG.AppendFormat(@"  通知原請購人，總務已完成採購 失敗 ||");
-
-            }
-            finally
-            {
-
-            }
-
-            //通知各表單申請人           
-            try
-            {
-                PREPARE_UOF_TASK_TASK_APPLICATION();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知各表單申請人");
-                MSG.AppendFormat(@"  通知各表單申請人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知各別的被交辨人
-            try
-            {
-                PREPARE_TB_EIP_PRIV_MESS();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知各別的被交辨人");
-                MSG.AppendFormat(@"  通知各別的被交辨人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //通知交辨人         
-            try
-            {
-                PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 通知交辨人");
-                MSG.AppendFormat(@"  通知交辨人 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //校稿追踨          
-            try
-            {
-                PREPAREPROOFREAD();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 校稿追踨");
-                MSG.AppendFormat(@"  校稿追踨 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //IT檢查網站是否正常           
-            try
-            {
-                PREPAREITCHECK();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 IT檢查網站是否正常");
-                MSG.AppendFormat(@"  IT檢查網站是否正常 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //給採購人員，ERP未核單的單別、單號           
-            try
-            {
-                PREPARESENDEMAILERPPURCHECK();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //essageBox.Show("有錯誤 給採購人員，ERP未核單的單別、單號           ");
-                MSG.AppendFormat(@"  給採購人員，ERP未核單的單別、單號  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試預排製令
-            ///SENDEMAIL_DAILY_MOCMANULINE
-            try
-            {
-                SENDEMAIL_DAILY_MOCMANULINE();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試預排製令");
-                MSG.AppendFormat(@"  測試預排製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試批號錯誤
-            ///SETFILELOTCHECK
-            try
-            {
-                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-                CancellationTokenSource cts = new CancellationTokenSource();
-                cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-
-                SETFILELOTCHECK(cts.Token);
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試批號錯誤");
-                MSG.AppendFormat(@"  測試批號錯誤  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試未完重工單
-            ///SETFILEMOCTARE
-            try
-            {
-                SETFILEMOCTARE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試未完重工單");
-                MSG.AppendFormat(@"  測試未完重工單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///測試已採購未結案
-            ///SETFILEPURTD
-            try
-            {
-                SETFILEPURTD();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試已採購未結案");
-                MSG.AppendFormat(@"  測試已採購未結案  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試物料安全水位
-            ///SETFILEINVMC
-            try
-            {
-                SETFILEINVMC();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試物料安全水位 ");
-                MSG.AppendFormat(@"  測試物料安全水位  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //測試已請購未採購
-            ///SETFILEPURTB
-            try
-            {
-                SETFILEPURTB();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試已請購未採購");
-                MSG.AppendFormat(@"  測試已請購未採購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試半成品-製令
-            ///SETFILEINVMOCTA
-            try
-            {
-                SETFILEINVMOCTA();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試半成品-製令");
-                MSG.AppendFormat(@"  測試半成品-製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試製令-訂單
-            ///SETFILEMOCTA            
-            try
-            {
-                SETFILEMOCTA();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試製令-訂單");
-                MSG.AppendFormat(@"  測試製令-訂單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試訂單變更
-            /// SETFILECOPTE
-            try
-            {
-                SETFILECOPTE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試訂單變更");
-                MSG.AppendFormat(@"  測試訂單變更  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試請購
-            ///SETFILEPURTA
-            try
-            {
-                SETFILEPURTA();
-                //SETFILEPURTA2();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試請購");
-                MSG.AppendFormat(@"  測試請購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-            //測試訂單
-            ///SETFILE
-            try
-            {
-                SETFILE();
-                CLEAREXCEL();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 測試訂單");
-                MSG.AppendFormat(@"  測試訂單  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日批號檢查表         
-            try
-            {
-                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-                CancellationTokenSource cts = new CancellationTokenSource();
-                cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-
-                SETPATH();
-                SETFILELOTCHECK(cts.Token);
-                SERACHMAILLOTCHECK();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日批號檢查表");
-                MSG.AppendFormat(@"  每日批號檢查表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日重工單未結案表       
-            try
-            {
-                SERACHMAILMOCTARE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日重工單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日重工單未結案表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTARE, pathFileMOCTARE);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日重工單未結案表");
-                MSG.AppendFormat(@"  每日重工單未結案表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日每日採購單未結案表
-            try
-            {
-                //PURTD
-                SERACHMAILPURTD();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日每日採購單未結案表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日採購單未結案表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTD, pathFilePURTD);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日每日採購單未結案表");
-                MSG.AppendFormat(@"  每日每日採購單未結案表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            /////每日物料安全水位表
-            //try
-            //{
-            //    //INVMC
-            //    //SERACHMAILINVMC();
-            //    //SUBJEST.Clear();
-            //    //BODY.Clear();
-            //    //SUBJEST.AppendFormat(@"每日物料安全水位表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日物料安全水位表，請查收" + Environment.NewLine + " ");
-            //    //SENDMAIL(SUBJEST, BODY, dsMAILINVMC, pathFileINVMC);
-            //}
-            //catch
-            //{
-
-            //}
-            //finally
-            //{
-
-            //}
-
-            ///系統通知-每日已請購未採購表
-            try
-            {
-                SERACHMAILPURTB();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日已請購未採購表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日已請購未採購表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTB, pathFilePURTB);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日已請購未採購表");
-                MSG.AppendFormat(@"  每日已請購未採購表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯
-            try
-            {
-                SERACHMAILINVMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨半成品-製令的比對表，是否有半成品呆滯" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日半成品-製令表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILINVMOCTA, pathFileINVMOCTA);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨半成品-製令的比對表");
-                MSG.AppendFormat(@"  每日追踨半成品-製令的比對表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-
-            ///系統通知-每日追踨製令未確認表
-            try
-            {
-                SERACHMAILMOCTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨製令未確認表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令未確認表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCTA, pathFileMOCTA);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨製令未確認表");
-                MSG.AppendFormat(@"  每日追踨製令未確認表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨訂單變更追踨表
-            try
-            {
-                SERACHMAILCOPTE();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單變更追踨表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單變更表，請查收" + Environment.NewLine + "請製造生管修改相對的製令");
-                SENDMAIL(SUBJEST, BODY, dsMAILCOPTE, pathFileCOPTE);
-
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 每日追踨訂單變更追踨表");
-                MSG.AppendFormat(@"  每日追踨訂單變更追踨表  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            ///系統通知-每日追踨製令-請購表，是否有製令已開但未請購
-            try
-            {
-                SERACHMAILPURTA();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨製令-請購表，是否有製令已開但未請購" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令-請購表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILPURTA, pathFilePURTA);
-
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 請購表，是否有製令已開但未請購");
-                MSG.AppendFormat(@"  請購表，是否有製令已開但未請購  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令
-            try
-            {
-                SERACHMAIL();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日追踨訂單-製令追踨表，是否有訂單未開製令" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日訂單-製令追踨表，請查收" + Environment.NewLine + "若訂單沒有相對的製令則需通知製造生管開立");
-                SENDMAIL(SUBJEST, BODY, dsMAIL, pathFile);
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                //MessageBox.Show("有錯誤 製令追踨表，是否有訂單未開製令");
-                MSG.AppendFormat(@" 製令追踨表，是否有訂單未開製令  失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
-
 
 
         }
@@ -1268,122 +979,128 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_targetTime2()
         {
-            StringBuilder MSG = new StringBuilder();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
 
             try
             {
-                //Thread.Sleep(1000);
+                //採購用
+                try
+                {                    
+                    //進貨有效日檢查
+                    //進貨單+客供料單(A11A)
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_PUR_VALIDCHECK(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"進貨有效日檢查  失敗");
+                }
+                try
+                {
+                    //採購7日前未到貨
+                    using (CancellationTokenSource cts2 = new CancellationTokenSource())
+                    {
+                        cts2.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_PURNOTIN(cts2.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"採購7日前未到貨  失敗");
+                }
+
+                //研發用
+                try
+                {
+                    //每週通知，1006.樣品試吃回覆單，還未回覆的明細   
+                    using (CancellationTokenSource cts3 = new CancellationTokenSource())
+                    {
+                        cts3.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_TK_UOF_DEV_NEW_SALES(cts3.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每週通知，1006.樣品試吃回覆單，還未回覆的明細  失敗");
+                }
+                try
+                {
+                    //每週通知，1006.樣品試吃回覆單，還未回覆的明細   
+                    using (CancellationTokenSource cts4 = new CancellationTokenSource())
+                    {
+                        cts4.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TB_DEVE_NEWLISTS(cts4.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"研發每週通知該月樣品  失敗");
+                }
+
+                //行銷用
+                try
+                {
+                    //每週通知，1006.樣品試吃回覆單，還未回覆的明細   
+                    using (CancellationTokenSource cts5 = new CancellationTokenSource())
+                    {
+                        cts5.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TB_SALES_PROMOTIONS(cts5.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"業務活動通知行銷  失敗");
+                }
+
+                //生產用
+                try
+                {
+                    //每週通知，1006.樣品試吃回覆單，還未回覆的明細   
+                    using (CancellationTokenSource cts6 = new CancellationTokenSource())
+                    {
+                        cts6.CancelAfter(timeoutMilliseconds);
+                       
+                        SETPATH();
+                        StringBuilder SUBJEST = new StringBuilder();
+                        StringBuilder BODY = new StringBuilder();
+                        SETFILEMOCCOP(cts6.Token);
+                        CLEAREXCEL();
+                        Thread.Sleep(5000);
+
+                        SERACHMAILMOCCOP();
+                        SUBJEST.Clear();
+                        BODY.Clear();
+                        SUBJEST.AppendFormat(@"系統通知-每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
+                        BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
+                        SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"每日製令準時完工率數量達交率  失敗");
+                }
+
+            }
+            catch (Exception ex)
+            {
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
-            catch
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MSG.AppendFormat(@" ");
-            }
-
-            try
-            {
-                //進貨有效日檢查
-                //進貨單+客供料單(A11A)
-                SENDMAIL_PUR_VALIDCHECK();
-                Thread.Sleep(1000);
-            }
-
-            catch
-            {
-                MSG.AppendFormat(@"進貨有效日檢查  失敗 ||");
-            }
-
-            try
-            {
-                //採購7日前未到貨
-                SENDEMAIL_PURNOTIN();
-                Thread.Sleep(1000);
-            }
-
-            catch
-            {
-                MSG.AppendFormat(@"採購7日前未到貨  失敗 ||");
-            }
-
-            //每週通知，1006.樣品試吃回覆單，還未回覆的明細    
-            try
-            {
-                SENDMAIL_TK_UOF_DEV_NEW_SALES();
-                Thread.Sleep(1000);
-            }
-
-            catch
-            {
-                MSG.AppendFormat(@" 每週通知，1006.樣品試吃回覆單，還未回覆的明細 失敗 ||");
-            }
-            finally
-            {
-            }
-            //研發每週通知該月樣品
-            try
-            {
-                SENDEMAIL_TB_DEVE_NEWLISTS();
-                Thread.Sleep(1000);
-            }
-
-            catch
-            {
-                MSG.AppendFormat(@" 研發每週通知該月樣品 失敗 ||");
-            }
-            finally
-            {
-            }
-
-
-            //業務活動通知行銷-測試
-            try
-            {
-                SENDEMAIL_TB_SALES_PROMOTIONS();
-                Thread.Sleep(1000);
-
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 業務活動通知行銷 失敗 ||");
-            }
-            finally
-            {
-            }
-
-            //每日製令準時完工率數量達交率
-            try
-            {
-                SETPATH();
-
-                StringBuilder SUBJEST = new StringBuilder();
-                StringBuilder BODY = new StringBuilder();
-
-                SETFILEMOCCOP();
-                CLEAREXCEL();
-                Thread.Sleep(5000);
-
-                SERACHMAILMOCCOP();
-                SUBJEST.Clear();
-                BODY.Clear();
-                SUBJEST.AppendFormat(@"系統通知-每日製令準時完工率數量達交率表" + DateTime.Now.ToString("yyyy/MM/dd"));
-                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日製令準時完工率數量達交率表，請查收" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILMOCCOP, pathFileMOCCOP);
-            }
-            catch
-            {
-                MSG.AppendFormat(@" 每日製令準時完工率數量達交率 失敗 ||");
-            }
-            finally
-            {
-
-            }
-
-            //MessageBox.Show("OK");
-
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
+                MessageBox.Show(errorMessages.ToString());
+            }                      
+            
 
         }
         /// <summary>
@@ -1452,71 +1169,80 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_currentTime3()
         {
-            StringBuilder MSG = new StringBuilder();
-
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
             try
             {
-                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
-                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
-                Thread.Sleep(5000);
+                //採購用 
+                try
+                {                   
+                    //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
+                }
+                try
+                {
+                    //進貨單，還未核準+品保驗收
+                    using (CancellationTokenSource cts2 = new CancellationTokenSource())
+                    {
+                        cts2.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_PUR_QC_CHECK(cts2.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"進貨單，還未核準 + 品保驗收  失敗");
+                }
+                try
+                {
+                    //採購今日未傳真
+                    using (CancellationTokenSource cts3 = new CancellationTokenSource())
+                    {
+                        cts3.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TBPURCHECKFAX(cts3.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"採購今日未傳真  失敗");
+                }
+                try
+                {
+                    //採購今日未傳真
+                    using (CancellationTokenSource cts4 = new CancellationTokenSource())
+                    {
+                        cts4.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_PURNOTIN(cts4.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"預計採購未到貨  失敗");
+                }
+
+
             }
-            catch
+            catch (Exception ex)
             {
-                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」  失敗 ||");
-            }
-            finally
-            {
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
-            try
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                //進貨單，還未核準+品保驗收
-                SENDEMAIL_TK_PUR_QC_CHECK();
-                Thread.Sleep(5000);
+                MessageBox.Show(errorMessages.ToString());
             }
-            catch
-            {
-                MSG.AppendFormat(@"進貨單，還未核準+品保驗收  失敗 ||");
-            }
-            finally
-            {
-            }
-
-            try
-            {
-                //採購今日未傳真
-                SENDEMAIL_TBPURCHECKFAX();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
-            }
-            finally
-            {
-            }
-
-
-            try
-            {
-                //預計採購未到貨
-                SENDEMAIL_PURNOTIN();
-
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"預計採購未到貨  失敗 ||");
-            }
-            finally
-            {
-            }
-
-            if (!string.IsNullOrEmpty(MSG.ToString()))
-            {
-                MessageBox.Show(MSG.ToString());
-            }
+            
 
         }
 
@@ -1528,49 +1254,68 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_currentTime4()
         {
-            StringBuilder MSG = new StringBuilder();
-            try
-            {
-                // 商品專案通知
-                SENDMAIL_TB_PROJECTS_PRODUCTS();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"商品專案通知失敗 ||");
-            }
-            try
-            {
-                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
-                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
-                Thread.Sleep(5000);
-            }
-            catch
-            {
-                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」  失敗 ||");
-            }
-            finally
-            {
-            }
-            try
-            {
-                //預計採購未到貨
-                SENDEMAIL_PURNOTIN();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
 
-                Thread.Sleep(5000);
-            }
-            catch
+            try
             {
-                MSG.AppendFormat(@"預計採購未到貨  失敗 ||");
+                //研發用
+                try
+                {
+                    // 商品專案通知
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_TB_PROJECTS_PRODUCTS(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"商品專案通知失敗  失敗");
+                }
+
+                //採購用
+                try
+                {
+                    //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                    using (CancellationTokenSource cts2 = new CancellationTokenSource())
+                    {
+                        cts2.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(cts2.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
+                }
+                try
+                {
+                    //預計採購未到貨
+                    using (CancellationTokenSource cts3 = new CancellationTokenSource())
+                    {
+                        cts3.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_PURNOTIN(cts3.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"預計採購未到貨  失敗");
+                }
+
+
             }
-            finally
+            catch (Exception ex)
             {
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
-            if (!string.IsNullOrEmpty(MSG.ToString()))
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(MSG.ToString());
-            }
+                MessageBox.Show(errorMessages.ToString());
+            }    
 
         }
 
@@ -1582,24 +1327,37 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_currentTime5()
         {
-            StringBuilder MSG = new StringBuilder();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
 
             try
             {
-                //採購今日未傳真
-                SENDEMAIL_TBPURCHECKFAX();
+                try
+                {
+                    //採購今日未傳真
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TBPURCHECKFAX(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"採購今日未傳真  失敗");
+                }
 
-                Thread.Sleep(5000);
+
             }
-            catch
+            catch (Exception ex)
             {
-                MSG.AppendFormat(@"採購今日未傳真  失敗 ||");
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
-            finally
+
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
+                MessageBox.Show(errorMessages.ToString());
             }
-
-
         }
 
         /// <summary>
@@ -1610,25 +1368,38 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_targetTime6()
         {
-            StringBuilder MSG = new StringBuilder();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
 
             try
             {
-                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
-                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+                try
+                {
+                    //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
+                }
 
 
-                Thread.Sleep(5000);
             }
-            catch
+            catch (Exception ex)
             {
-                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」失敗 ||");
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
-            finally
+
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
+                MessageBox.Show(errorMessages.ToString());
             }
-
-
+            
         }
 
         /// <summary>
@@ -1639,23 +1410,38 @@ namespace TKMQ
         /// </summary>
         public void HRAUTORUN_currentTime7()
         {
-            StringBuilder MSG = new StringBuilder();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            errorMessages.Clear();
+
 
             try
             {
-                //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
-                SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+                try
+                {
+                    //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch
+                {
+                    errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
+                }
 
-                Thread.Sleep(5000);
+
             }
-            catch
+            catch (Exception ex)
             {
-                MSG.AppendFormat(@"當日UOF簽核的「採購單」、「採購變更單」失敗 ||");
-            }
-            finally
-            {
+                // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
+            if (!string.IsNullOrEmpty(errorMessages.ToString()))
+            {
+                MessageBox.Show(errorMessages.ToString());
+            }
 
         }
 
@@ -1886,7 +1672,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILE()
+        public void SETFILE(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -1943,7 +1729,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCH();
+            SEARCH(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -1953,7 +1739,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCH()
+        public void SEARCH(CancellationToken cancellationToken)
         {
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddMonths(-1);
@@ -2216,7 +2002,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILECOPTE()
+        public void SETFILECOPTE(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -2273,7 +2059,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHCOPTE();
+            SEARCHCOPTE(cancellationToken);
 
             //if (!File.Exists(pathFileCOPTE + ".xlsx"))
             //{
@@ -2283,7 +2069,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCHCOPTE()
+        public void SEARCHCOPTE(CancellationToken cancellationToken)
         {
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddMonths(-1);
@@ -2498,7 +2284,7 @@ namespace TKMQ
 
 
 
-        public void SETFILEPURTA()
+        public void SETFILEPURTA(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -2554,7 +2340,7 @@ namespace TKMQ
 
             Console.Read();
 
-            SEARCHVPURTDINVMD();
+            SEARCHVPURTDINVMD(cancellationToken);
             //SEARCHPURTA();
 
             //if (!File.Exists(pathFileCOPTE + ".xlsx"))
@@ -2565,7 +2351,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCHVPURTDINVMD()
+        public void SEARCHVPURTDINVMD(CancellationToken cancellationToken)
         {
             DateTime SEARCHDATE2 = DateTime.Now;
             DateTime SEARCHDATE3 = DateTime.Now.AddDays(7);
@@ -3018,7 +2804,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILEMOCTA()
+        public void SETFILEMOCTA(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3075,7 +2861,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHMOCTA();
+            SEARCHMOCTA(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -3084,7 +2870,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHMOCTA()
+        public void SEARCHMOCTA(CancellationToken cancellationToken)
         {
             //DateTime SEARCHDATE = DateTime.Now;
             //SEARCHDATE = SEARCHDATE.AddMonths(-1);
@@ -3277,7 +3063,7 @@ namespace TKMQ
             { }
         }
 
-        public void SETFILEINVMOCTA()
+        public void SETFILEINVMOCTA(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3334,7 +3120,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHINVMOCTA();
+            SEARCHINVMOCTA(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -3343,7 +3129,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHINVMOCTA()
+        public void SEARCHINVMOCTA(CancellationToken cancellationToken)
         {
             //DateTime SEARCHDATE = DateTime.Now;
             //SEARCHDATE = SEARCHDATE.AddMonths(-1);
@@ -3487,7 +3273,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILEPURTB()
+        public void SETFILEPURTB(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3544,7 +3330,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHPURTB();
+            SEARCHPURTB(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -3553,7 +3339,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHPURTB()
+        public void SEARCHPURTB(CancellationToken cancellationToken)
         {
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddDays(-2);
@@ -3839,7 +3625,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILEMOCCOP()
+        public void SETFILEMOCCOP(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3896,7 +3682,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHMOCCOP();
+            SEARCHMOCCOP(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -3905,7 +3691,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHMOCCOP()
+        public void SEARCHMOCCOP(CancellationToken cancellationToken)
         {
             DateTime SEARCHDATES = DateTime.Now;
             SEARCHDATES = SEARCHDATES.AddDays(-8);
@@ -4266,7 +4052,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILEPURTD()
+        public void SETFILEPURTD(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -4323,7 +4109,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHPURTD();
+            SEARCHPURTD(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -4332,7 +4118,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHPURTD()
+        public void SEARCHPURTD(CancellationToken cancellationToken)
         {
             //DateTime SEARCHDATE2 = DateTime.Now;
 
@@ -4654,7 +4440,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILEMOCTARE()
+        public void SETFILEMOCTARE(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -4711,7 +4497,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCHMOCTARE();
+            SEARCHMOCTARE(cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -4720,7 +4506,7 @@ namespace TKMQ
             //}
         }
 
-        public void SEARCHMOCTARE()
+        public void SEARCHMOCTARE(CancellationToken cancellationToken)
         {
             //DateTime SEARCHDATE2 = DateTime.Now;
 
@@ -5310,12 +5096,12 @@ namespace TKMQ
         /// 準備寄給採購人員跟生管
         /// ERP 採購相關單別、單號未核準的明細 及 昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量
         /// </summary>
-        public void PREPARESENDEMAILERPPURCHECK()
+        public void PREPARESENDEMAILERPPURCHECK(CancellationToken cancellationToken)
         {
-            DataSet DSPURCHECK = ERPPURCHECK();
-            DataSet DSPURTDCHECK = ERPPURTDCHECK();
-            DataSet DSTKPUR_PURTATBCHAGE_DCHECK = TKPUR_PURTATBCHAGE_DCHECK();
-            DataSet DS_PURTB_NOTIN_PURTD = FRIN_DS_PURTB_NOTIN_PURTD();
+            DataSet DSPURCHECK = ERPPURCHECK(cancellationToken);
+            DataSet DSPURTDCHECK = ERPPURTDCHECK(cancellationToken);
+            DataSet DSTKPUR_PURTATBCHAGE_DCHECK = TKPUR_PURTATBCHAGE_DCHECK(cancellationToken);
+            DataSet DS_PURTB_NOTIN_PURTD = FRIN_DS_PURTB_NOTIN_PURTD(cancellationToken);
 
 
             try
@@ -5587,7 +5373,7 @@ namespace TKMQ
         /// <summary>
         /// 準備寄給採購人員，ERP未核單的單別、單號
         /// </summary>
-        public DataSet ERPPURCHECK()
+        public DataSet ERPPURCHECK(CancellationToken cancellationToken)
         {
             DataSet DSPURCHECK = new DataSet();
 
@@ -5704,7 +5490,7 @@ namespace TKMQ
         /// 昨天該到貨的採購單，但沒有進貨明細數量
         /// </summary>
         /// <returns></returns>
-        public DataSet ERPPURTDCHECK()
+        public DataSet ERPPURTDCHECK(CancellationToken cancellationToken)
         {
             DataSet DSERPPURTDCHECK = new DataSet();
 
@@ -5780,7 +5566,7 @@ namespace TKMQ
 
         }
 
-        public DataSet TKPUR_PURTATBCHAGE_DCHECK()
+        public DataSet TKPUR_PURTATBCHAGE_DCHECK(CancellationToken cancellationToken)
         {
             DataSet DSTKPUR_PURTATBCHAGE = new DataSet();
 
@@ -5868,7 +5654,7 @@ namespace TKMQ
 
         }
 
-        public DataSet FRIN_DS_PURTB_NOTIN_PURTD()
+        public DataSet FRIN_DS_PURTB_NOTIN_PURTD(CancellationToken cancellationToken)
         {
             DataSet DS_PURTB_NOTIN_PURTD = new DataSet();
 
@@ -6255,7 +6041,7 @@ namespace TKMQ
         /// <summary>
         /// 資訊的每日檢查
         /// </summary>
-        public void PREPAREITCHECK()
+        public void PREPAREITCHECK(CancellationToken cancellationToken)
         {
             DataTable DTWEBLINKS = SEARCHLINKS();
 
@@ -6410,10 +6196,10 @@ namespace TKMQ
 
         }
 
-        public void PREPAREPROOFREAD()
+        public void PREPAREPROOFREAD(CancellationToken cancellationToken)
         {
-            DataSet DSPROOFREAD = UOFPROOFREAD();
-            DataSet DSUOFUOFFORM1002 = UOFUOFFORM1002();
+            DataSet DSPROOFREAD = UOFPROOFREAD(cancellationToken);
+            DataSet DSUOFUOFFORM1002 = UOFUOFFORM1002(cancellationToken);
 
 
             try
@@ -6556,7 +6342,7 @@ namespace TKMQ
         }
 
 
-        public DataSet UOFPROOFREAD()
+        public DataSet UOFPROOFREAD(CancellationToken cancellationToken)
         {
             DataSet DSPROOFREAD = new DataSet();
 
@@ -6647,7 +6433,7 @@ namespace TKMQ
         }
 
 
-        public DataSet UOFUOFFORM1002()
+        public DataSet UOFUOFFORM1002(CancellationToken cancellationToken)
         {
             DataSet DSPROOFREAD = new DataSet();
 
@@ -6820,7 +6606,7 @@ namespace TKMQ
 
         }
 
-        public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR()
+        public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR(CancellationToken cancellationToken)
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_DIRECTOR();
             string MESS = null;
@@ -7170,7 +6956,7 @@ namespace TKMQ
 
         }
 
-        public void PREPARE_TB_EIP_PRIV_MESS()
+        public void PREPARE_TB_EIP_PRIV_MESS(CancellationToken cancellationToken)
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID();
             string MESS = null;
@@ -7520,9 +7306,9 @@ namespace TKMQ
 
         }
 
-        public void PREPARE_UOF_TASK_TASK_APPLICATION()
+        public void PREPARE_UOF_TASK_TASK_APPLICATION(CancellationToken cancellationToken)
         {
-            DataTable DT_FIND_UOF_TASK_APPLICATION = FIND_UOF_TASK_APPLICATION();
+            DataTable DT_FIND_UOF_TASK_APPLICATION = FIND_UOF_TASK_APPLICATION(cancellationToken);
             DataTable DT_FIND_UOF_TASK_APPLICATION_FORM = new DataTable();
 
             if (DT_FIND_UOF_TASK_APPLICATION != null && DT_FIND_UOF_TASK_APPLICATION.Rows.Count >= 1)
@@ -7541,7 +7327,7 @@ namespace TKMQ
         }
 
 
-        public DataTable FIND_UOF_TASK_APPLICATION()
+        public DataTable FIND_UOF_TASK_APPLICATION(CancellationToken cancellationToken)
         {
             StringBuilder MESS = new StringBuilder();
             DataSet DS = new DataSet();
@@ -7909,9 +7695,9 @@ namespace TKMQ
         /// <summary>
         /// 找出昨天核準過的採購單，通知原請購人到貨了
         /// </summary>
-        public void FIND_UOF_GRAFFAIRS_1005()
+        public void FIND_UOF_GRAFFAIRS_1005(CancellationToken cancellationToken)
         {
-            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005();
+            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005(cancellationToken);
 
             if (DTSEARCHUOF_GRAFFAIRS_1005 != null && DTSEARCHUOF_GRAFFAIRS_1005.Rows.Count >= 1)
             {
@@ -7990,7 +7776,7 @@ namespace TKMQ
 
         }
         //找出昨天，已核單完成的採購單-1005.雜項採購單
-        public DataTable SEARCHUOF_GRAFFAIRS_1005()
+        public DataTable SEARCHUOF_GRAFFAIRS_1005(CancellationToken cancellationToken)
         {
             StringBuilder MESS = new StringBuilder();
             DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
@@ -8234,7 +8020,7 @@ namespace TKMQ
             }
         }
 
-        public void PREPARE_UOF_TASK_TASK_GRAFFIR()
+        public void PREPARE_UOF_TASK_TASK_GRAFFIR(CancellationToken cancellationToken)
         {
             DataTable DT_OF_TASK_TASK_GRAFFIR = new DataTable();
             DataTable GRAFFIR_TO_EMAIL = new DataTable();
@@ -8831,10 +8617,10 @@ namespace TKMQ
         }
 
         //交辨未完成meail
-        public void CHECK_TB_EIP_SCH_DEVOLVE()
+        public void CHECK_TB_EIP_SCH_DEVOLVE(CancellationToken cancellationToken)
         {
             //找出所有被交辨人  
-            DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES();
+            DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES(cancellationToken);
 
             if (DT != null && DT.Rows.Count >= 1)
             {
@@ -8843,7 +8629,7 @@ namespace TKMQ
         }
 
         //找出交辨的所有 被交辨人
-        public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES()
+        public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES(CancellationToken cancellationToken)
         {
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES = new DataSet();
 
@@ -9430,10 +9216,10 @@ namespace TKMQ
         }
 
         //交辨未完成meail
-        public void CHECK_TB_EIP_SCH_DEVOLVE_MANAGER()
+        public void CHECK_TB_EIP_SCH_DEVOLVE_MANAGER(CancellationToken cancellationToken)
         {
             //找出所有被交辨人的主管
-            DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER();
+            DataTable DT = FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER(cancellationToken);
 
             if (DT != null && DT.Rows.Count >= 1)
             {
@@ -9442,7 +9228,7 @@ namespace TKMQ
         }
 
         //找出交辨的所有 被交辨人
-        public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER()
+        public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER(CancellationToken cancellationToken)
         {
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES = new DataSet();
 
@@ -10033,7 +9819,7 @@ namespace TKMQ
         /// <summary>
         /// 本年新品的銷售報表
         /// </summary>
-        public void PREPARESENDEMAIL_NEWSLAES(string path_File)
+        public void PREPARESENDEMAIL_NEWSLAES(string path_File, CancellationToken cancellationToken)
         {
             SETPATH();
 
@@ -10053,7 +9839,7 @@ namespace TKMQ
 
             // SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
 
-            DataSet DS_NEWSLAES = ERP_NEWSLAES();
+            DataSet DS_NEWSLAES = ERP_NEWSLAES(cancellationToken);
 
             try
             {
@@ -10243,7 +10029,7 @@ namespace TKMQ
         /// 
         /// </summary>
         /// <returns></returns>
-        public DataSet ERP_NEWSLAES()
+        public DataSet ERP_NEWSLAES(CancellationToken cancellationToken)
         {
             DataSet DS_NEWSLAES = new DataSet();
 
@@ -10382,7 +10168,7 @@ namespace TKMQ
             }
 
         }
-        public void SETFILE_NEWSLAES(string pathFile)
+        public void SETFILE_NEWSLAES(string pathFile, CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -10439,7 +10225,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCH_NEWSLAES(pathFile);
+            SEARCH_NEWSLAES(pathFile, cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -10449,7 +10235,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCH_NEWSLAES(string pathFile)
+        public void SEARCH_NEWSLAES(string pathFile, CancellationToken cancellationTokens)
         {
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -10589,7 +10375,7 @@ namespace TKMQ
             }
         }
 
-        public void SETFILE_POSINV(string pathFile)
+        public void SETFILE_POSINV(string pathFile, CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -10646,7 +10432,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCH_POSINV(pathFile);
+            SEARCH_POSINV(pathFile, cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -10656,7 +10442,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCH_POSINV(string pathFile)
+        public void SEARCH_POSINV(string pathFile, CancellationToken cancellationToken)
         {
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -11059,7 +10845,7 @@ namespace TKMQ
 
         }
 
-        public void SETFILE_COPTCD(string pathFile)
+        public void SETFILE_COPTCD(string pathFile, CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -11116,7 +10902,7 @@ namespace TKMQ
             Console.Read();
 
 
-            SEARCH_COPTCD(pathFile);
+            SEARCH_COPTCD(pathFile, cancellationToken);
 
             //if (!File.Exists(pathFile + ".xlsx"))
             //{
@@ -11126,7 +10912,7 @@ namespace TKMQ
 
         }
 
-        public void SEARCH_COPTCD(string pathFile)
+        public void SEARCH_COPTCD(string pathFile, CancellationToken cancellationToken)
         {
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -13349,7 +13135,7 @@ namespace TKMQ
 
         }
 
-        public void SENDEMAIL_DAILY_QC_CHECK()
+        public void SENDEMAIL_DAILY_QC_CHECK(CancellationToken cancellationToken)
         {
             DataSet ds = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -13370,7 +13156,7 @@ namespace TKMQ
             }
 
 
-            SAVEREPORT_QC_CHECK(pathFile_QC_CHECK);
+            SAVEREPORT_QC_CHECK(pathFile_QC_CHECK, cancellationToken);
 
             ds = SERACHMAIL_QC_CHECK();
 
@@ -13443,7 +13229,7 @@ namespace TKMQ
         }
 
 
-        public void SAVEREPORT_QC_CHECK(string pathFile)
+        public void SAVEREPORT_QC_CHECK(string pathFile, CancellationToken cancellationToken)
         {
             string FILENAME = pathFile;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
@@ -13919,7 +13705,7 @@ namespace TKMQ
             finally { }
         }
 
-        public void SENDEMAIL_DAILY_TKWH_CALENDAR()
+        public void SENDEMAIL_DAILY_TKWH_CALENDAR(CancellationToken cancellationToken)
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
             DataTable DT_CALENDAR1 = new DataTable();
@@ -14232,7 +14018,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_TB_SALES_PROMOTIONS()
+        public void SENDEMAIL_TB_SALES_PROMOTIONS(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_TB_SALES_PROMOTIONS = new DataTable();
@@ -14243,7 +14029,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TB_SALES_PROMOTIONS();
-                DT_TB_SALES_PROMOTIONS = SERACH_TB_SALES_PROMOTIONS();
+                DT_TB_SALES_PROMOTIONS = SERACH_TB_SALES_PROMOTIONS(cancellationToken);
 
                 if (DT_TB_SALES_PROMOTIONS != null && DT_TB_SALES_PROMOTIONS.Rows.Count >= 1)
                 {
@@ -14368,7 +14154,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TB_SALES_PROMOTIONS()
+        public DataTable SERACH_TB_SALES_PROMOTIONS(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -14512,7 +14298,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_PURNOTIN()
+        public void SENDEMAIL_PURNOTIN(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_PURNOTIN = new DataTable();
@@ -14841,7 +14627,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_TBPURCHECKFAX()
+        public void SENDEMAIL_TBPURCHECKFAX(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -14852,7 +14638,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TBPURCHECKFAX();
-                DT_DATAS = SERACH_TBPURCHECKFAX();
+                DT_DATAS = SERACH_TBPURCHECKFAX(cancellationToken);
 
 
                 SUBJEST.Clear();
@@ -14987,7 +14773,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TBPURCHECKFAX()
+        public DataTable SERACH_TBPURCHECKFAX(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -15137,7 +14923,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_TB_DEVE_NEWLISTS()
+        public void SENDEMAIL_TB_DEVE_NEWLISTS(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -15148,7 +14934,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TB_DEVE_NEWLISTS();
-                DT_DATAS = SERACH_TB_DEVE_NEWLISTS();
+                DT_DATAS = SERACH_TB_DEVE_NEWLISTS(cancellationToken);
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -15280,7 +15066,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TB_DEVE_NEWLISTS()
+        public DataTable SERACH_TB_DEVE_NEWLISTS(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -15443,7 +15229,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_DAILY_MOCMANULINE()
+        public void SENDEMAIL_DAILY_MOCMANULINE(CancellationToken cancellationToken)
         {
             DataSet dsSALESMONEYS = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -15626,7 +15412,7 @@ namespace TKMQ
 
         }
 
-        public void SENDEMAIL_DAILY_QC_TEMP_CHECK()
+        public void SENDEMAIL_DAILY_QC_TEMP_CHECK(CancellationToken cancellationToken)
         {
             DataSet ds = new DataSet();
             StringBuilder SUBJEST = new StringBuilder();
@@ -15647,7 +15433,7 @@ namespace TKMQ
             }
 
 
-            SAVEREPORT_QC_TEMP_CHECK(pathFile_QC_TEMP_CHECK);
+            SAVEREPORT_QC_TEMP_CHECK(pathFile_QC_TEMP_CHECK, cancellationToken);
 
             ds = SERACHMAIL_QC_CHECK();
 
@@ -15720,7 +15506,7 @@ namespace TKMQ
                 //ex.ToString();
             }
         }
-        public void SAVEREPORT_QC_TEMP_CHECK(string pathFile)
+        public void SAVEREPORT_QC_TEMP_CHECK(string pathFile, CancellationToken cancellationToken)
         {
             string FILENAME = pathFile;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
@@ -15797,9 +15583,9 @@ namespace TKMQ
         }
 
         //針對昨天核單的 總務採購單，給申請人發出公告
-        public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN()
+        public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN(CancellationToken cancellationToken)
         {
-            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW();
+            DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW(cancellationToken);
             string xmlString = "";
             string xmlString_UserSet = "";
 
@@ -16030,7 +15816,7 @@ namespace TKMQ
 
         }
 
-        public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW()
+        public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW(CancellationToken cancellationToken)
         {
             StringBuilder MESS = new StringBuilder();
             DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
@@ -16404,7 +16190,7 @@ namespace TKMQ
 
             }
         }
-        public void ADD_TO_UOF_Z_UOF_FORMS_COMMENTS()
+        public void ADD_TO_UOF_Z_UOF_FORMS_COMMENTS(CancellationToken cancellationToken)
         {
             try
             {
@@ -16491,7 +16277,7 @@ namespace TKMQ
                                     ");
 
                 cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
+                cmd.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 cmd.CommandText = sbSql.ToString();
                 cmd.Transaction = tran;
                 result = cmd.ExecuteNonQuery();
@@ -17027,7 +16813,7 @@ namespace TKMQ
                 sqlConn.Close();
             }
         }
-        public void SENDEMAIL_TK_PUR_QC_CHECK()
+        public void SENDEMAIL_TK_PUR_QC_CHECK(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -17038,7 +16824,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_PUR_QC_CHECK();
-                DT_DATAS = SERACH_TK_PUR_QC_CHECK();
+                DT_DATAS = SERACH_TK_PUR_QC_CHECK(cancellationToken);
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -17166,7 +16952,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TK_PUR_QC_CHECK()
+        public DataTable SERACH_TK_PUR_QC_CHECK(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -17378,7 +17164,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDEMAIL_TK_IT_CHECK_FORMS()
+        public void SENDEMAIL_TK_IT_CHECK_FORMS(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -17389,7 +17175,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_IT_CHECK_FORMS();
-                DT_DATAS = SERACH_TK_IT_CHECK_FORMS();
+                DT_DATAS = SERACH_TK_IT_CHECK_FORMS(cancellationToken);
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -17516,7 +17302,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TK_IT_CHECK_FORMS()
+        public DataTable SERACH_TK_IT_CHECK_FORMS(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -17678,7 +17464,7 @@ namespace TKMQ
         /// <summary>
         /// 程式新增-採購-TKMQ，每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
         /// </summary>
-        public void SENDEMAIL_TK_UOF_ERP_PURTC_PURTE()
+        public void SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -17689,7 +17475,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_UOF_ERP_PURTC_PURTE();
-                DT_DATAS = SERACH_TK_UOF_ERP_PURTC_PURTE();
+                DT_DATAS = SERACH_TK_UOF_ERP_PURTC_PURTE(cancellationToken);
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -17815,7 +17601,7 @@ namespace TKMQ
 
             }
         }
-        public DataTable SERACH_TK_UOF_ERP_PURTC_PURTE()
+        public DataTable SERACH_TK_UOF_ERP_PURTC_PURTE(CancellationToken cancellationToken)
         {
 
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
@@ -18074,7 +17860,7 @@ namespace TKMQ
         }
 
         ////每週通知，1006.樣品試吃回覆單，還未回覆的明細
-        public void SENDMAIL_TK_UOF_DEV_NEW_SALES()
+        public void SENDMAIL_TK_UOF_DEV_NEW_SALES(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -18085,7 +17871,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_UOF_DEV_NEW_SLAES();
-                DT_DATAS = SERACH_TK_UOF_ERP_DEV_NEW_SLAES();
+                DT_DATAS = SERACH_TK_UOF_ERP_DEV_NEW_SLAES(cancellationToken);
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -18213,7 +17999,7 @@ namespace TKMQ
 
             }
         }
-        public DataTable SERACH_TK_UOF_ERP_DEV_NEW_SLAES()
+        public DataTable SERACH_TK_UOF_ERP_DEV_NEW_SLAES(CancellationToken cancellationToken)
         {
 
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
@@ -18385,7 +18171,7 @@ namespace TKMQ
         }
         //UOF請購相關未核準明細
         //PUR10.請購單申請+PUR20.請購單變更單
-        public void SENDMAIL_TK_UOF_PUR_NOT_APPROVED()
+        public void SENDMAIL_TK_UOF_PUR_NOT_APPROVED(CancellationToken cancellationToken)
         {
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
@@ -18393,7 +18179,7 @@ namespace TKMQ
             DataTable DT_TK_UOF_PUR_NOT_APPROVED_DETAILS = new DataTable();
 
             //先找出「還沒有核準」的「PUR10.請購單申請」、「PUR20.請購單變更單」主檔
-            DT_TK_UOF_PUR_NOT_APPROVED_MAIN = FIND_TK_UOF_PUR_NOT_APPROVED_MAIN();
+            DT_TK_UOF_PUR_NOT_APPROVED_MAIN = FIND_TK_UOF_PUR_NOT_APPROVED_MAIN(cancellationToken);
 
             //如果有主檔，再用[DOC_NBR]找明細，寄給該申請人
             if (DT_TK_UOF_PUR_NOT_APPROVED_MAIN != null && DT_TK_UOF_PUR_NOT_APPROVED_MAIN.Rows.Count >= 1)
@@ -18550,7 +18336,7 @@ namespace TKMQ
 
         }
 
-        public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_MAIN()
+        public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_MAIN(CancellationToken cancellationToken)
         {
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -18818,7 +18604,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_TK_PUR_MOC_OUT_NOTIN()
+        public void SENDMAIL_TK_PUR_MOC_OUT_NOTIN(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -18829,7 +18615,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PUR_MOC_OUT_NOT_IN();
-                DT_DATAS = SERACH_PUR_MOC_OUT_NOT_IN();
+                DT_DATAS = SERACH_PUR_MOC_OUT_NOT_IN(cancellationToken);
 
 
                 SUBJEST.Clear();
@@ -18964,7 +18750,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_PUR_MOC_OUT_NOT_IN()
+        public DataTable SERACH_PUR_MOC_OUT_NOT_IN(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -19433,7 +19219,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_DEC_NEW_PRODUCT_PRICES()
+        public void SENDMAIL_DEC_NEW_PRODUCT_PRICES(CancellationToken cancellationToken)
         {
             string IS_SPECIAL = "N";
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -19445,7 +19231,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_DEC_NEW_PRODUCT_PRICES();
-                DT_DATAS = SERACH_DEC_NEW_PRODUCT_PRICES_UOF();
+                DT_DATAS = SERACH_DEC_NEW_PRODUCT_PRICES_UOF(cancellationToken);
 
                 //找出特定人員的mail
                 DataTable DT_EMAIL_TO_EMAIL_SPECIAL = SERACH_MAIL_DEC_NEW_PRODUCT_PRICES_SPECIAL();
@@ -19599,7 +19385,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_DEC_NEW_PRODUCT_PRICES_UOF()
+        public DataTable SERACH_DEC_NEW_PRODUCT_PRICES_UOF(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -20099,7 +19885,7 @@ namespace TKMQ
         }
 
 
-        public void SENDMAIL_STOCK_TBPURINCHECK()
+        public void SENDMAIL_STOCK_TBPURINCHECK(CancellationToken cancellationToken)
         {
 
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -20110,7 +19896,7 @@ namespace TKMQ
 
             try
             {
-                DT_DATAS = SERACH_STOCK_TBPURINCHECK();
+                DT_DATAS = SERACH_STOCK_TBPURINCHECK(cancellationToken);
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_STOCK_TBPURINCHECK();
 
                 SUBJEST.Clear();
@@ -20243,7 +20029,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_STOCK_TBPURINCHECK()
+        public DataTable SERACH_STOCK_TBPURINCHECK(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -20398,7 +20184,7 @@ namespace TKMQ
 
             }
         }
-        public void SENDMAIL_STOCK_TBPURINCHECK_CONFIRM()
+        public void SENDMAIL_STOCK_TBPURINCHECK_CONFIRM(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -20408,7 +20194,7 @@ namespace TKMQ
 
             try
             {
-                DT_DATAS = SERACH_STOCK_TBPURINCHECK_CONFIRM();
+                DT_DATAS = SERACH_STOCK_TBPURINCHECK_CONFIRM(cancellationToken);
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_STOCK_TBPURINCHECK_CONFIRM();
 
                 SUBJEST.Clear();
@@ -20536,7 +20322,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_STOCK_TBPURINCHECK_CONFIRM()
+        public DataTable SERACH_STOCK_TBPURINCHECK_CONFIRM(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -21746,7 +21532,7 @@ namespace TKMQ
             return SB;
         }
 
-        public void SENDMAIL_PUR_VALIDCHECK()
+        public void SENDMAIL_PUR_VALIDCHECK(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -21756,7 +21542,7 @@ namespace TKMQ
 
             try
             {
-                DT_DATAS = SERACH_PUR_VALIDCHECK();
+                DT_DATAS = SERACH_PUR_VALIDCHECK(cancellationToken);
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PUR_VALIDCHECK();
 
                 SUBJEST.Clear();
@@ -21902,7 +21688,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_PUR_VALIDCHECK()
+        public DataTable SERACH_PUR_VALIDCHECK(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -22090,7 +21876,7 @@ namespace TKMQ
             }
         }
 
-        public void SENDMAIL_TB_PROJECTS_PRODUCTS()
+        public void SENDMAIL_TB_PROJECTS_PRODUCTS(CancellationToken cancellationToken)
         {
 
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
@@ -22101,7 +21887,7 @@ namespace TKMQ
 
             try
             {
-                DT_DATAS = SERACH_TB_PROJECTS_PRODUCTS();
+                DT_DATAS = SERACH_TB_PROJECTS_PRODUCTS(cancellationToken);
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TB_PROJECTS_PRODUCTS();
 
                 SUBJEST.Clear();
@@ -22245,7 +22031,7 @@ namespace TKMQ
             }
         }
 
-        public DataTable SERACH_TB_PROJECTS_PRODUCTS()
+        public DataTable SERACH_TB_PROJECTS_PRODUCTS(CancellationToken cancellationToken)
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -22400,24 +22186,36 @@ namespace TKMQ
         #region BUTTON
         private void button1_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);            
+
             SETPATH();
-            SETFILE();
+            SETFILE(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button2_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
-            SETFILECOPTE();
+            SETFILECOPTE(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
 
         private void button4_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
             //CAN"T USE SQL-CTE QUERY
-            SETFILEPURTA();
+            SETFILEPURTA(cts1.Token);
             //SETFILEPURTA2();
 
             CLEAREXCEL();
@@ -22432,23 +22230,35 @@ namespace TKMQ
 
         private void button5_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
-            SETFILEMOCTA();
+            SETFILEMOCTA(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
 
         private void button6_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
-            SETFILEINVMOCTA();
+            SETFILEINVMOCTA(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
         private void button7_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
-            SETFILEPURTB();
+            SETFILEPURTB(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
@@ -22461,8 +22271,12 @@ namespace TKMQ
         }
         private void button9_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);          
+
             SETPATH();
-            SETFILEMOCCOP();
+            SETFILEMOCCOP(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
@@ -22475,16 +22289,24 @@ namespace TKMQ
         }
         private void button11_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);           
+
             SETPATH();
-            SETFILEPURTD();
+            SETFILEPURTD(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
 
         private void button12_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             SETPATH();
-            SETFILEMOCTARE();
+            SETFILEMOCTARE(cts1.Token);
             CLEAREXCEL();
             MessageBox.Show("OK");
         }
@@ -22547,7 +22369,11 @@ namespace TKMQ
 
         private void button15_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_DAILY_MOCMANULINE();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_DAILY_MOCMANULINE(cts1.Token);
             MessageBox.Show("OK");
 
         }
@@ -22557,41 +22383,66 @@ namespace TKMQ
         }
         private void button16_Click(object sender, EventArgs e)
         {
-            PREPARESENDEMAILERPPURCHECK();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);            
+
+            PREPARESENDEMAILERPPURCHECK(cts1.Token);
         }
         private void button17_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
             //WEBTEST();
 
-            PREPAREITCHECK();
+            PREPAREITCHECK(cts1.Token);
         }
         private void button18_Click(object sender, EventArgs e)
         {
-            PREPAREPROOFREAD();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            PREPAREPROOFREAD(cts1.Token);
         }
         private void button19_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //通知各別的被交辨人
-            PREPARE_TB_EIP_PRIV_MESS();
+            PREPARE_TB_EIP_PRIV_MESS(cts1.Token);
 
             //通知交辨人
-            PREPARE_TB_EIP_PRIV_MESS_DIRECTOR();
+            PREPARE_TB_EIP_PRIV_MESS_DIRECTOR(cts1.Token);
         }
         private void button20_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
             //通知各表單申請人
-            PREPARE_UOF_TASK_TASK_APPLICATION();
+            PREPARE_UOF_TASK_TASK_APPLICATION(cts1.Token);
         }
 
         private void button21_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
             //通知原請購人，總務已完成採購
-            FIND_UOF_GRAFFAIRS_1005();
+            FIND_UOF_GRAFFAIRS_1005(cts1.Token);
         }
         private void button22_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
             //通知副總，總務未簽核的表單
-            PREPARE_UOF_TASK_TASK_GRAFFIR();
+            PREPARE_UOF_TASK_TASK_GRAFFIR(cts1.Token);
 
 
         }
@@ -22612,27 +22463,44 @@ namespace TKMQ
         }
         private void button25_Click(object sender, EventArgs e)
         {
-            CHECK_TB_EIP_SCH_DEVOLVE();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);            
+
+            CHECK_TB_EIP_SCH_DEVOLVE(cts1.Token);
         }
         private void button26_Click(object sender, EventArgs e)
         {
-            CHECK_TB_EIP_SCH_DEVOLVE_MANAGER();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
+            CHECK_TB_EIP_SCH_DEVOLVE_MANAGER(cts1.Token);
         }
         private void button27_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
+
             SETPATH();
-            SETFILE_NEWSLAES(path_File_NEWSLAES);
+            SETFILE_NEWSLAES(path_File_NEWSLAES, cts1.Token);
             CLEAREXCEL();
 
-            PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES);
+            PREPARESENDEMAIL_NEWSLAES(path_File_NEWSLAES, cts1.Token);
 
             MessageBox.Show("OK");
         }
 
         private void button28_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+           
             SETPATH();
-            SETFILE_POSINV(path_File_POSINV);
+            SETFILE_POSINV(path_File_POSINV, cts1.Token);
             CLEAREXCEL();
 
             PREPARESENDEMAIL_POSINV(path_File_POSINV);
@@ -22640,10 +22508,14 @@ namespace TKMQ
         }
         private void button29_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //path_File_COPTCD
             //每日訂單明細表
             SETPATH();
-            SETFILE_COPTCD(path_File_COPTCD);
+            SETFILE_COPTCD(path_File_COPTCD, cts1.Token);
             CLEAREXCEL();
 
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
@@ -22666,12 +22538,20 @@ namespace TKMQ
 
         private void button32_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //SETFASTREPORT_QC_CHECK();
-            SENDEMAIL_DAILY_QC_CHECK();
+            SENDEMAIL_DAILY_QC_CHECK(cts1.Token);
         }
         private void button33_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_DAILY_QC_CHECK();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+           
+            SENDEMAIL_DAILY_QC_CHECK(cts1.Token);
 
             MessageBox.Show("完成");
         }
@@ -22685,41 +22565,68 @@ namespace TKMQ
 
         private void button35_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_DAILY_TKWH_CALENDAR();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+           
+            SENDEMAIL_DAILY_TKWH_CALENDAR(cts1.Token);
 
             MessageBox.Show("完成");
         }
         private void button36_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_TB_SALES_PROMOTIONS();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_TB_SALES_PROMOTIONS(cts1.Token);
             MessageBox.Show("完成");
         }
         private void button37_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_PURNOTIN();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
+            SENDEMAIL_PURNOTIN(cts1.Token);
 
             MessageBox.Show("完成");
         }
         private void button38_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_TBPURCHECKFAX();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_TBPURCHECKFAX(cts1.Token);
             MessageBox.Show("完成");
         }
         private void button39_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_TB_DEVE_NEWLISTS();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_TB_DEVE_NEWLISTS(cts1.Token);
             MessageBox.Show("完成");
         }
         private void button40_Click(object sender, EventArgs e)
         {
-            SENDEMAIL_DAILY_QC_TEMP_CHECK();
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
+            SENDEMAIL_DAILY_QC_TEMP_CHECK(cts1.Token);
 
             MessageBox.Show("完成");
         }
         private void button41_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
             //針對昨天核單的 總務採購單，給申請人發出公告
-            NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN();
+            NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN(cts1.Token);
 
             MessageBox.Show("完成");
         }
@@ -22736,9 +22643,13 @@ namespace TKMQ
 
         private void button43_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //總經理簽核意見，轉MAIL給申請者及部門主管
             //新增總經理簽核意見
-            ADD_TO_UOF_Z_UOF_FORMS_COMMENTS();
+            ADD_TO_UOF_Z_UOF_FORMS_COMMENTS(cts1.Token);
             //更新上層主管
             UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS();
             //寄送通知
@@ -22751,29 +22662,45 @@ namespace TKMQ
 
         private void button44_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //進貨單，還未核準+品保驗收
-            SENDEMAIL_TK_PUR_QC_CHECK();
+            SENDEMAIL_TK_PUR_QC_CHECK(cts1.Token);
 
             MessageBox.Show("OK");
         }
         private void button45_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+           
             //查離職人員的未結案表單
-            SENDEMAIL_TK_IT_CHECK_FORMS();
+            SENDEMAIL_TK_IT_CHECK_FORMS(cts1.Token);
 
             MessageBox.Show("OK");
         }
         private void button46_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
-            SENDEMAIL_TK_UOF_ERP_PURTC_PURTE();
+            SENDEMAIL_TK_UOF_ERP_PURTC_PURTE(cts1.Token);
 
             MessageBox.Show("OK");
         }
         private void button47_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+         
             //每週通知，1006.樣品試吃回覆單，還未回覆的明細
-            SENDMAIL_TK_UOF_DEV_NEW_SALES();
+            SENDMAIL_TK_UOF_DEV_NEW_SALES(cts1.Token);
 
             MessageBox.Show("OK");
 
@@ -22782,18 +22709,26 @@ namespace TKMQ
 
         private void button48_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //UOF請購相關未核準明細
             //PUR10.請購單申請+PUR20.請購單變更單
-            SENDMAIL_TK_UOF_PUR_NOT_APPROVED();
+            SENDMAIL_TK_UOF_PUR_NOT_APPROVED(cts1.Token);
 
             MessageBox.Show("OK");
         }
 
         private void button49_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //託外未到貨通知，託外製令單連動託外採購單，當託外製令還未有入庫就通知
-            //
-            SENDMAIL_TK_PUR_MOC_OUT_NOTIN();
+            
+            SENDMAIL_TK_PUR_MOC_OUT_NOTIN(cts1.Token);
             MessageBox.Show("OK");
         }
         private void button50_Click(object sender, EventArgs e)
@@ -22806,8 +22741,12 @@ namespace TKMQ
 
         private void button30_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //研發每日通知新品售價
-            SENDMAIL_DEC_NEW_PRODUCT_PRICES();
+            SENDMAIL_DEC_NEW_PRODUCT_PRICES(cts1.Token);
 
             MessageBox.Show("OK");
         }
@@ -22822,11 +22761,15 @@ namespace TKMQ
 
         private void button52_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            
             //到貨檢查進貨
             //到貨是否有建進貨單
-            SENDMAIL_STOCK_TBPURINCHECK_CONFIRM();
+            SENDMAIL_STOCK_TBPURINCHECK_CONFIRM(cts1.Token);
             //到貨數量是否等同進貨數量
-            SENDMAIL_STOCK_TBPURINCHECK();
+            SENDMAIL_STOCK_TBPURINCHECK(cts1.Token);
             MessageBox.Show("OK");
 
         }
@@ -22898,15 +22841,23 @@ namespace TKMQ
 
         private void button55_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+         
             //進貨有效日檢查
             //進貨單+客供料單(A11A)
-            SENDMAIL_PUR_VALIDCHECK();
+            SENDMAIL_PUR_VALIDCHECK(cts1.Token);
             MessageBox.Show("OK");
         }
         private void button56_Click(object sender, EventArgs e)
         {
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+           
             // 商品專案通知
-            SENDMAIL_TB_PROJECTS_PRODUCTS();
+            SENDMAIL_TB_PROJECTS_PRODUCTS(cts1.Token);
             MessageBox.Show("OK");
         }
 
