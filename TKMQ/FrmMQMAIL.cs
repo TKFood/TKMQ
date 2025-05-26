@@ -15586,6 +15586,7 @@ namespace TKMQ
         //針對昨天核單的 總務採購單，給申請人發出公告
         public void NEW_GRAFFAIRS_1005_TB_EIP_BULLETIN(CancellationToken cancellationToken)
         {
+            DataTable DT = FIND_TB_EB_USER_USER_GUID();
             DataTable DTSEARCHUOF_GRAFFAIRS_1005 = SEARCHUOF_GRAFFAIRS_1005_NEW(cancellationToken);
             string xmlString = "";
             string xmlString_UserSet = "";
@@ -15643,9 +15644,14 @@ namespace TKMQ
 
             string BULLETIN_GUID = Guid.NewGuid().ToString();
             string ANNOUNCER = "192f1ddd-f6ef-4725-81e0-dc15c15a10cf";
-            string CLASS_GUID = "2e6d7f89-abcb-426b-afd6-8191fff9a668"; //01.行政類公告
-            string TOPIC = "測試公告";
-            string CONTEXT = "測試公告";
+            if (DT != null && DT.Rows.Count >= 1)
+            {
+                ANNOUNCER = DT.Rows[0]["USER_GUID"].ToString();
+            }
+
+            string CLASS_GUID = "4a1d49b5-3af4-4909-b1aa-175b6398dba1"; //A0.總務類公告
+            string TOPIC = "總務公告";
+            string CONTEXT = "總務公告";
             string EXPIRE_DATE = DateTime.Now.AddDays(7).ToString("yyyyMMdd");
             string RM_ID = Guid.NewGuid().ToString();
             string FILE_GROUP_ID = "";
@@ -15817,6 +15823,73 @@ namespace TKMQ
 
         }
 
+        public DataTable FIND_TB_EB_USER_USER_GUID()
+        {           
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"   
+                                    SELECT 
+                                    [TB_ANNOUNCE_NAMES].[NAMES]
+                                    ,[TB_EB_USER].[USER_GUID]
+                                    FROM [TKMQ].[dbo].[TB_ANNOUNCE_NAMES],[192.168.1.223]. [UOF].[dbo].[TB_EB_USER]
+                                    WHERE [TB_ANNOUNCE_NAMES].[NAMES]=[TB_EB_USER].[NAME] COLLATE Chinese_Taiwan_Stroke_CI_AS
+                                      ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+    
         public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW(CancellationToken cancellationToken)
         {
             StringBuilder MESS = new StringBuilder();
