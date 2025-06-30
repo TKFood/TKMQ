@@ -23069,8 +23069,10 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-            //寄送MAIL，硯微墨統計表 
+            //寄送MAIL，硯微墨+門市統計表 
             SENDMAIL_STORES_REPORTS(cts.Token);
+          
+
             MessageBox.Show("OK"); 
         }
 
