@@ -23071,7 +23071,7 @@ namespace TKMQ
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
             //寄送MAIL，硯微墨統計表 
             SENDMAIL_STORES_REPORTS(cts.Token);
-            MessageBox.Show("OK");
+            MessageBox.Show("OK"); 
         }
 
         private void button55_Click(object sender, EventArgs e)

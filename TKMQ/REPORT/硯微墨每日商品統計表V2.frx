@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report ScriptLanguage="CSharp" ReportInfo.Created="06/30/2025 14:55:30" ReportInfo.Modified="06/30/2025 16:32:05" ReportInfo.CreatorVersion="2016.4.4.0">
+<Report ScriptLanguage="CSharp" ReportInfo.Created="06/30/2025 14:55:30" ReportInfo.Modified="06/30/2025 17:03:26" ReportInfo.CreatorVersion="2016.4.4.0">
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUFVvQIi0KmxJBijrsDDFaTF">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUEDAk9nnZvpympJPves+Dl8">
       <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="SELECT&#13;&#10;[ID]&#13;&#10;,[YMD] AS '日期'&#13;&#10;,[MB001] AS '品號'&#13;&#10;,[MB002] AS '品名'&#13;&#10;,[MB001]&#13;&#10;,[MB002]&#13;&#10;,[期初庫存]&#13;&#10;,[期末庫存]&#13;&#10;,[本期銷售]&#13;&#10;,[本期入庫]&#13;&#10;,[本期領用]&#13;&#10;,[本期轉撥入]&#13;&#10;,[本期轉撥出]&#13;&#10;,[其他]&#13;&#10;FROM [TKMK].[dbo].[TBDAILYDAYS]&#13;&#10;WHERE [YMD]='20250629'&#13;&#10;ORDER BY [YMD],[MB001]">
         <Column Name="ID" DataType="System.Decimal"/>
         <Column Name="品號" DataType="System.String"/>
@@ -20,7 +20,7 @@
       </TableDataSource>
     </MsSqlDataConnection>
   </Dictionary>
-  <ReportPage Name="Page1" Landscape="true" PaperWidth="400" PaperHeight="400">
+  <ReportPage Name="Page1" Landscape="true" PaperWidth="400" PaperHeight="210">
     <ReportTitleBand Name="ReportTitle1" Width="1436.4" Height="18.9">
       <TextObject Name="Text1" Width="207.9" Height="18.9" Text="硯微墨每日統計表"/>
     </ReportTitleBand>
