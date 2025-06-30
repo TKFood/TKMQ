@@ -20568,11 +20568,11 @@ namespace TKMQ
             //新增每日記錄
             //ADD_TBDAILYPOSTB(yesterday, before_yesterday);
             //新增每日記錄，重試機制
-            TBDAILYPOSTB_RetryAddDailyPost(yesterday, before_yesterday);
+            TBDAILYDAYS_RetryAddDailyPost(yesterday);
             //新增當月記錄
             //ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
             //新增當月記錄，重試機制
-            TBDAILYPOSTBMONTH_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            TBDAILYMONTHS_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday);
 
             DataSet ds = new DataSet();
             DataTable DT = new DataTable();
@@ -20671,27 +20671,27 @@ namespace TKMQ
             }
         }
 
-        public void TBDAILYPOSTB_RetryAddDailyPost(string yesterday, string beforeYesterday)
+        public void TBDAILYDAYS_RetryAddDailyPost(string yesterday)
         {
             int maxRetries = 3;
             int attempt = 0;
             bool isSuccess = false;
 
             //先執行1次
-            ADD_TBDAILYPOSTB(yesterday, beforeYesterday);
+            ADD_TBDAILYDAYS(yesterday);
             //再檢查
             while (attempt < maxRetries && !isSuccess)
             {
                 attempt++;
 
                 // 先檢查是否已有 yesterday 的資料
-                if (!TBDAILYPOSTB_HasDataForDate(yesterday))
+                if (!TBDAILYDAYS_HasDataForDate(yesterday))
                 {
                     try
                     {
-                        ADD_TBDAILYPOSTB(yesterday, beforeYesterday);
+                        ADD_TBDAILYDAYS(yesterday);
                         // 執行後再次檢查是否成功新增
-                        if (TBDAILYPOSTB_HasDataForDate(yesterday))
+                        if (TBDAILYDAYS_HasDataForDate(yesterday))
                         {
                             isSuccess = true;
                         }
@@ -20715,7 +20715,7 @@ namespace TKMQ
         }
 
         //TBDAILYPOSTB, 假設這是檢查資料是否存在的方法
-        public bool TBDAILYPOSTB_HasDataForDate(string SDATES)
+        public bool TBDAILYDAYS_HasDataForDate(string SDATES)
         {
             bool YN = false;
             SqlConnection sqlConn = null;
@@ -20734,13 +20734,13 @@ namespace TKMQ
 
                     sbSql.AppendFormat(@"
                                         SELECT 1
-                                        FROM [TKMK].[dbo].[TBDAILYPOSTB]
-                                        WHERE SDATES = @SDATES
+                                        FROM [TKMK].[dbo].[TBDAILYDAYS]
+                                        WHERE [YMD] = @YMD
                                          ");
 
                     using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
                     {
-                        cmd.Parameters.AddWithValue("@SDATES", SDATES);
+                        cmd.Parameters.AddWithValue("@YMD", SDATES);
                         sqlConn.Open();
 
                         object result = cmd.ExecuteScalar();
@@ -20756,27 +20756,27 @@ namespace TKMQ
             return YN;
         }
 
-        public void TBDAILYPOSTBMONTH_RetryAddDailyPost(string SMONTHS, string firstDayOfMonth, string yesterday, string lastDayOfLastMonthday)
+        public void TBDAILYMONTHS_RetryAddDailyPost(string SMONTHS, string firstDayOfMonth, string yesterday)
         {
             int maxRetries = 3;
             int attempt = 0;
             bool isSuccess = false;
 
             //先執行1次
-            ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            ADD_TBDAILYMONTHS(SMONTHS, firstDayOfMonth, yesterday);
             //再檢查
             while (attempt < maxRetries && !isSuccess)
             {
                 attempt++;
 
                 // 先檢查是否已有 SMONTHS 的資料
-                if (!TBDAILYPOSTBMONTH_HasDataForDate(SMONTHS))
+                if (!TBDAILYMONTHS_HasDataForDate(SMONTHS))
                 {
                     try
                     {
-                        ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+                        ADD_TBDAILYMONTHS(SMONTHS, firstDayOfMonth, yesterday);
                         // 執行後再次檢查是否成功新增
-                        if (TBDAILYPOSTBMONTH_HasDataForDate(SMONTHS))
+                        if (TBDAILYMONTHS_HasDataForDate(SMONTHS))
                         {
                             isSuccess = true;
                         }
@@ -20799,7 +20799,7 @@ namespace TKMQ
             }
         }
         //TBDAILYPOSTBMONTH，假設這是檢查資料是否存在的方法
-        public bool TBDAILYPOSTBMONTH_HasDataForDate(string SMONTHS)
+        public bool TBDAILYMONTHS_HasDataForDate(string SMONTHS)
         {
             bool YN = false;
             SqlConnection sqlConn = null;
@@ -20818,13 +20818,13 @@ namespace TKMQ
 
                     sbSql.AppendFormat(@"
                                         SELECT 1
-                                        FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                        WHERE [SMONTHS] = @SMONTHS
+                                        FROM [TKMK].[dbo].[TBDAILYMONTHS]
+                                        WHERE [YM] = @YM
                                          ");
 
                     using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
                     {
-                        cmd.Parameters.AddWithValue("@SMONTHS", SMONTHS);
+                        cmd.Parameters.AddWithValue("@YM", SMONTHS);
                         sqlConn.Open();
 
                         object result = cmd.ExecuteScalar();
@@ -20840,7 +20840,7 @@ namespace TKMQ
             return YN;
         }
 
-        public void ADD_TBDAILYPOSTB(string SDATES, string YEATERDAYES)
+        public void ADD_TBDAILYDAYS(string SDATES)
         {
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
@@ -20879,171 +20879,108 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@" 
-                                    DELETE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    WHERE [SDATES]='{0}'
+                                    DELETE [TKMK].[dbo].[TBDAILYDAYS]
+                                    WHERE [YMD]='{0}'
 
-                                    --新增日期+品號
-                                    INSERT INTO [TKMK].[dbo].[TBDAILYPOSTB]
-                                    ([SDATES]
+                                    INSERT INTO [TKMK].[dbo].[TBDAILYDAYS]
+                                    (
+                                    [YMD]
                                     ,[MB001]
                                     ,[MB002]
+                                    ,[期初庫存]
+                                    ,[期末庫存]
+                                    ,[本期銷售]
+                                    ,[本期入庫]
+                                    ,[本期領用]
+                                    ,[本期轉撥入]
+                                    ,[本期轉撥出]
                                     )
-                                    SELECT DISTINCT '{0}' , MB001, MB002
+                                    SELECT 
+                                    '{0}' AS YMD
+                                    ,MB001
+                                    ,MB002
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 and LA004<'{0}' 
+                                    AND (LA009 ='21002' )),0) AS '期初庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 and LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '期末庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('2')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '本期銷售'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('1')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '本期入庫'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('3')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '本期領用'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (1)
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '本期轉撥入'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (-1)
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 ='21002' )),0) AS '本期轉撥出'
+
                                     FROM 
                                     (
-                                        SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-                                        AND LA004<='{0}'
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-
-                                        UNION ALL
-
-                                        SELECT TB010 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.POSTB  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON TB010 = MB001
-                                        WHERE (TB010 LIKE '4%' OR TB010 LIKE '5%')
-                                        AND TB002   IN ( '106702')
-                                        AND TB001 = '{0}'
-                                        GROUP BY TB010, MB002
-                                        HAVING SUM(TB019) > 0
-
-	                                    UNION ALL
-
-	                                    SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                   	AND LA005 IN (1)
-	                                    AND LA014 IN (1)
-                                        AND LA004='{0}'
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-
-                                        UNION ALL
-
-	                                    SELECT LA001 AS MB001, MB002 AS MB00
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (-1)
-	                                    AND LA006 IN ('A111')
-                                        AND LA004='{0}'
-                                        GROUP BY LA001, MB002
-	                                    HAVING SUM(LA005 * LA011*-1)>0
+	                                    SELECT 
+	                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
+	                                    FROM  [TK].dbo.INVMB AS INVMB
+	                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
+	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
+	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
+	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
+	                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
+	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
+	                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+	                                    Where  (LA004 Between N'{0}' and N'{0}')  
+	                                    AND (INV.MC002 IN (N'21002'))
+	                                    AND CMS.MC004='1'  
+	                                    AND ISNULL(A.MA001,'')<>'' 
+	                                    AND ISNULL(A.MA002,'')<>'' 
+                                        {1}
 
                                     ) AS TEMP
-                                    WHERE 1=1
-                                    {2}
-                                    ORDER BY MB001, MB002
+                                    ORDER BY  MB001,MB002
 
-                                    --更新前期庫存量
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET [PRENUMS]=NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE LA001=MB001
-	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
-	                                    AND LA009 IN ('21002')	
-	                                    AND LA004<='{1}'
-	                                    GROUP BY  LA001,MB002
-                                    HAVING SUM(LA005*LA011)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=TBDAILYPOSTB.MB001
-                                    AND TBDAILYPOSTB.SDATES='{0}'
 
-                                    --更新庫存量
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET [NOWNUMS]=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE LA001=MB001
-	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
-	                                    AND LA009 IN ('21002')                                      
-	                                    GROUP BY  LA001,MB002
-                                    HAVING SUM(LA005*LA011)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=[TBDAILYPOSTB].MB001
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
+                                    UPDATE [TKMK].[dbo].[TBDAILYDAYS]
+                                    SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
+                                    WHERE [YMD]='{0}'
 
-                                    --更新銷售量
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET [SALENUMS]=TEMP.TB019
-                                    FROM 
-                                    (
-	                                    SELECT TB010,MB002,SUM(TB019) TB019
-	                                    FROM [TK].dbo.POSTB  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE TB010=MB001
-	                                    AND (TB010 LIKE '4%' OR TB010 LIKE '5%')
-	                                    AND  TB002 IN ('106702')
-	                                    AND TB001='{0}'
-	                                    GROUP BY TB010,MB002
-	                                    HAVING SUM(TB019)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.TB010=[TBDAILYPOSTB].MB001
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
-
-                                    --更新進貨量
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET INNUMS=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001, MB002,SUM(LA005*LA011) AS NUMS
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                   	AND LA005 IN (1)
-	                                    AND LA014 IN (1)
-                                        AND LA004='{0}'
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=[TBDAILYPOSTB].MB001
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
-
-                                    --更新 試吃+公關
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET PUBNUMS=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001 AS MB001, MB002 AS MB002,SUM(LA005 * LA011*-1)  AS NUMS
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (-1)
-	                                    AND LA006 IN ('A111')
-                                        AND LA004='{0}'
-                                        GROUP BY LA001, MB002
-	                                    HAVING SUM(LA005 * LA011*-1)>0
- 
-                                    ) AS TEMP
-                                    WHERE TEMP.MB001=[TBDAILYPOSTB].MB001
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
-
-                                    --更新轉入
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET OTHERSINNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)
-                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)>0
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
-
-                                    --更新轉入+領用
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTB]
-                                    SET OTHERSOUTNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)*-1
-                                    WHERE(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)<0
-                                    AND [TBDAILYPOSTB].[SDATES]='{0}'
                                     "
-                                    , SDATES, YEATERDAYES, sbSql99.ToString()
+                                    , SDATES, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -21077,7 +21014,7 @@ namespace TKMQ
 
         }
 
-        public void ADD_TBDAILYPOSTBMONTH(string SMONTHS, string SDATES, string EDATES, string LASTMONTHDAYS)
+        public void ADD_TBDAILYMONTHS(string SMONTHS, string SDATES, string EDATES)
         {
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
@@ -21116,181 +21053,106 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@" 
-                                    DELETE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    WHERE [SMONTHS]='{0}'
+                                    DELETE [TKMK].[dbo].[TBDAILYMONTHS]
+                                    WHERE [YM]='{0}'
 
-                                    INSERT INTO [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    ([SMONTHS]
+                                    INSERT INTO [TKMK].[dbo].[TBDAILYMONTHS]
+                                    (
+                                    [YM]
                                     ,[MB001]
                                     ,[MB002]
+                                    ,[期初庫存]
+                                    ,[期末庫存]
+                                    ,[本期銷售]
+                                    ,[本期入庫]
+                                    ,[本期領用]
+                                    ,[本期轉撥入]
+                                    ,[本期轉撥出]
                                     )
-                                    SELECT DISTINCT '{0}' , MB001, MB002
+                                    SELECT 
+                                    '{0}' AS YM
+                                    ,MB001
+                                    ,MB002
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 and LA004<'{1}' 
+                                    AND (LA009 ='21002' )),0) AS '期初庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 and LA004<='{2}' 
+                                    AND (LA009 ='21002' )),0) AS '期末庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('2')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 ='21002' )),0) AS '本期銷售'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('1')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 ='21002' )),0) AS '本期入庫'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('3')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 ='21002' )),0) AS '本期領用'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (1)
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{1}' 
+                                    AND (LA009 ='21002' )),0) AS '本期轉撥入'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA 
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (-1)
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 ='21002' )),0) AS '本期轉撥出'
+
                                     FROM 
                                     (
-                                        SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-
-                                        UNION ALL
-
-                                        SELECT TB010 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.POSTB  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON TB010 = MB001
-                                        WHERE (TB010 LIKE '4%' OR TB010 LIKE '5%')
-                                        AND TB002   IN ( '106702')
-                                        AND TB001 >= '{1}' AND TB001 <= '{2}'
-                                        GROUP BY TB010, MB002
-                                        HAVING SUM(TB019) > 0
-
-	                                    UNION ALL
-
-	                                    SELECT LA001 AS MB001, MB002 AS MB002
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB   WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (1)
-	                                    AND LA004 >= '{1}' AND LA004 <= '{2}'
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-
-	                                    UNION ALL
-
-	                                    SELECT LA001 AS MB001, MB002 AS MB00
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (-1)
-	                                    AND LA006 IN ('A111')
-                                        AND LA004 >= '{1}' AND LA004 <= '{2}'
-                                        GROUP BY LA001, MB002
-	                                    HAVING SUM(LA005 * LA011*-1)>0
- 
-
+	                                    SELECT 
+	                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
+	                                    FROM  [TK].dbo.INVMB AS INVMB
+	                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
+	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
+	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
+	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
+	                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
+	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
+	                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+	                                    Where  (LA004 Between N'{1}' and N'{2}')  
+	                                    AND (INV.MC002 IN (N'21002'))
+	                                    AND CMS.MC004='1'  
+	                                    AND ISNULL(A.MA001,'')<>'' 
+	                                    AND ISNULL(A.MA002,'')<>'' 
+                                        {3}
                                     ) AS TEMP
-                                    WHERE 1=1
-                                     {4}
-                                    ORDER BY MB001, MB002
+                                    ORDER BY  MB001,MB002
 
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET [PRENUMS]=NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE LA001=MB001
-	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
-	                                    AND LA009 IN ('21002')	
-	                                    AND LA004<='{3}'
-	                                    GROUP BY  LA001,MB002
-	                                    HAVING SUM(LA005*LA011)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=[TBDAILYPOSTBMONTH].MB001
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
 
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET [NOWNUMS]=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001,MB002,SUM(LA005*LA011) AS NUMS
-	                                    FROM [TK].dbo.INVLA  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE LA001=MB001
-	                                    AND (LA001 LIKE '4%' OR LA001 LIKE '5%')
-	                                    AND LA009 IN ('21002')	
-	                                    GROUP BY  LA001,MB002
-                                        HAVING SUM(LA005*LA011)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=[TBDAILYPOSTBMONTH].MB001
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET [SALENUMS]=TEMP.TB019
-                                    FROM 
-                                    (
-	                                    SELECT TB010,MB002,SUM(TB019) TB019
-	                                    FROM [TK].dbo.POSTB  WITH(NOLOCK),[TK].dbo.INVMB  WITH(NOLOCK)
-	                                    WHERE TB010=MB001
-	                                    AND (TB010 LIKE '4%' OR TB010 LIKE '5%')
-	                                    AND TB002 IN ('106702')
-	                                    AND TB001 >= '{1}' AND TB001 <= '{2}'
-	                                    GROUP BY TB010,MB002
-	                                    HAVING SUM(TB019)>0
-                                    ) AS TEMP
-                                    WHERE TEMP.TB010=[TBDAILYPOSTBMONTH].MB001
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET INNUMS=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001, MB002,SUM(LA005*LA011) AS NUMS
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (1)
-                                        AND LA004 >= '{1}' AND LA004 <= '{2}'
-                                        GROUP BY LA001, MB002
-                                        HAVING SUM(LA005 * LA011) > 0
-                                    ) AS TEMP
-                                    WHERE TEMP.LA001=[TBDAILYPOSTBMONTH].MB001
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET PUBNUMS=TEMP.NUMS
-                                    FROM 
-                                    (
-	                                    SELECT LA001 AS MB001, MB002 AS MB002,SUM(LA005 * LA011*-1)  AS NUMS
-                                        FROM [TK].dbo.INVLA  WITH(NOLOCK)
-                                        INNER JOIN [TK].dbo.INVMB  WITH(NOLOCK) ON LA001 = MB001
-                                        WHERE (LA001 LIKE '4%' OR LA001 LIKE '5%')
-                                        AND LA009  IN ( '21002')
-	                                    AND LA005 IN (-1)
-	                                    AND LA006 IN ('A111')
-                                        AND LA004 >= '{1}' AND LA004 <= '{2}'
-                                        GROUP BY LA001, MB002
-	                                    HAVING SUM(LA005 * LA011*-1)>0
- 
-                                    ) AS TEMP
-                                    WHERE TEMP.MB001=[TBDAILYPOSTBMONTH].MB001
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET OTHERSINNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)
-                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)>0
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET OTHERSOUTNUMS=(NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)*-1
-                                    WHERE (NOWNUMS-PRENUMS-INNUMS+SALENUMS+PUBNUMS)<0
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
-
-                                    UPDATE [TKMK].[dbo].[TBDAILYPOSTBMONTH]
-                                    SET [COMMENTS]=
-                                    (CASE WHEN OTHERSOUTNUMS>TEMP.NUMS THEN  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,TEMP.NUMS)))+' 組合成盒裝'
-                                    ELSE  '本月有領出 '+CONVERT(NVARCHAR,(CONVERT(INT,OTHERSOUTNUMS)))+' 組合成盒裝' END )
-                                    FROM (
-	                                    SELECT TE004,MB002,SUM(TE008) AS NUMS
-	                                    FROM [TK].dbo.BOMTE,[TK].dbo.BOMTD,[TK].dbo.INVMB
-	                                    WHERE TE001=TD001 AND TE002=TD002
-	                                    AND TE004=MB001
-	                                    AND TD012='Y'
-	                                    AND TD003 LIKE '{0}%'
-	                                    AND TE004 IN (
-	                                    SELECT [MB001]
-	                                    FROM [TKMK].[dbo].[TBDAILYPOSTBCOMMENTS]
-	                                    )
-                                    GROUP BY TE004,MB002
-                                    ) AS TEMP
-                                    WHERE [MB001]=TEMP.TE004
-                                    AND [TBDAILYPOSTBMONTH].[SMONTHS]='{0}'
+                                    UPDATE [TKMK].[dbo].[TBDAILYMONTHS]
+                                    SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
+                                    WHERE [YM]='{0}'
                                     "
-                                    , SMONTHS, SDATES, EDATES, LASTMONTHDAYS, sbSql99.ToString()
+                                    , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -21467,11 +21329,11 @@ namespace TKMQ
             string FILENAME = pathFile;
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
-
+             
             SQL1 = SETSQL_STORES_REPORTS_DAILY(SDAYS);
             Report report1 = new Report();
 
-            report1.Load(@"REPORT\硯微墨每日商品統計表.frx");
+            report1.Load(@"REPORT\硯微墨每日商品統計表V2.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
@@ -21508,23 +21370,24 @@ namespace TKMQ
 
 
             SB.AppendFormat(@"   
-                            SELECT 
-                            [SDATES] AS '日期'
+                            SELECT
+                            [ID]
+                            ,[YMD] AS '日期'
                             ,[MB001] AS '品號'
                             ,[MB002] AS '品名'
-                            ,[PRENUMS] AS '前期庫存數量'
-                            ,[SALENUMS] AS '銷售數量'
-                            ,[INNUMS] AS '入庫數量'
-                            ,[PUBNUMS] AS '試吃+公關數量'
-                            ,[OTHERSINNUMS] AS '轉入'
-                            ,[OTHERSOUTNUMS] AS '領出'
-                            ,[NOWNUMS] AS '庫存數量'
-                            ,[COMMENTS] AS '備註'
-                            ,[ID]
-                            ,[CREATEDATES]
-                            FROM [TKMK].[dbo].[TBDAILYPOSTB] WITH(NOLOCK) 
-                            WHERE [SDATES]='{0}'
-                            ORDER BY [MB001]
+                            ,[MB001]
+                            ,[MB002]
+                            ,[期初庫存]
+                            ,[期末庫存]
+                            ,[本期銷售]
+                            ,[本期入庫]
+                            ,[本期領用]
+                            ,[本期轉撥入]
+                            ,[本期轉撥出]
+                            ,[其他]
+                            FROM [TKMK].[dbo].[TBDAILYDAYS]
+                            WHERE [YMD]='{0}'
+                            ORDER BY [YMD],[MB001]
 
                          
 
@@ -21540,10 +21403,10 @@ namespace TKMQ
             //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
-            SQL1 = SETSQL_STORES_REPORTS_MONTH(SMONTHS);
+            SQL1 = SETSQL_STORES_REPORTS_MONTH(SMONTHS, SDATES, EDATES);
             Report report1 = new Report();
 
-            report1.Load(@"REPORT\硯微墨月份商品統計表.frx");
+            report1.Load(@"REPORT\硯微墨當月商品統計表V2.frx");
 
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
@@ -21575,32 +21438,32 @@ namespace TKMQ
             report1.Export(export, FILENAME);
         }
 
-        public StringBuilder SETSQL_STORES_REPORTS_MONTH(string SMONTHS)
+        public StringBuilder SETSQL_STORES_REPORTS_MONTH(string SMONTHS,string SDATES, string EDATES )
         {
 
             StringBuilder SB = new StringBuilder();
 
 
             SB.AppendFormat(@"   
-                            SELECT 
+                           SELECT 
                             [ID]
-                            ,[SMONTHS] AS '年月'
+                            ,[YM] AS '年月'
+                            ,'{1}~{2}' AS '日期區間'
                             ,[MB001] AS '品號'
                             ,[MB002] AS '品名'
-                            ,[PRENUMS] AS '上月底庫存數量'
-                            ,[SALENUMS] AS '銷售累計總數量'
-                            ,[INNUMS] AS '入庫累計總數量'
-                            ,[PUBNUMS] AS '試吃+公關累計總數量'
-                            ,[OTHERSINNUMS] AS '轉入'
-                            ,[OTHERSOUTNUMS] AS '領出'
-                            ,[NOWNUMS] AS '目前庫存數量'
-                            ,[COMMENTS]AS '備註'
-                            ,[CREATEDATES]
-                            FROM [TKMK].[dbo].[TBDAILYPOSTBMONTH] WITH(NOLOCK) 
-                            WHERE [SMONTHS]='{0}'
-                            ORDER BY [MB001]                         
+                            ,[期初庫存]
+                            ,[期末庫存]
+                            ,[本期銷售]
+                            ,[本期入庫]
+                            ,[本期領用]
+                            ,[本期轉撥入]
+                            ,[本期轉撥出]
+                            ,[其他]
+                            FROM [TKMK].[dbo].[TBDAILYMONTHS]
+                            WHERE [YM]='202506'
+                            ORDER BY [YM],[MB001]                     
 
-                            ", SMONTHS);
+                            ", SMONTHS, SDATES, EDATES);
 
 
             return SB;
