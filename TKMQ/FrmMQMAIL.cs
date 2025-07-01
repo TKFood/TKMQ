@@ -20607,10 +20607,17 @@ namespace TKMQ
             {
                 File.Delete(pathFile_DAILY);
             }
-
             if (File.Exists(pathFile_MONTH))
             {
                 File.Delete(pathFile_MONTH);
+            }
+            if (File.Exists(pathFile_DAILY_STORES))
+            {
+                File.Delete(pathFile_DAILY_STORES);
+            }
+            if (File.Exists(pathFile_MONTH_STORES))
+            {
+                File.Delete(pathFile_MONTH_STORES);
             }
 
             SAVEREPORT_STORES_REPORTS_DAILY(pathFile_DAILY, yesterday);
@@ -20654,8 +20661,12 @@ namespace TKMQ
             // 添加附件
             Attachment attch = new Attachment(pathFile_DAILY);
             Attachment attch2 = new Attachment(pathFile_MONTH);
+            Attachment attch3 = new Attachment(pathFile_DAILY_STORES);
+            Attachment attch4 = new Attachment(pathFile_MONTH_STORES);
             MyMail.Attachments.Add(attch);
             MyMail.Attachments.Add(attch2);
+            MyMail.Attachments.Add(attch3);
+            MyMail.Attachments.Add(attch4);
 
             try
             {
