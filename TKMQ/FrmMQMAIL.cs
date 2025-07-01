@@ -14493,6 +14493,7 @@ namespace TKMQ
                                     FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
+                                    AND TD016 IN ('N')
                                     AND TC001 NOT IN ('A334')
                                     AND TC014='Y'
                                     AND REPLACE(TD001+TD002+TD003,' ','') NOT IN (SELECT REPLACE(TH011+TH012+TH013,' ','') FROM [TK].dbo.PURTH)
@@ -14515,6 +14516,7 @@ namespace TKMQ
                                     FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND MA001=TC004
+                                    AND TD016 IN ('N')
                                     AND TC001 IN ('A334')
                                     AND TC014='Y'
                                     AND TD008>0
