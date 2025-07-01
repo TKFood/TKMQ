@@ -21266,12 +21266,12 @@ namespace TKMQ
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
                                     WHERE  LA001=TEMP.MB001 and LA004<'{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '期初庫存'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期初庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
                                     WHERE  LA001=TEMP.MB001 and LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '期末庫存'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21279,7 +21279,7 @@ namespace TKMQ
                                     AND LA014 IN ('2')
                                     AND LA004>='{0}' 
                                     AND LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期銷售'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
@@ -21287,7 +21287,7 @@ namespace TKMQ
                                     AND LA014 IN ('1')
                                     AND LA004>='{0}' 
                                     AND LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014'))),0) AS '本期入庫'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004'))),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21295,7 +21295,7 @@ namespace TKMQ
                                     AND LA014 IN ('3')
                                     AND LA004>='{0}' 
                                     AND LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014'))),0) AS '本期領用'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004'))),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
@@ -21304,7 +21304,7 @@ namespace TKMQ
                                     AND LA005 IN (1)
                                     AND LA004>='{0}' 
                                     AND LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期轉撥入'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21313,7 +21313,7 @@ namespace TKMQ
                                     AND LA005 IN (-1)
                                     AND LA004>='{0}' 
                                     AND LA004<='{0}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期轉撥出'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥出'
 
                                     FROM 
                                     (
@@ -21332,7 +21332,7 @@ namespace TKMQ
 		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
 		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 		                                    Where  (LA004 Between N'20250601' and N'20250630')  
-		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'300014'))
+		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
 		                                    AND ISNULL(A.MA001,'')<>'' 
 		                                    and ISNULL(A.MA002,'')<>'' 
@@ -21617,12 +21617,12 @@ namespace TKMQ
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
                                     WHERE  LA001=TEMP.MB001 and LA004<'{1}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '期初庫存'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期初庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
                                     WHERE  LA001=TEMP.MB001 and LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '期末庫存'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21630,7 +21630,7 @@ namespace TKMQ
                                     AND LA014 IN ('2')
                                     AND LA004>='{1}' 
                                     AND LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期銷售'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
@@ -21638,7 +21638,7 @@ namespace TKMQ
                                     AND LA014 IN ('1')
                                     AND LA004>='{1}' 
                                     AND LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期入庫'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21646,7 +21646,7 @@ namespace TKMQ
                                     AND LA014 IN ('3')
                                     AND LA004>='{1}' 
                                     AND LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期領用'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
                                     FROM [TK].dbo.INVLA 
@@ -21655,7 +21655,7 @@ namespace TKMQ
                                     AND LA005 IN (1)
                                     AND LA004>='{1}' 
                                     AND LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期轉撥入'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
                                     FROM [TK].dbo.INVLA 
@@ -21664,7 +21664,7 @@ namespace TKMQ
                                     AND LA005 IN (-1)
                                     AND LA004>='{1}' 
                                     AND LA004<='{2}' 
-                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'300014') )),0) AS '本期轉撥出'
+                                    AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥出'
 
                                     FROM 
                                     (
@@ -21683,7 +21683,7 @@ namespace TKMQ
 		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
 		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 		                                    Where  (LA004 Between N'20250601' and N'20250630')  
-		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'300014'))
+		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
 		                                    AND ISNULL(A.MA001,'')<>'' 
 		                                    and ISNULL(A.MA002,'')<>'' 
