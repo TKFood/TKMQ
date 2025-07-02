@@ -21261,7 +21261,7 @@ namespace TKMQ
                                     ,[本期轉撥出]
                                     )
                                     SELECT 
-                                    '20250630' AS YMD
+                                    '{0}' AS YMD
                                     ,MB001
                                     ,MB002
                                     ,ISNULL((
@@ -21333,7 +21333,7 @@ namespace TKMQ
 		                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
 		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
 		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
-		                                    Where  (LA004 Between N'20250601' and N'20250630')  
+		                                    Where  (LA004 Between N'{0}' and N'{0}')  
 		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
 		                                    AND ISNULL(A.MA001,'')<>'' 
@@ -21612,7 +21612,7 @@ namespace TKMQ
                                     ,[本期轉撥出]
                                     )
                                     SELECT 
-                                    '202506' AS YM
+                                    '{0}' AS YM
                                     ,MB001
                                     ,MB002
                                     ,ISNULL((
@@ -21684,7 +21684,7 @@ namespace TKMQ
 		                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
 		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
 		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
-		                                    Where  (LA004 Between N'20250601' and N'20250630')  
+		                                    Where  (LA004 Between N'{1}' and N'{2}')  
 		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
 		                                    AND ISNULL(A.MA001,'')<>'' 
