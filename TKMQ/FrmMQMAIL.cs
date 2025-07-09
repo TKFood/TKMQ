@@ -23109,7 +23109,7 @@ namespace TKMQ
         }
 
              //2001.產品開發+包裝設計申請單
-        public void   SENDMAIL_UOF_APPLY_DEV_DESIGN_2001(CancellationToken cancellationToken)
+        public void  SENDMAIL_UOF_APPLY_DEV_DESIGN_2001(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
             DataTable DT_DATAS = new DataTable();
@@ -23151,7 +23151,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<tr>");
                             BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:20%;'>表單編號</th>");                            
                             BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:20%;'>申請人/業務</th>");
-                            BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:40%;'>商品名稱</th>");
+                            BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:60%;'>商品名稱</th>");
 
                             BODY.AppendFormat(@"</tr>");
 
