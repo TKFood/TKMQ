@@ -331,6 +331,7 @@ namespace TKMQ
 
             }
 
+            //currentTime8
             //09:29 通知
             if (currentTime8 == targetTime8)
             {
@@ -341,39 +342,6 @@ namespace TKMQ
                 }
 
 
-            }
-            //採購用-15:00
-            //currentTime3=15:00
-            //品保驗收
-            if (currentTime3 == targetTime3)
-            {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime3();
-                }
-            }
-
-            //採購用-17:00
-            //currentTime4=17:00
-            if (currentTime4 == targetTime4)
-            {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime4();
-                }
-            }
-
-            //採購用-18:00
-            //targetTime5 = "18:00";
-            if (currentTime5 == targetTime5)
-            {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime5();
-                }
             }
 
             //採購用-11:00
@@ -397,6 +365,41 @@ namespace TKMQ
                     HRAUTORUN_currentTime7();
                 }
             }
+
+            //採購用-15:00
+            //currentTime3=15:00
+            //品保驗收
+            if (currentTime3 == targetTime3)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN_currentTime3();
+                }
+            }
+
+            //採購用-17:00
+            //currentTime4=17:00
+            if (currentTime4 == targetTime4)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN_currentTime4();
+                }
+            }            
+
+            //採購用-18:00
+            //targetTime5 = "18:00";
+            if (currentTime5 == targetTime5)
+            {
+                //每星期一~星期五寄送
+                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
+                {
+                    HRAUTORUN_currentTime5();
+                }
+            }
+
 
         }
 
