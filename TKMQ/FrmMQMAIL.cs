@@ -441,7 +441,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"查離職人員的未結案表單  失敗");
                 }
@@ -5856,7 +5856,7 @@ namespace TKMQ
                     MyMail.Dispose(); //釋放資源
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -5925,7 +5925,7 @@ namespace TKMQ
                     MyMail.Dispose(); //釋放資源
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
