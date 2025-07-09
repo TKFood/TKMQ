@@ -264,6 +264,9 @@ namespace TKMQ
             string targetTime1 = "08:31";
             string currentTime1 = DateTime.Now.ToString("HH:mm");
 
+            string targetTime9 = "08:40";
+            string currentTime9 = DateTime.Now.ToString("HH:mm");
+
             string targetTime2 = "08:50";
             string currentTime2 = DateTime.Now.ToString("HH:mm");
 
@@ -303,9 +306,20 @@ namespace TKMQ
                 System.Threading.Thread.Sleep(1000*60*1);
             }
 
+            //targetTime9
+            //targetTime9 = "08:40";
+            if (currentTime9 == targetTime9)
+            {
+                //每日LINE通知
+                ASYNC_HRAUTORUN5();
+            }
+
             //targetTime2
             //一般用08:50
-            if (currentTime2 == targetTime2)
+            //並且是星期一到星期五
+            if (currentTime2 == targetTime2 &&
+                now.DayOfWeek >= DayOfWeek.Monday &&
+                now.DayOfWeek <= DayOfWeek.Friday)
             {
                 //每星期一寄送
                 if (now.DayOfWeek == DayOfWeek.Monday)
@@ -313,11 +327,8 @@ namespace TKMQ
                     HRAUTORUN_targetTime2();
                 }
 
-                //每日寄送               
                 HRAUTORUN();
 
-                //每日LINE通知
-                ASYNC_HRAUTORUN5();
             }
 
             //09:29 通知
@@ -408,6 +419,18 @@ namespace TKMQ
 
             try
             {
+                try
+                {
+                    CancellationTokenSource cts1 = new CancellationTokenSource();
+                    cts1.CancelAfter(timeoutMilliseconds);
+
+                    //2001.產品開發+包裝設計申請單
+                    SENDMAIL_UOF_APPLY_DEV_DESIGN_2001(cts1.Token);
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"2001.產品開發+包裝設計申請單  失敗");
+                }
                 //資訊用
                 try
                 {
