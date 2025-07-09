@@ -215,7 +215,7 @@ namespace TKMQ
                         SEND_PURVERSIONSNUMS(DT);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -244,7 +244,7 @@ namespace TKMQ
                         SENDMAIL_TK_PUR_MONTHS_NO_IN();
 
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -427,7 +427,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"總經理簽核意見，轉MAIL給申請者及部門主管  失敗");
                 }
@@ -455,7 +455,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"溫濕度明細  失敗");
                 }
@@ -469,7 +469,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"溫濕度  失敗");
                 }
@@ -483,7 +483,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"UOF交辨未完成  失敗");
                 }
@@ -497,7 +497,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"主管UOF交辨未完成  失敗");
                 }
@@ -511,7 +511,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"通知各表單申請人  失敗");
                 }
@@ -525,7 +525,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"通知各別的被交辨人  失敗");
                 }
@@ -539,7 +539,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"通知交辨人  失敗");
                 }
@@ -553,7 +553,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"IT檢查網站是否正常  失敗");
                 }
@@ -573,7 +573,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"營銷各庫庫存通知  失敗");
                 }
@@ -589,7 +589,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"校稿追踨  失敗");
                 }
@@ -605,7 +605,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"派車  失敗");
                 }
@@ -631,7 +631,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"批號錯誤  失敗");
                 }
@@ -647,7 +647,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"針對昨天核單的 總務採購單，給申請人發出公告  失敗");
                 }
@@ -661,7 +661,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"通知副總，總務未簽核的表單      失敗");
                 }
@@ -675,7 +675,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"通知原請購人，總務已完成採購         失敗");
                 }
@@ -691,7 +691,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"到貨是否有建進貨單  失敗");
                 }
@@ -705,7 +705,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"到貨數量是否等同進貨數量  失敗");
                 }
@@ -719,7 +719,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"託外未到貨通知  失敗");
                 }
@@ -734,7 +734,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"PUR10.請購單申請+PUR20.請購單變更單  失敗");
                 }
@@ -748,7 +748,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"給採購人員，ERP未核單的單別、單號  失敗");
                 }  
@@ -770,7 +770,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"請購  失敗");
                 }
@@ -792,7 +792,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日採購單未結案表  失敗");
                 }
@@ -815,7 +815,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日已請購未採購表  失敗");
                 }
@@ -831,7 +831,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"研發每日通知新品售價  失敗");
                 }
@@ -850,7 +850,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"本年新品的銷售報表  失敗");
                 }
@@ -871,7 +871,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日訂單明細表  失敗");
                 }
@@ -886,7 +886,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日訂單明細表  失敗");
                 }            
@@ -909,7 +909,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"訂單變更  失敗");
                 }
@@ -932,7 +932,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"訂單  失敗");
                 }
@@ -955,7 +955,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日追踨製令未確認表  失敗");
                 }
@@ -997,7 +997,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"進貨有效日檢查  失敗");
                 }
@@ -1011,7 +1011,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"採購7日前未到貨  失敗");
                 }
@@ -1027,7 +1027,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每週通知，1006.樣品試吃回覆單，還未回覆的明細  失敗");
                 }
@@ -1041,7 +1041,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"研發每週通知該月樣品  失敗");
                 }
@@ -1057,7 +1057,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"業務活動通知行銷  失敗");
                 }
@@ -1086,7 +1086,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"每日製令準時完工率數量達交率  失敗");
                 }
@@ -1127,7 +1127,7 @@ namespace TKMQ
                         SENDEMAIL_DAILY_SALES_MONEY(cts1.Token);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"國內、外業務部業績 失敗");
                 }
@@ -1140,7 +1140,7 @@ namespace TKMQ
                         SENDMAIL_STORES_REPORTS(cts2.Token);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"硯微墨商品銷進 失敗");
                 }
@@ -1185,7 +1185,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
@@ -1199,7 +1199,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"進貨單，還未核準 + 品保驗收  失敗");
                 }
@@ -1213,7 +1213,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"採購今日未傳真  失敗");
                 }
@@ -1227,7 +1227,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"預計採購未到貨  失敗");
                 }
@@ -1271,7 +1271,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"商品專案通知失敗  失敗");
                 }
@@ -1287,7 +1287,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
@@ -1301,7 +1301,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"預計採購未到貨  失敗");
                 }
@@ -1343,7 +1343,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"採購今日未傳真  失敗");
                 }
@@ -1384,7 +1384,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
@@ -1427,7 +1427,7 @@ namespace TKMQ
                         Thread.Sleep(1000);
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
@@ -1458,7 +1458,7 @@ namespace TKMQ
 
                 Thread.Sleep(5000);
             }
-            catch
+            catch (Exception EX)
             {
                 MSG.AppendFormat(@"LINE通知  失敗 ||");
             }
@@ -1654,7 +1654,7 @@ namespace TKMQ
 
                         break; // 成功則跳出迴圈
                     }
-                    catch
+                    catch (Exception EX)
                     {
                         if (i == retryCount - 1)
                             throw; // 最後一次仍失敗則拋出異常
@@ -1820,7 +1820,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -1993,7 +1993,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2140,7 +2140,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2209,7 +2209,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2273,7 +2273,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2429,7 +2429,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2732,7 +2732,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2795,7 +2795,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -2937,7 +2937,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3000,7 +3000,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3056,7 +3056,7 @@ namespace TKMQ
                 }
             }
 
-            catch
+            catch (Exception EXCE)
             {
 
             }
@@ -3202,7 +3202,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3264,7 +3264,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3412,7 +3412,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3475,7 +3475,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3616,7 +3616,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3774,7 +3774,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3835,7 +3835,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -3981,7 +3981,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4043,7 +4043,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4187,7 +4187,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4250,7 +4250,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4307,7 +4307,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -4368,7 +4368,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4431,7 +4431,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -4573,7 +4573,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -5020,7 +5020,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -5082,7 +5082,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EXCE)
             {
 
             }
@@ -5361,7 +5361,7 @@ namespace TKMQ
                 SENDEMAILERPPURCHECK(SUBJEST, BODY);
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -5476,7 +5476,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -5555,7 +5555,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -5643,7 +5643,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -5720,7 +5720,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -5792,7 +5792,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6030,7 +6030,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6124,7 +6124,7 @@ namespace TKMQ
                 //SEND_LINE(LINE_NOTIFY.ToString());
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -6185,7 +6185,7 @@ namespace TKMQ
                     MyMail.Dispose(); //釋放資源
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -6332,7 +6332,7 @@ namespace TKMQ
                 SENDEMAILUOFPROOFEAD(SUBJEST, BODY);
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -6421,7 +6421,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6524,7 +6524,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6595,7 +6595,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -6709,7 +6709,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6835,7 +6835,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -6945,7 +6945,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -7059,7 +7059,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -7185,7 +7185,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -7295,7 +7295,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -7432,7 +7432,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -7551,7 +7551,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -7672,7 +7672,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -7683,7 +7683,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -7725,37 +7725,37 @@ namespace TKMQ
 
 
                     }
-                    catch { }
+                    catch (Exception EX) { }
                     try
                     {
                         GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
 
                     }
-                    catch { }
+                    catch (Exception EX) { }
                     try
                     {
                         GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
 
                     }
-                    catch { }
+                    catch (Exception EX) { }
                     try
                     {
                         GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
 
                     }
-                    catch { }
+                    catch (Exception EX) { }
                     try
                     {
                         GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
 
                     }
-                    catch { }
+                    catch (Exception EX) { }
                     try
                     {
 
                         GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
                     }
-                    catch { }
+                    catch (Exception EX) { }
 
 
                     string MESSAGES = GA003 + " 申請的請購單:" + GA002 + "，物品:" + GA005 + "，已由" + GA999 + " 在" + GA015 + "購買完成。";
@@ -7843,7 +7843,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -7953,7 +7953,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -8011,7 +8011,7 @@ namespace TKMQ
                     //ex.ToString();
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -8037,7 +8037,7 @@ namespace TKMQ
                     SEND_UOF_TASK_FORM_GRAFFIR(GRAFFIR_TO_EMAIL, DT_OF_TASK_TASK_GRAFFIR);
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -8154,7 +8154,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -8226,7 +8226,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -8350,7 +8350,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -8361,7 +8361,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -8537,7 +8537,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -8703,7 +8703,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -8846,7 +8846,7 @@ namespace TKMQ
                                 //ex.ToString();
                             }
                         }
-                        catch
+                        catch (Exception EX)
                         {
 
                         }
@@ -8857,7 +8857,7 @@ namespace TKMQ
 
 
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -9105,7 +9105,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -9205,7 +9205,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -9302,7 +9302,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -9445,7 +9445,7 @@ namespace TKMQ
                                 //ex.ToString();
                             }
                         }
-                        catch
+                        catch (Exception EX)
                         {
 
                         }
@@ -9456,7 +9456,7 @@ namespace TKMQ
 
 
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -9705,7 +9705,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -9807,7 +9807,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -9950,7 +9950,7 @@ namespace TKMQ
                 SENDEMAIL_NEWSALES(SUBJEST, BODY, path_File);
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10015,7 +10015,7 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10159,7 +10159,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -10366,7 +10366,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10552,7 +10552,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10652,7 +10652,7 @@ namespace TKMQ
                 SENDEMAIL_POSINV(SUBJEST, BODY, path_File);
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10732,7 +10732,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -10835,7 +10835,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -11144,7 +11144,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -11348,7 +11348,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -11582,7 +11582,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -12935,7 +12935,7 @@ namespace TKMQ
 
                         break; // 成功則跳出迴圈
                     }
-                    catch
+                    catch (Exception EX)
                     {
                         if (i == retryCount - 1)
                             throw; // 最後一次仍失敗則拋出異常
@@ -13065,7 +13065,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -13325,7 +13325,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -13508,7 +13508,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -13529,7 +13529,7 @@ namespace TKMQ
                     SEND_PURVERSIONSNUMS(DT);
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -13593,7 +13593,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -13689,7 +13689,7 @@ namespace TKMQ
                         SENDE_TO_PURTYPES(SUBJEST, BODY);
 
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -13699,7 +13699,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -13945,7 +13945,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14009,7 +14009,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14132,7 +14132,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -14145,7 +14145,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -14219,7 +14219,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14289,7 +14289,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14422,7 +14422,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -14435,7 +14435,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -14550,7 +14550,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14620,7 +14620,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14753,7 +14753,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -14766,7 +14766,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -14846,7 +14846,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -14916,7 +14916,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -15046,7 +15046,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -15059,7 +15059,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -15152,7 +15152,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -15222,7 +15222,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -15881,7 +15881,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -15997,7 +15997,7 @@ namespace TKMQ
                     return null;
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -16191,7 +16191,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16257,7 +16257,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16370,7 +16370,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16430,7 +16430,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16503,7 +16503,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16577,7 +16577,7 @@ namespace TKMQ
                     return null;
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -16743,7 +16743,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -16756,7 +16756,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -16819,7 +16819,7 @@ namespace TKMQ
                     return null;
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -16879,7 +16879,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -17005,7 +17005,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -17018,7 +17018,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -17160,7 +17160,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -17230,7 +17230,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -17355,7 +17355,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -17368,7 +17368,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -17458,7 +17458,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -17528,7 +17528,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -17655,7 +17655,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -17668,7 +17668,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -17855,7 +17855,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -17925,7 +17925,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18053,7 +18053,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -18066,7 +18066,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -18166,7 +18166,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18236,7 +18236,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18382,7 +18382,7 @@ namespace TKMQ
                                         //ex.ToString();
                                     }
                                 }
-                                catch
+                                catch (Exception EX)
                                 {
 
                                 }
@@ -18395,7 +18395,7 @@ namespace TKMQ
 
 
                         }
-                        catch
+                        catch (Exception EX)
                         {
 
                         }
@@ -18533,7 +18533,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18670,7 +18670,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18803,7 +18803,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -18816,7 +18816,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -18903,7 +18903,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -18973,7 +18973,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19106,7 +19106,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -19119,7 +19119,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -19215,7 +19215,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19285,7 +19285,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19440,7 +19440,7 @@ namespace TKMQ
                             //ex.ToString();
                         }
                     }
-                    catch
+                    catch (Exception EX)
                     {
 
                     }
@@ -19451,7 +19451,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -19540,7 +19540,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19610,7 +19610,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19680,7 +19680,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19799,7 +19799,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -19812,7 +19812,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -19880,7 +19880,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -19950,7 +19950,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -20082,7 +20082,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -20095,7 +20095,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -20181,7 +20181,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -20251,7 +20251,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -20375,7 +20375,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -20388,7 +20388,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -20475,7 +20475,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -20545,7 +20545,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -20770,7 +20770,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 YN = false;
             }
@@ -20855,7 +20855,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 YN = false;
             }
@@ -20939,7 +20939,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 YN = false;
             }
@@ -21023,7 +21023,7 @@ namespace TKMQ
                     }
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 YN = false;
             }
@@ -21193,7 +21193,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -21372,7 +21372,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -21544,7 +21544,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -21723,7 +21723,7 @@ namespace TKMQ
 
                 }
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -21790,7 +21790,7 @@ namespace TKMQ
                     return null;
                 }
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -21863,7 +21863,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -22294,7 +22294,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -22307,7 +22307,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -22425,7 +22425,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -22495,7 +22495,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -22641,7 +22641,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -22654,7 +22654,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -22735,7 +22735,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -22805,7 +22805,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -22925,7 +22925,7 @@ namespace TKMQ
                         //ex.ToString();
                     }
                 }
-                catch
+                catch (Exception EX)
                 {
 
                 }
@@ -22938,7 +22938,7 @@ namespace TKMQ
 
 
             }
-            catch
+            catch (Exception EX)
             {
 
             }
@@ -23028,7 +23028,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -23098,7 +23098,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -23321,7 +23321,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
@@ -23391,7 +23391,7 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception EX)
             {
                 return null;
             }
