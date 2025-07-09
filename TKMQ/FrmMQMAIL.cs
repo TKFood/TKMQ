@@ -962,7 +962,7 @@ namespace TKMQ
                 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1092,7 +1092,7 @@ namespace TKMQ
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1147,7 +1147,7 @@ namespace TKMQ
                 
                 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
                 //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
@@ -1234,7 +1234,7 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1308,7 +1308,7 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1350,7 +1350,7 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1391,7 +1391,7 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1434,7 +1434,7 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
@@ -1666,10 +1666,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -2536,9 +2536,9 @@ namespace TKMQ
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                INSERTLOG(pathFilePURTA, ex.ToString());
+                INSERTLOG(pathFilePURTA, EX.ToString());
             }
             finally
             {
@@ -2659,9 +2659,9 @@ namespace TKMQ
                 GC.Collect();
             }
 
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                INSERTLOG(pathFilePURTA, ex.ToString());
+                INSERTLOG(pathFilePURTA, EX.ToString());
             }
 
             finally
@@ -4895,7 +4895,7 @@ namespace TKMQ
                 }
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
 
             }
@@ -5842,12 +5842,12 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                             //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
 
@@ -5911,12 +5911,12 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
 
@@ -6171,12 +6171,12 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                                   //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             // MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
 
@@ -6578,12 +6578,12 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
 
@@ -7664,12 +7664,12 @@ namespace TKMQ
 
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -8003,12 +8003,12 @@ namespace TKMQ
 
 
                 }
-                catch (Exception ex)
+                catch (Exception EX)
                 {
                     //MessageBox.Show("有錯誤");
 
-                    //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                    //ex.ToString();
+                    //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                    //EX.ToString();
                 }
             }
             catch (Exception EX)
@@ -8342,12 +8342,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -8405,9 +8405,9 @@ namespace TKMQ
                 var response = (HttpWebResponse)request.GetResponse();
                 var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine(EX.ToString());
             }
         }
 
@@ -8580,12 +8580,12 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 //MessageBox.Show("有錯誤 ");
 
-                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                //ex.ToString();
+                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -8610,7 +8610,7 @@ namespace TKMQ
 
                 MessageBox.Show("寄送成功 ");
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 //MessageBox.Show("有錯誤 ");
             }
@@ -8838,12 +8838,12 @@ namespace TKMQ
 
 
                             }
-                            catch (Exception ex)
+                            catch (Exception EX)
                             {
                                 //MessageBox.Show("有錯誤");
 
-                                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                                //ex.ToString();
+                                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                                //EX.ToString();
                             }
                         }
                         catch (Exception EX)
@@ -8985,12 +8985,12 @@ namespace TKMQ
 
 
             //                }
-            //                catch (Exception ex)
+            //                catch (Exception EX)
             //                {
             //                    //MessageBox.Show("有錯誤");
 
-            //                    //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-            //                    //ex.ToString();
+            //                    //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+            //                    //EX.ToString();
             //                }
             //            }
             //            catch
@@ -9437,12 +9437,12 @@ namespace TKMQ
 
 
                             }
-                            catch (Exception ex)
+                            catch (Exception EX)
                             {
                                 //MessageBox.Show("有錯誤");
 
-                                //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                                //ex.ToString();
+                                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                                //EX.ToString();
                             }
                         }
                         catch (Exception EX)
@@ -9583,12 +9583,12 @@ namespace TKMQ
 
 
             //                    }
-            //                    catch (Exception ex)
+            //                    catch (Exception EX)
             //                    {
             //                        //MessageBox.Show("有錯誤");
 
-            //                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-            //                        //ex.ToString();
+            //                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+            //                        //EX.ToString();
             //                    }
             //                }
             //                catch
@@ -10004,7 +10004,7 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
                                                                   //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email                          
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
 
                         }
@@ -10723,12 +10723,12 @@ namespace TKMQ
 
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
             }
@@ -11339,12 +11339,12 @@ namespace TKMQ
 
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
             }
@@ -12946,10 +12946,10 @@ namespace TKMQ
 
                 //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
 
         }
@@ -13222,10 +13222,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -13878,10 +13878,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -14124,12 +14124,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -14414,12 +14414,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -14745,12 +14745,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -15038,12 +15038,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -15297,10 +15297,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -15503,10 +15503,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
         public void SAVEREPORT_QC_TEMP_CHECK(string pathFile, CancellationToken cancellationToken)
@@ -16735,12 +16735,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -16997,12 +16997,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -17347,12 +17347,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -17647,12 +17647,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -18045,12 +18045,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -18374,12 +18374,12 @@ namespace TKMQ
                                         MyMail.Dispose(); //釋放資源
 
                                     }
-                                    catch (Exception ex)
+                                    catch (Exception EX)
                                     {
                                         //MessageBox.Show("有錯誤");
 
-                                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                                        //ex.ToString();
+                                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                                        //EX.ToString();
                                     }
                                 }
                                 catch (Exception EX)
@@ -18795,12 +18795,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -19098,12 +19098,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -19432,12 +19432,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                            //ex.ToString();
+                            ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -19791,12 +19791,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -20074,12 +20074,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -20367,12 +20367,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -20686,10 +20686,10 @@ namespace TKMQ
 
 
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
-                ADDLOG(DateTime.Now, SUBJEST.ToString(), ex.ToString());
-                //ex.ToString();
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
             }
         }
 
@@ -20719,7 +20719,7 @@ namespace TKMQ
                         }
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
 
                     }
@@ -20804,7 +20804,7 @@ namespace TKMQ
                         }
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
 
                     }
@@ -20889,7 +20889,7 @@ namespace TKMQ
                         }
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
 
                     }
@@ -20973,7 +20973,7 @@ namespace TKMQ
                         }
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
 
                     }
@@ -22286,12 +22286,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -22633,12 +22633,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -22917,12 +22917,12 @@ namespace TKMQ
                         MyMail.Dispose(); //釋放資源
 
                     }
-                    catch (Exception ex)
+                    catch (Exception EX)
                     {
                         //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                        //ex.ToString();
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
                     }
                 }
                 catch (Exception EX)
@@ -23211,12 +23211,12 @@ namespace TKMQ
                             MyMail.Dispose(); //釋放資源
 
                         }
-                        catch (Exception ex)
+                        catch (Exception EX)
                         {
                             //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), ex.ToString());
-                            //ex.ToString();
+                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                            //EX.ToString();
                         }
                     }
                     catch (Exception EX)
@@ -23560,7 +23560,7 @@ namespace TKMQ
             {
                 //MessageBox.Show("資料查詢超時，操作已被取消。");
             }
-            catch (Exception ex)
+            catch (Exception EX)
             {
                 //MessageBox.Show("發生錯誤：" + ex.Message);
             }
