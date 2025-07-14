@@ -312,6 +312,8 @@ namespace TKMQ
             {
                 //每日LINE通知
                 ASYNC_HRAUTORUN5();
+                // 執行完，暫停 1 分，避免太快重覆執行
+                System.Threading.Thread.Sleep(1000 * 60 * 1);
             }
 
             //targetTime2
@@ -21118,17 +21120,17 @@ namespace TKMQ
                                     ,MB002
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<'{0}' 
                                     AND (LA009 ='21002' )),0) AS '期初庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<='{0}' 
                                     AND (LA009 ='21002' )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('2')
                                     AND LA004>='{0}' 
@@ -21136,7 +21138,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('1')
                                     AND LA004>='{0}' 
@@ -21144,7 +21146,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('3')
                                     AND LA004>='{0}' 
@@ -21152,7 +21154,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (1)
@@ -21161,7 +21163,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (-1)
@@ -21173,14 +21175,14 @@ namespace TKMQ
                                     (
 	                                    SELECT 
 	                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
-	                                    FROM  [TK].dbo.INVMB AS INVMB
-	                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
-	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
-	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
-	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
-	                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
-	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
-	                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+	                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+	                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD  WITH(NOLOCK) ON MB001=MD001 AND MB072=MD002 
+	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+	                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+	                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 	                                    Where  (LA004 Between N'{0}' and N'{0}')  
 	                                    AND (INV.MC002 IN (N'21002'))
 	                                    AND CMS.MC004='1'  
@@ -21292,17 +21294,17 @@ namespace TKMQ
                                     ,MB002
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<'{0}' 
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期初庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<='{0}' 
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('2')
                                     AND LA004>='{0}' 
@@ -21310,7 +21312,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('1')
                                     AND LA004>='{0}' 
@@ -21318,7 +21320,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004'))),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('3')
                                     AND LA004>='{0}' 
@@ -21326,7 +21328,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004'))),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (1)
@@ -21335,7 +21337,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (-1)
@@ -21351,14 +21353,14 @@ namespace TKMQ
 	                                    (
 		                                    SELECT 
 		                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
-		                                    FROM  [TK].dbo.INVMB AS INVMB
-		                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
-		                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
-		                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
-		                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
-		                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
-		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
-		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+		                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+		                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+		                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+		                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD WITH(NOLOCK)  ON MB001=MD001 AND MB072=MD002 
+		                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+		                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+		                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 		                                    Where  (LA004 Between N'{0}' and N'{0}')  
 		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
@@ -21471,7 +21473,7 @@ namespace TKMQ
                                     ,MB002
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<'{1}' 
                                     AND (LA009 ='21002' )),0) AS '期初庫存'
                                     ,ISNULL((
@@ -21481,7 +21483,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('2')
                                     AND LA004>='{1}' 
@@ -21489,7 +21491,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('1')
                                     AND LA004>='{1}' 
@@ -21497,7 +21499,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('3')
                                     AND LA004>='{1}' 
@@ -21505,7 +21507,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (1)
@@ -21514,7 +21516,7 @@ namespace TKMQ
                                     AND (LA009 ='21002' )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (-1)
@@ -21526,14 +21528,14 @@ namespace TKMQ
                                     (
 	                                    SELECT 
 	                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
-	                                    FROM  [TK].dbo.INVMB AS INVMB
-	                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
-	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
-	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
-	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
-	                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
-	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
-	                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+	                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+	                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD  WITH(NOLOCK) ON MB001=MD001 AND MB072=MD002 
+	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+	                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+	                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 	                                    Where  (LA004 Between N'{1}' and N'{2}')  
 	                                    AND (INV.MC002 IN (N'21002'))
 	                                    AND CMS.MC004='1'  
@@ -21643,17 +21645,17 @@ namespace TKMQ
                                     ,MB002
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<'{1}' 
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期初庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 and LA004<='{2}' 
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '期末庫存'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('2')
                                     AND LA004>='{1}' 
@@ -21661,7 +21663,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期銷售'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('1')
                                     AND LA004>='{1}' 
@@ -21669,7 +21671,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期入庫'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('3')
                                     AND LA004>='{1}' 
@@ -21677,7 +21679,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期領用'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (1)
@@ -21686,7 +21688,7 @@ namespace TKMQ
                                     AND (LA009 IN (N'30001',N'30002',N'30003',N'30004') )),0) AS '本期轉撥入'
                                     ,ISNULL((
                                     SELECT SUM(LA011*LA005)*-1
-                                    FROM [TK].dbo.INVLA 
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
                                     WHERE  LA001=TEMP.MB001 
                                     AND LA014 IN ('4')
                                     AND LA005 IN (-1)
@@ -21702,14 +21704,14 @@ namespace TKMQ
 	                                    (
 		                                    SELECT 
 		                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
-		                                    FROM  [TK].dbo.INVMB AS INVMB
-		                                    INNER JOIN [TK].dbo.INVMC AS INV ON INV.MC001=MB001 
-		                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS ON INV.MC002=CMS.MC001 
-		                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD ON MB001=MD001 AND MB072=MD002 
-		                                    INNER JOIN  [TK].dbo.INVLA AS INVLA ON LA001=MB001 AND LA009=CMS.MC001
-		                                    LEFT JOIN  [TK].dbo.INVMA AS A ON A.MA001='1' AND A.MA002=MB005 
-		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC ON 1=1 
-		                                    LEFT JOIN  [TK].dbo.ACTMA AS B ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+		                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+		                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+		                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+		                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD  WITH(NOLOCK) ON MB001=MD001 AND MB072=MD002 
+		                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+		                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+		                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
 		                                    Where  (LA004 Between N'{1}' and N'{2}')  
 		                                    and (INV.MC002 IN (N'30001',N'30002',N'30003',N'30004'))
 		                                    AND CMS.MC004='1'  
