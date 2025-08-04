@@ -22778,7 +22778,7 @@ namespace TKMQ
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
             //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
             // show the export options dialog and do the export
-            report1.Export(export, FILENAME);
+            report1.Export(export, FILENAME); 
         }
         
 
