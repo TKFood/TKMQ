@@ -20612,6 +20612,11 @@ namespace TKMQ
             //新增當月記錄-門市
             TBDAILYMONTHSSTORES_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday);
 
+            //新增每日記錄-觀光
+            TBDAILYDAYSFACTORYS_RetryAddDailyPost(yesterday);
+            //新增當月記錄-觀光
+            TBDAILYMONTHSFACTORYS_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday);
+
             DataSet ds = new DataSet();
             DataTable DT = new DataTable();
             StringBuilder SUBJEST = new StringBuilder();
@@ -20628,6 +20633,8 @@ namespace TKMQ
             string pathFile_MONTH = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份硯微墨統計表" + DATES.ToString() + ".pdf";
             string pathFile_DAILY_STORES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "烘培類每日商品統計表-門市" + DATES.ToString() + ".pdf";
             string pathFile_MONTH_STORES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "烘培類當月商品統計表-門市" + DATES.ToString() + ".pdf";
+            string pathFile_DAILY_FACTORYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日觀光工廠統計表" + DATES.ToString() + ".pdf";
+            string pathFile_MONTH_FACTORYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份觀光工廠統計表" + DATES.ToString() + ".pdf";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -20657,6 +20664,8 @@ namespace TKMQ
             SAVEREPORT_STORES_REPORTS_MONTH(pathFile_MONTH, SMONTHS, firstDayOfMonth, yesterday);
             SAVEREPORT_STORES_REPORTS_DAILY_STORES(pathFile_DAILY_STORES, yesterday);
             SAVEREPORT_STORES_REPORTS_MONTH_STORES(pathFile_MONTH_STORES, SMONTHS, firstDayOfMonth, yesterday);
+            SAVEREPORT_STORES_REPORTS_DAILY_FACTORYS(pathFile_DAILY_FACTORYS, yesterday);
+            SAVEREPORT_STORES_REPORTS_MONTH_FACTORYS(pathFile_MONTH_FACTORYS, SMONTHS, firstDayOfMonth, yesterday);
 
             DT = SERACH_MAIL_STORES_REPORTS();
 
@@ -20696,10 +20705,14 @@ namespace TKMQ
             Attachment attch2 = new Attachment(pathFile_MONTH);
             Attachment attch3 = new Attachment(pathFile_DAILY_STORES);
             Attachment attch4 = new Attachment(pathFile_MONTH_STORES);
+            Attachment attch5 = new Attachment(pathFile_DAILY_FACTORYS);
+            Attachment attch6 = new Attachment(pathFile_MONTH_FACTORYS);
             MyMail.Attachments.Add(attch);
             MyMail.Attachments.Add(attch2);
             MyMail.Attachments.Add(attch3);
             MyMail.Attachments.Add(attch4);
+            MyMail.Attachments.Add(attch5);
+            MyMail.Attachments.Add(attch6);
 
             try
             {
@@ -20808,6 +20821,50 @@ namespace TKMQ
 
             return YN;
         }
+
+        public void TBDAILYDAYSFACTORYS_RetryAddDailyPost(string yesterday)
+        {
+            int maxRetries = 3;
+            int attempt = 0;
+            bool isSuccess = false;
+
+            //先執行1次
+            ADD_TBDAILYDAYSFACTORYS(yesterday);
+            //再檢查
+            while (attempt < maxRetries && !isSuccess)
+            {
+                attempt++;
+
+                // 先檢查是否已有 yesterday 的資料
+                if (!TBDAILYDAYSFACTORYS_HasDataForDate(yesterday))
+                {
+                    try
+                    {
+                        ADD_TBDAILYDAYSFACTORYS(yesterday);
+                        // 執行後再次檢查是否成功新增
+                        if (TBDAILYDAYSFACTORYS_HasDataForDate(yesterday))
+                        {
+                            isSuccess = true;
+                        }
+
+                    }
+                    catch (Exception EX)
+                    {
+
+                    }
+                }
+                else
+                {
+                    isSuccess = true;
+                }
+            }
+
+            if (!isSuccess)
+            {
+
+            }
+        }
+
 
         public void TBDAILYDAYSSTORES_RetryAddDailyPost(string yesterday)
         {
@@ -21020,6 +21077,50 @@ namespace TKMQ
 
             }
         }
+
+        public void TBDAILYMONTHSFACTORYS_RetryAddDailyPost(string SMONTHS, string firstDayOfMonth, string yesterday)
+        {
+            int maxRetries = 3;
+            int attempt = 0;
+            bool isSuccess = false;
+
+            //先執行1次
+            ADD_TBDAILYMONTHSFACTORYS(SMONTHS, firstDayOfMonth, yesterday);
+            //再檢查
+            while (attempt < maxRetries && !isSuccess)
+            {
+                attempt++;
+
+                // 先檢查是否已有 SMONTHS 的資料
+                if (!TBDAILYMONTHSFACTORYS_HasDataForDate(SMONTHS))
+                {
+                    try
+                    {
+                        ADD_TBDAILYMONTHSFACTORYS(SMONTHS, firstDayOfMonth, yesterday);
+                        // 執行後再次檢查是否成功新增
+                        if (TBDAILYMONTHSFACTORYS_HasDataForDate(SMONTHS))
+                        {
+                            isSuccess = true;
+                        }
+
+                    }
+                    catch (Exception EX)
+                    {
+
+                    }
+                }
+                else
+                {
+                    isSuccess = true;
+                }
+            }
+
+            if (!isSuccess)
+            {
+
+            }
+        }
+
         //TBDAILYPOSTBMONTH，假設這是檢查資料是否存在的方法
         public bool TBDAILYMONTHSSTORES_HasDataForDate(string SMONTHS)
         {
@@ -21041,6 +21142,47 @@ namespace TKMQ
                     sbSql.AppendFormat(@"
                                         SELECT 1
                                         FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES]
+                                        WHERE [YM] = @YM
+                                         ");
+
+                    using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
+                    {
+                        cmd.Parameters.AddWithValue("@YM", SMONTHS);
+                        sqlConn.Open();
+
+                        object result = cmd.ExecuteScalar();
+                        YN = (result != null);
+                    }
+                }
+            }
+            catch (Exception EX)
+            {
+                YN = false;
+            }
+
+            return YN;
+        }
+
+        public bool TBDAILYMONTHSFACTORYS_HasDataForDate(string SMONTHS)
+        {
+            bool YN = false;
+            SqlConnection sqlConn = null;
+
+            try
+            {
+                // 解密連線字串
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    StringBuilder sbSql = new StringBuilder();
+
+                    sbSql.AppendFormat(@"
+                                        SELECT 1
+                                        FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                                         WHERE [YM] = @YM
                                          ");
 
@@ -21415,6 +21557,223 @@ namespace TKMQ
 
         }
 
+        public void ADD_TBDAILYDAYSFACTORYS(string SDATES)
+        {
+            StringBuilder sbSql = new StringBuilder();
+            StringBuilder sbSql99 = new StringBuilder();
+            SqlTransaction tran;
+            SqlCommand cmd = new SqlCommand();
+            int result;
+
+        
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+
+                sbSql.AppendFormat(@" 
+                                    DELETE [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                    WHERE [YMD]='{0}'
+
+                                    INSERT INTO [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                    (
+                                    [YMD]
+                                    ,[MB001]
+                                    ,[MB002]
+                                    ,[期初庫存]
+                                    ,[期末庫存]
+                                    ,[本期銷售]
+                                    ,[本期入庫]
+                                    ,[本期領用]
+                                    ,[本期轉撥入]
+                                    ,[本期轉撥出]
+                                    )
+
+                                    SELECT 
+                                    '{0}' AS YMD
+                                    ,MB001
+                                    ,MB002
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 and LA004<'{0}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '期初庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 and LA004<='{0}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '期末庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('2')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期銷售'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('1')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 IN (N'21001'))),0) AS '本期入庫'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('3')
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 IN (N'21001'))),0) AS '本期領用'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (1)
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期轉撥入'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (-1)
+                                    AND LA004>='{0}' 
+                                    AND LA004<='{0}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期轉撥出'
+
+                                    FROM 
+                                    (
+                                    SELECT 
+                                    DISTINCT MB001,MB002
+                                    FROM 
+                                    (
+	                                    SELECT 
+	                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
+	                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+	                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+	                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+	                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD WITH(NOLOCK)  ON MB001=MD001 AND MB072=MD002 
+	                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+	                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+	                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+	                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+	                                    Where  (LA004 Between N'{0}' and N'{0}')  
+	                                    and (INV.MC002 IN (N'21001'))
+	                                    AND CMS.MC004='1'  
+	                                    AND ISNULL(A.MA001,'')<>'' 
+	                                    AND ISNULL(A.MA002,'')<>'' 
+	                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%')
+
+                                    ) AS TEMP2
+                                    ) AS TEMP
+                                    ORDER BY  MB001,MB002
+
+
+
+                                    UPDATE [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                    SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
+                                    WHERE [YMD]='{0}'
+
+                                    "
+                                    , SDATES
+                                    );
+
+                sbSql.AppendFormat(@" ");
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                cmd.CommandText = sbSql.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+
+
+                }
+            }
+            catch (Exception EX)
+            {
+
+            }
+
+            finally
+            {
+                sqlConn.Close();
+            }
+
+
+        }
+
+
+        public bool TBDAILYDAYSFACTORYS_HasDataForDate(string SDATES)
+        {
+            bool YN = false;
+            SqlConnection sqlConn = null;
+
+            try
+            {
+                // 解密連線字串
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    StringBuilder sbSql = new StringBuilder();
+
+                    sbSql.AppendFormat(@"
+                                        SELECT 1
+                                        FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                        WHERE [YMD] = @YMD
+                                         ");
+
+                    using (SqlCommand cmd = new SqlCommand(sbSql.ToString(), sqlConn))
+                    {
+                        cmd.Parameters.AddWithValue("@YMD", SDATES);
+                        sqlConn.Open();
+
+                        object result = cmd.ExecuteScalar();
+                        YN = (result != null);
+                    }
+                }
+            }
+            catch (Exception EX)
+            {
+                YN = false;
+            }
+
+            return YN;
+        }
+
+
         public void ADD_TBDAILYMONTHS(string SMONTHS, string SDATES, string EDATES)
         {
             StringBuilder sbSql = new StringBuilder();
@@ -21765,6 +22124,176 @@ namespace TKMQ
             }
 
         }
+
+        public void ADD_TBDAILYMONTHSFACTORYS(string SMONTHS, string SDATES, string EDATES)
+        {
+            StringBuilder sbSql = new StringBuilder();
+            StringBuilder sbSql99 = new StringBuilder();
+            SqlTransaction tran;
+            SqlCommand cmd = new SqlCommand();
+            int result;
+            
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sqlConn.Close();
+                sqlConn.Open();
+                tran = sqlConn.BeginTransaction();
+
+
+                sbSql.AppendFormat(@" 
+                                   DELETE [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                                    WHERE [YM]='{0}'
+
+                                    INSERT INTO [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                                    (
+                                    [YM]
+                                    ,[MB001]
+                                    ,[MB002]
+                                    ,[期初庫存]
+                                    ,[期末庫存]
+                                    ,[本期銷售]
+                                    ,[本期入庫]
+                                    ,[本期領用]
+                                    ,[本期轉撥入]
+                                    ,[本期轉撥出]
+                                    )
+                                    SELECT 
+                                    '{0}' AS YM
+                                    ,MB001
+                                    ,MB002
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 and LA004<'{1}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '期初庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 and LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '期末庫存'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('2')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期銷售'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('1')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期入庫'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('3')
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期領用'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (1)
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期轉撥入'
+                                    ,ISNULL((
+                                    SELECT SUM(LA011*LA005)*-1
+                                    FROM [TK].dbo.INVLA   WITH(NOLOCK)
+                                    WHERE  LA001=TEMP.MB001 
+                                    AND LA014 IN ('4')
+                                    AND LA005 IN (-1)
+                                    AND LA004>='{1}' 
+                                    AND LA004<='{2}' 
+                                    AND (LA009 IN (N'21001') )),0) AS '本期轉撥出'
+
+                                    FROM 
+                                    (
+	                                    SELECT 
+	                                    DISTINCT MB001,MB002
+	                                    FROM 
+	                                    (
+		                                    SELECT 
+		                                    DISTINCT A.MA002 AS MA002, A.MA003 AS MA003, MB001,INV.MC002 AS LA009, A.MA004 AS MA004, ISNULL(B.MA003,'') AS ACTMA003, MB002, MB003, MB004, MB072, CMS.MC002 AS CMSMC002, MB090,ISNULL(MD003,0) AS MD003,ISNULL(MD004,0) AS MD004 
+		                                    FROM  [TK].dbo.INVMB AS INVMB  WITH(NOLOCK)
+		                                    INNER JOIN [TK].dbo.INVMC AS INV  WITH(NOLOCK) ON INV.MC001=MB001 
+		                                    LEFT JOIN  [TK].dbo.CMSMC AS CMS  WITH(NOLOCK) ON INV.MC002=CMS.MC001 
+		                                    LEFT JOIN  [TK].dbo.INVMD AS INVMD  WITH(NOLOCK) ON MB001=MD001 AND MB072=MD002 
+		                                    INNER JOIN  [TK].dbo.INVLA AS INVLA  WITH(NOLOCK) ON LA001=MB001 AND LA009=CMS.MC001
+		                                    LEFT JOIN  [TK].dbo.INVMA AS A  WITH(NOLOCK) ON A.MA001='1' AND A.MA002=MB005 
+		                                    LEFT JOIN  [TK].dbo.ACTMC AS ACTMC  WITH(NOLOCK) ON 1=1 
+		                                    LEFT JOIN  [TK].dbo.ACTMA AS B  WITH(NOLOCK) ON B.MA001=A.MA004 AND B.MA050=ACTMC.MC039
+		                                    Where  (LA004 Between N'{1}' and N'{2}')  
+		                                    and (INV.MC002 IN (N'21001'))
+		                                    AND CMS.MC004='1'  
+		                                    AND ISNULL(A.MA001,'')<>'' 
+		                                    and ISNULL(A.MA002,'')<>'' 
+                                            AND (MB001 LIKE '4%' OR MB001 LIKE '5%')
+
+	                                    ) AS TEMP2
+                                    ) AS TEMP
+                                    ORDER BY  MB001,MB002
+
+
+                                    UPDATE [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                                    SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
+                                    WHERE [YM]='{0}'
+
+                                    "
+                                    , SMONTHS, SDATES, EDATES
+                                    );
+
+                sbSql.AppendFormat(@" ");
+
+                cmd.Connection = sqlConn;
+                cmd.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                cmd.CommandText = sbSql.ToString();
+                cmd.Transaction = tran;
+                result = cmd.ExecuteNonQuery();
+
+                if (result == 0)
+                {
+                    tran.Rollback();    //交易取消
+                }
+                else
+                {
+                    tran.Commit();      //執行交易  
+
+
+                }
+            }
+            catch (Exception EX)
+            {
+
+            }
+
+            finally
+            {
+                sqlConn.Close();
+            }
+
+        }
+
         public DataTable FIND_TBDAILYPOSTBNOTIN()
         {
             DataTable DT = new DataTable();
@@ -22191,6 +22720,131 @@ namespace TKMQ
 
             return SB;
         }
+
+        public void SAVEREPORT_STORES_REPORTS_DAILY_FACTORYS(string pathFile, string SDAYS)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1.AppendFormat(@"   
+                            SELECT
+                            [ID]
+                            ,[YMD] AS '日期'
+                            ,[MB001] AS '品號'
+                            ,[MB002] AS '品名'
+                            ,[MB001]
+                            ,[MB002]
+                            ,[期初庫存]
+                            ,[期末庫存]
+                            ,[本期銷售]
+                            ,[本期入庫]
+                            ,[本期領用]
+                            ,[本期轉撥入]
+                            ,[本期轉撥出]
+                            ,[其他]
+                            FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                            WHERE [YMD]='{0}'
+                            AND [MB002] NOT LIKE '%試吃%'
+                            ORDER BY [YMD],[MB001]                         
+
+                            ", SDAYS);
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\觀光工廠每日商品統計表V2.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
+            report1.SetParameterValue("P1", SDAYS);
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+        }
+        
+
+        public void SAVEREPORT_STORES_REPORTS_MONTH_FACTORYS(string pathFile, string SMONTHS, string SDATES, string EDATES)
+        {
+            string FILENAME = pathFile;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            SQL1.AppendFormat(@"   
+                           SELECT 
+                            [ID]
+                            ,[YM] AS '年月'
+                            ,'{1}~{2}' AS '日期區間'
+                            ,[MB001] AS '品號'
+                            ,[MB002] AS '品名'
+                            ,[期初庫存]
+                            ,[期末庫存]
+                            ,[本期銷售]
+                            ,[本期入庫]
+                            ,[本期領用]
+                            ,[本期轉撥入]
+                            ,[本期轉撥出]
+                            ,[其他]
+                            FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                            WHERE [YM]='{0}'
+                            AND [MB002] NOT LIKE '%試吃%'
+                            ORDER BY [YM],[MB001]                     
+
+                            ", SMONTHS, SDATES, EDATES);
+
+            Report report1 = new Report();
+
+            report1.Load(@"REPORT\觀光工廠當月商品統計表V2.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
+            report1.SetParameterValue("P1", SDATES);
+            report1.SetParameterValue("P2", EDATES);
+
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+        }
+
+       
 
         public void SENDMAIL_PUR_VALIDCHECK(CancellationToken cancellationToken)
         {
