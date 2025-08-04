@@ -83,6 +83,7 @@
             this.button55 = new System.Windows.Forms.Button();
             this.button56 = new System.Windows.Forms.Button();
             this.button57 = new System.Windows.Forms.Button();
+            this.button58 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -101,7 +102,6 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button58 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -767,6 +767,16 @@
             this.button57.UseVisualStyleBackColor = true;
             this.button57.Click += new System.EventHandler(this.button57_Click);
             // 
+            // button58
+            // 
+            this.button58.Location = new System.Drawing.Point(723, 363);
+            this.button58.Name = "button58";
+            this.button58.Size = new System.Drawing.Size(197, 34);
+            this.button58.TabIndex = 109;
+            this.button58.Text = "研發-2001.產品開發+包裝設計申請單";
+            this.button58.UseVisualStyleBackColor = true;
+            this.button58.Click += new System.EventHandler(this.button58_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -932,7 +942,7 @@
             this.button54.Name = "button54";
             this.button54.Size = new System.Drawing.Size(189, 34);
             this.button54.TabIndex = 41;
-            this.button54.Text = "硯微墨商品銷進";
+            this.button54.Text = "硯微墨+門市+觀光商品銷進";
             this.button54.UseVisualStyleBackColor = true;
             this.button54.Click += new System.EventHandler(this.button54_Click);
             // 
@@ -1014,16 +1024,6 @@
             // timer3
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
-            // 
-            // button58
-            // 
-            this.button58.Location = new System.Drawing.Point(723, 363);
-            this.button58.Name = "button58";
-            this.button58.Size = new System.Drawing.Size(197, 34);
-            this.button58.TabIndex = 109;
-            this.button58.Text = "研發-2001.產品開發+包裝設計申請單";
-            this.button58.UseVisualStyleBackColor = true;
-            this.button58.Click += new System.EventHandler(this.button58_Click);
             // 
             // FrmMQMAIL
             // 

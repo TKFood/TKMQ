@@ -20582,7 +20582,10 @@ namespace TKMQ
 
             }
         }
-
+        /// <summary>
+        /// 硯微墨+門市+觀光商品銷進
+        /// </summary>
+        /// <param name="cancellationToken"></param>
         public void SENDMAIL_STORES_REPORTS(CancellationToken cancellationToken)  
         {
             DateTime yesterdayDate = DateTime.Now.AddDays(-1); // 取得昨天的日期
@@ -20659,10 +20662,10 @@ namespace TKMQ
 
             SUBJEST.Clear();
             BODY.Clear();
-            SUBJEST.AppendFormat(@"每日及月份-烘培類商品統計表" + DateTime.Now.ToString("yyyy/MM/dd"));
+            SUBJEST.AppendFormat(@"每日及月份-觀光+硯微墨+門市的烘培商品-統計表" + DateTime.Now.ToString("yyyy/MM/dd"));
             BODY.AppendFormat("Dear All, ");
             BODY.AppendFormat(Environment.NewLine);
-            BODY.AppendFormat(Environment.NewLine + "檢附每日及月份-烘培類商品統計表，請參考，謝謝");
+            BODY.AppendFormat(Environment.NewLine + "檢附每日及月份-觀光+硯微墨+門市的烘培商品-統計表，請參考，謝謝");
             BODY.AppendFormat(Environment.NewLine);
 
 
@@ -24081,7 +24084,7 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-            //寄送MAIL，硯微墨+門市統計表 
+            //寄送MAIL，硯微墨+門市+觀光商品銷進統計表 
             SENDMAIL_STORES_REPORTS(cts.Token);
           
 
