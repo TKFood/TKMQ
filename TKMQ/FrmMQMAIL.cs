@@ -421,9 +421,25 @@ namespace TKMQ
 
             //關閉excel
             CLEAREXCEL();
-
+    
             try
             {
+                try
+                {                    
+                }
+                catch (Exception EX)
+                { }
+                try
+                {
+                    //副總-品保未核單
+                    timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+                    CancellationTokenSource cts1 = new CancellationTokenSource();
+                    cts1.CancelAfter(timeoutMilliseconds);
+                    //通知副總，總務未簽核的表單
+                    PREPARE_UOF_TASK_QC_UOF_FORM(cts1.Token);
+                }
+                catch (Exception EX)
+                { }
                 try
                 {
                     CancellationTokenSource cts1 = new CancellationTokenSource();
