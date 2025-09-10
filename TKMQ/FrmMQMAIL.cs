@@ -24085,6 +24085,374 @@ namespace TKMQ
 
             }
         }
+        public void PREPARE_UOF_TASK_QC_UOF_FORM(CancellationToken cancellationToken)
+        {
+            DataTable DT_UOF_TASK_QC_UOF_FORM = new DataTable();
+            DataTable EMAIL_QC_UOF_FORM = new DataTable();
+            DT_UOF_TASK_QC_UOF_FORM = FIND_UOF_TASK_QC_UOF_FORM();
+            EMAIL_QC_UOF_FORM = FIND_EMAIL_QC_UOF_FORM();
+
+            try
+            {
+                if (DT_UOF_TASK_QC_UOF_FORM != null && DT_UOF_TASK_QC_UOF_FORM.Rows.Count > 0 && EMAIL_QC_UOF_FORM != null && EMAIL_QC_UOF_FORM.Rows.Count > 0)
+                {
+                    SEND_QC_UOF_FORM(EMAIL_QC_UOF_FORM, DT_UOF_TASK_QC_UOF_FORM);
+                }
+            }
+            catch (Exception EX)
+            {
+
+            }
+
+        }
+        public DataTable FIND_UOF_TASK_QC_UOF_FORM()
+        {
+
+            DataSet DS = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //   AND DOC_NBR = 'GA1005230100006'
+
+                sbSql.AppendFormat(@"                                    
+                                   -- 20250909 查業務所有未結案的品保表單
+                                    SELECT 
+                                        f.FORM_NAME       AS '表單名稱',
+                                        u.NAME            AS '申請者',
+                                        CONVERT(nvarchar,t.BEGIN_TIME,111)      AS '申請時間',
+                                        t.DOC_NBR         AS '表單編號',   
+                                        (
+                                            SELECT STUFF(
+                                                (
+                                                    SELECT ',' + u2.NAME
+                                                    FROM [UOF].dbo.TB_WKF_TASK_NODE AS TN
+                                                    LEFT JOIN [UOF].dbo.TB_EB_USER AS u2
+                                                        ON u2.USER_GUID = TN.ORIGINAL_SIGNER
+                                                    WHERE TN.SITE_ID = t.CURRENT_SITE_ID
+                                                    FOR XML PATH(''), TYPE
+                                                ).value('.', 'nvarchar(max)')
+                                            ,1,1,'')
+                                        ) AS '目前簽核者',
+	                                     (
+                                            SELECT STUFF(
+                                                (
+                                                    SELECT ',' + u2.NAME
+                                                    FROM [UOF].dbo.TB_WKF_TASK_NODE AS TN
+                                                    LEFT JOIN [UOF].dbo.TB_EB_USER AS u2
+                                                        ON u2.USER_GUID = TN.ORIGINAL_SIGNER
+                                                    WHERE TN.SITE_ID <> t.CURRENT_SITE_ID
+				                                    AND TN.TASK_ID = t.TASK_ID
+				                                    AND ISNULL(FINISH_TIME,'')=''
+				                                    ORDER BY NODE_SEQ
+                                                    FOR XML PATH(''), TYPE
+                                                ).value('.', 'nvarchar(max)')
+                                            ,1,1,'')
+                                        ) AS '下關的簽核者',
+                                        CASE 
+                                            WHEN f.FORM_NAME = '1002.客訴異常處理單' 
+                                                THEN t.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""QCFrm002PRD""]/@fieldValue)[1]', 'nvarchar(max)') 
+		                                    WHEN f.FORM_NAME = '1004.無品號試吃製作申請單' 
+			                                    THEN STUFF((
+				                                    SELECT N',' + C.value('@fieldValue','nvarchar(200)')
+				                                    FROM CURRENT_DOC.nodes('/Form/FormFieldValue/FieldItem[@fieldId=""DETAILS""]/DataGrid/Row/Cell[@fieldId=""DVV01""]') AS T(C)
+				                                    FOR XML PATH(''), TYPE
+			                                    ).value('.', 'nvarchar(max)'), 1, 1, '')
+                                            WHEN f.FORM_NAME = '1004.品保業務工作申請單' 
+                                                THEN [UOF].dbo.StripHTML(t.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""QCFrm004Process""]/@fieldValue)[1]', 'nvarchar(max)'))
+		                                    WHEN f.FORM_NAME = '1005 研發業務工作申請單' 
+			                                    THEN  [UOF].dbo.StripHTML(t.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""RDFrm1003RS""]/@fieldValue)[1]', 'nvarchar(max)'))
+		                                    WHEN f.FORM_NAME = '1005.舊品變更申請單' 
+                                                THEN t.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""RDFrm1002PD""]/@fieldValue)[1]', 'nvarchar(max)')  
+		                                    WHEN f.FORM_NAME = '1006.委外送驗申請單' 
+                                                THEN t.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""QC6007""]/DataGrid/Row[@order=""0""]/Cell[@fieldId=""QC60071""]/@fieldValue)[1]', 'nvarchar(200)')
+                                     ELSE NULL
+                                        END AS '表單標題',
+                                        t.CURRENT_SITE_ID,
+	                                    t.TASK_ID,
+                                        t.CURRENT_DOC
+
+                                    FROM [UOF].dbo.TB_WKF_TASK AS t WITH (NOLOCK)
+                                    LEFT JOIN [UOF].dbo.TB_EB_USER AS u
+                                        ON u.USER_GUID = t.USER_GUID
+                                    LEFT JOIN [UOF].dbo.TB_EB_EMPL_DEP AS ed
+                                        ON ed.USER_GUID = u.USER_GUID AND ed.ORDERS = '0'
+                                    JOIN [UOF].dbo.TB_WKF_FORM_VERSION AS fv
+                                        ON t.FORM_VERSION_ID = fv.FORM_VERSION_ID
+                                    JOIN [UOF].dbo.TB_WKF_FORM AS f
+                                        ON f.FORM_ID = fv.FORM_ID
+                                    WHERE 1=1
+                                      AND ISNULL(t.TASK_STATUS,'') NOT IN ('2','3')
+                                      AND t.BEGIN_TIME >= '2025-01-01'
+                                      AND f.FORM_NAME COLLATE Chinese_Taiwan_Stroke_BIN IN (
+                                            SELECT  [FORM_NAME]
+		                                    FROM [192.168.1.105].[TKMQ].[dbo].[TB_UOF_QC_FORM_NAME]
+	                                       )
+ 
+                                    ORDER BY f.FORM_NAME,t.DOC_NBR;
+
+
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count > 0)
+                {
+
+                    return DS.Tables["DS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable FIND_EMAIL_QC_UOF_FORM()
+        {
+            DataSet DS = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //   AND DOC_NBR = 'GA1005230100006'
+
+                sbSql.AppendFormat(@"                                    
+                                  SELECT [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='QC_UOF_FORM'
+
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count > 0)
+                {
+
+                    return DS.Tables["DS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SEND_QC_UOF_FORM(DataTable TO_EMAIL, DataTable DT)
+        {
+            try
+            {
+                StringBuilder SUBJEST = new StringBuilder();
+                StringBuilder BODY = new StringBuilder();
+
+                ////加上附圖
+                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
+                //LinkedResource res = new LinkedResource(path);
+                //res.ContentId = Guid.NewGuid().ToString();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-請查收-每日-UOF表單中，品保未核單的簽核人及表單單號，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-每日-UOF表單中，品保未核單的簽核人及表單單號，謝謝"
+                    + " <br>"
+                    );
+
+
+
+
+
+                if (DT.Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人員</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請表單</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
+
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DT.Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請者"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單名稱"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單編號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請時間"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核者"].ToString() + "</td>");
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+
+
+                try
+                {
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = SUBJEST.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+
+
+                    try
+                    {
+                        foreach (DataRow DR in TO_EMAIL.Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+                    }
+                    catch (Exception EX)
+                    {
+                        //MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
+                    }
+                }
+                catch (Exception EX)
+                {
+
+                }
+                finally
+                {
+
+                }
+
+
+            }
+            catch (Exception EX)
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -24789,6 +25157,16 @@ namespace TKMQ
             //2001.產品開發+包裝設計申請單
             SENDMAIL_UOF_APPLY_DEV_DESIGN_2001(cts1.Token);
             MessageBox.Show("OK");
+        }
+        private void button59_Click(object sender, EventArgs e)
+        {
+            //副總-品保未核單
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+            //通知副總，總務未簽核的表單
+            PREPARE_UOF_TASK_QC_UOF_FORM(cts1.Token);
+
         }
 
         #endregion

@@ -102,6 +102,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
+            this.button59 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -207,6 +208,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button57, 2, 5);
             this.tableLayoutPanel1.Controls.Add(this.button58, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
+            this.tableLayoutPanel1.Controls.Add(this.button59, 0, 7);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -1025,6 +1027,17 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
+            // button59
+            // 
+            this.button59.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button59.Location = new System.Drawing.Point(3, 283);
+            this.button59.Name = "button59";
+            this.button59.Size = new System.Drawing.Size(168, 34);
+            this.button59.TabIndex = 110;
+            this.button59.Text = "副總-品保未核單";
+            this.button59.UseVisualStyleBackColor = true;
+            this.button59.Click += new System.EventHandler(this.button59_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -1129,5 +1142,6 @@
         private System.Windows.Forms.Button button56;
         private System.Windows.Forms.Button button57;
         private System.Windows.Forms.Button button58;
+        private System.Windows.Forms.Button button59;
     }
 }
