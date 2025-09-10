@@ -184,7 +184,6 @@
             this.tableLayoutPanel1.Controls.Add(this.button49, 4, 13);
             this.tableLayoutPanel1.Controls.Add(this.button50, 3, 10);
             this.tableLayoutPanel1.Controls.Add(this.button21, 6, 12);
-            this.tableLayoutPanel1.Controls.Add(this.button22, 6, 11);
             this.tableLayoutPanel1.Controls.Add(this.button30, 6, 8);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.button24, 0, 1);
@@ -207,6 +206,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button56, 2, 4);
             this.tableLayoutPanel1.Controls.Add(this.button57, 2, 5);
             this.tableLayoutPanel1.Controls.Add(this.button58, 6, 9);
+            this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -541,11 +541,11 @@
             // button22
             // 
             this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button22.Location = new System.Drawing.Point(723, 443);
+            this.button22.Location = new System.Drawing.Point(3, 243);
             this.button22.Name = "button22";
-            this.button22.Size = new System.Drawing.Size(197, 34);
+            this.button22.Size = new System.Drawing.Size(168, 34);
             this.button22.TabIndex = 24;
-            this.button22.Text = "總務未核單-副總";
+            this.button22.Text = "副總-總務未核單";
             this.button22.UseVisualStyleBackColor = true;
             this.button22.Click += new System.EventHandler(this.button22_Click);
             // 
