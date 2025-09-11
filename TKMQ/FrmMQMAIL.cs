@@ -1723,6 +1723,127 @@ namespace TKMQ
             }
         }
 
+        public void SENDMAIL_LOTCHECK(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments,DataTable DT)
+        {
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {             
+                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                MyMail.Subject = Subject.ToString();
+                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                MyMail.Body = Body.ToString() + Environment.NewLine;
+                //MyMail.IsBodyHtml = true; //是否使用html格式
+
+              
+                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+                Attachment attch = new Attachment(Attachments + ".xlsx");
+                MyMail.Attachments.Add(attch);
+
+
+                if (DT.Rows.Count > 0)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單名稱</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">批號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製造日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">備註</th>");
+
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    foreach (DataRow DR in DT.Rows)
+                    {
+
+                        BODY.AppendFormat(@"<tr >");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["KINDS"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["批號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造日"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["序號"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["備註"].ToString() + "</td>");
+
+                        BODY.AppendFormat(@"</tr> ");
+
+                        //BODY.AppendFormat("<span></span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+                }
+
+            }
+            catch
+            { }
+
+            MyMail.Body = Body.ToString() + Environment.NewLine+ BODY.ToString();
+            MyMail.IsBodyHtml = true; //是否使用html格式
+
+            try
+            {
+                foreach (DataRow od in SEND.Tables[0].Rows)
+                {
+
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                //增加重試機制，避免短暫的網路問題導致失敗
+                int retryCount = 3;
+                for (int i = 0; i < retryCount; i++)
+                {
+                    try
+                    {
+                        MySMTP.Send(MyMail);
+                        MyMail.Dispose(); //釋放資源
+
+                        break; // 成功則跳出迴圈
+                    }
+                    catch (Exception EX)
+                    {
+                        if (i == retryCount - 1)
+                            throw; // 最後一次仍失敗則拋出異常
+                    }
+
+                    System.Threading.Thread.Sleep(5000); // 等待 5 秒再試
+                }
+                MyMail.Dispose(); //釋放資源
+
+
+            }
+            catch (Exception EX)
+            {
+                ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                //EX.ToString();
+            }
+        }
+
         public void SETFILE(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
@@ -24872,7 +24993,7 @@ namespace TKMQ
                                   "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
 
                 DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
-                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+                SENDMAIL_LOTCHECK(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
             }
             catch (OperationCanceledException)
             {
