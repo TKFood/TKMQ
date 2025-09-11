@@ -4719,6 +4719,13 @@ namespace TKMQ
                                     SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
                                     FROM 
                                     ( 
+	                                SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
+	                                FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+	                                WHERE TG001=TH001 AND TG002=TH002 
+	                                AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+	                                AND TH030='Y' 
+	                                AND TH117>TG003
+	                                UNION ALL 
                                     SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
                                     FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
                                     WHERE TG001=TH001 AND TG002=TH002 
