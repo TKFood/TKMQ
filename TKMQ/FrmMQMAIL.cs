@@ -672,8 +672,8 @@ namespace TKMQ
                         BODY.AppendFormat("Dear SIR" + Environment.NewLine +
                                           "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
 
-                        DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
-                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
+                  
+                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
                         Thread.Sleep(1000);
                     }
                 }
@@ -1641,47 +1641,8 @@ namespace TKMQ
                     p[i].Kill();
             }
         }
-        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments,DataTable DT)
-        {
-            StringBuilder BODY = new StringBuilder();
-
-
-            if (DT.Rows.Count > 0)
-            {
-                BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-                BODY.AppendFormat(@"<table> ");
-                BODY.AppendFormat(@"<tr >");
-                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人員</th>");
-                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請表單</th>");
-                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
-                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
-                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
-
-
-                BODY.AppendFormat(@"</tr> ");
-
-                foreach (DataRow DR in DT.Rows)
-                {
-
-                    BODY.AppendFormat(@"<tr >");
-                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請者"].ToString() + "</td>");
-                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單名稱"].ToString() + "</td>");
-                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單編號"].ToString() + "</td>");
-                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請時間"].ToString() + "</td>");
-                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核者"].ToString() + "</td>");
-
-                    BODY.AppendFormat(@"</tr> ");
-
-                    //BODY.AppendFormat("<span></span>");
-                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-                }
-                BODY.AppendFormat(@"</table> ");
-            }
-
+        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
+        {           
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -1693,7 +1654,7 @@ namespace TKMQ
             //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = Subject.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-            MyMail.Body = Body.ToString() + Environment.NewLine + BODY.ToString();
+            MyMail.Body = Body.ToString() + Environment.NewLine ;
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
@@ -24911,7 +24872,7 @@ namespace TKMQ
                                   "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
 
                 DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
-                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
+                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
             }
             catch (OperationCanceledException)
             {
