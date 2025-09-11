@@ -1645,26 +1645,6 @@ namespace TKMQ
         {
             StringBuilder BODY = new StringBuilder();
 
-            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-            string NAME = ConfigurationManager.AppSettings["NAME"];
-            string PW = ConfigurationManager.AppSettings["PW"];
-
-            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-            MyMail.Subject = Subject.ToString();
-            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-           
-            //MyMail.IsBodyHtml = true; //是否使用html格式
-
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-            Attachment attch = new Attachment(Attachments + ".xlsx");
-            MyMail.Attachments.Add(attch);
-
 
             if (DT.Rows.Count > 0)
             {
@@ -1702,7 +1682,29 @@ namespace TKMQ
                 BODY.AppendFormat(@"</table> ");
             }
 
-            MyMail.Body = Body.ToString() + Environment.NewLine+ BODY.ToString();
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = Subject.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = Body.ToString() + Environment.NewLine + BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            Attachment attch = new Attachment(Attachments + ".xlsx");
+            MyMail.Attachments.Add(attch);
+
+
+
+           
 
             //if (Directory.Exists(DirectoryNAME))
             //{
