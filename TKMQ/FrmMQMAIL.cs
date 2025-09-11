@@ -672,8 +672,9 @@ namespace TKMQ
                         BODY.AppendFormat("Dear SIR" + Environment.NewLine +
                                           "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
 
-                  
-                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
+                        DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts29.Token);
+                        SENDMAIL_LOTCHECK(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
                         Thread.Sleep(1000);
                     }
                 }
