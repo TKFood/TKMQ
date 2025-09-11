@@ -671,7 +671,9 @@ namespace TKMQ
                         SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
                         BODY.AppendFormat("Dear SIR" + Environment.NewLine +
                                           "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
+                        DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
+                        SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
                         Thread.Sleep(1000);
                     }
                 }
@@ -1639,8 +1641,10 @@ namespace TKMQ
                     p[i].Kill();
             }
         }
-        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
+        public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments,DataTable DT)
         {
+            StringBuilder BODY = new StringBuilder();
+
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
@@ -1652,7 +1656,7 @@ namespace TKMQ
             //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = Subject.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-            MyMail.Body = Body.ToString();
+           
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
             System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
@@ -1660,6 +1664,45 @@ namespace TKMQ
 
             Attachment attch = new Attachment(Attachments + ".xlsx");
             MyMail.Attachments.Add(attch);
+
+
+            if (DT.Rows.Count > 0)
+            {
+                BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                BODY.AppendFormat(@"<table> ");
+                BODY.AppendFormat(@"<tr >");
+                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人員</th>");
+                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請表單</th>");
+                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
+                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
+                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
+
+
+                BODY.AppendFormat(@"</tr> ");
+
+                foreach (DataRow DR in DT.Rows)
+                {
+
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請者"].ToString() + "</td>");
+                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單名稱"].ToString() + "</td>");
+                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["表單編號"].ToString() + "</td>");
+                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["申請時間"].ToString() + "</td>");
+                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核者"].ToString() + "</td>");
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    //BODY.AppendFormat("<span></span>");
+                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
+                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
+                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
+                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
+                }
+                BODY.AppendFormat(@"</table> ");
+            }
+
+            MyMail.Body = Body.ToString() + Environment.NewLine+ BODY.ToString();
 
             //if (Directory.Exists(DirectoryNAME))
             //{
@@ -4955,6 +4998,240 @@ namespace TKMQ
 
             }
         }
+
+        public DataTable SEARCHLOTCHECK_SHOWMAIL(CancellationToken cancellationToken)
+        {
+            try
+            {
+                // 解密連線字串
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"
+                                    SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
+                                        FROM 
+                                        ( 
+	                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
+	                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+	                                    WHERE TG001=TH001 AND TG002=TH002 
+	                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+	                                    AND TH030='Y' 
+	                                    AND TH117>TG003
+	                                    UNION ALL 
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '1%' 
+                                        AND TH010<>TH036 
+                                        UNION ALL 
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '2%' 
+                                        AND TH010<>TH117 
+                                        UNION ALL 
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '3%' 
+                                        AND TH010<>TH117 
+                                        UNION ALL 
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '4%' 
+                                        AND TH010<>TH036 
+                                        UNION ALL 
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '5%' 
+                                        AND TH010<>TH036 
+                                        UNION ALL 
+                                        SELECT  '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH004 LIKE '1%' 
+                                        AND ISDATE(TH010)<>1
+                                        AND TH009 NOT LIKE '21%'
+                                        UNION ALL 
+                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
+                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
+                                        WHERE TF001=TG001 AND TF002=TG002 
+                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TG022='Y' 
+                                        AND TG004 LIKE '3%'  
+                                        AND TG004 NOT LIKE '307%' 
+                                        AND TG017<>TG040 
+                                        UNION ALL 
+                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
+                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
+                                        WHERE TF001=TG001 AND TF002=TG002 
+                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TG022='Y' 
+                                        AND TG004 LIKE '4%' 
+                                        AND TG017<>TG018 
+
+                                        UNION ALL 
+                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
+                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
+                                        WHERE TF001=TG001 AND TF002=TG002 
+                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TG022='Y' 
+                                        AND TG004 LIKE '3%'  
+                                        AND TG004 NOT LIKE '307%' 
+                                        AND ISDATE(TG017)<>1
+                                        UNION ALL 
+                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
+                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
+                                        WHERE TH001=TI001 AND TH002=TI002 
+                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TI004 LIKE '3%'   
+                                        AND TI037='Y' 
+                                        AND TI010<>TI061 
+                                        AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
+                                        UNION ALL 
+                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
+                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
+                                        WHERE TH001=TI001 AND TH002=TI002 
+                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TI004 LIKE '4%' 
+                                        AND TI037='Y' 
+                                        AND TI010<>TI011
+                                        UNION ALL 
+                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號不是日期' AS COMMET 
+                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
+                                        WHERE TH001=TI001 AND TH002=TI002 
+                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TI004 LIKE '4%' 
+                                        AND TI037='Y' 
+                                        AND ISDATE(TI011)<>1
+                                        UNION 
+
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND TH117>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                        UNION ALL
+                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
+                                        WHERE TG001=TH001 AND TG002=TH002 
+                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TH030='Y' 
+                                        AND ISDATE(TH117)<>1
+                                        UNION ALL
+                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日是未來日' AS COMMET 
+                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
+                                        WHERE TF001=TG001 AND TF002=TG002 
+                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TG022='Y' 
+                                        AND TG004 LIKE '3%'  
+                                        AND TG004 NOT LIKE '307%' 
+                                        AND TG040>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                        UNION ALL
+                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
+                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
+                                        WHERE TF001=TG001 AND TF002=TG002 
+                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TG022='Y' 
+                                        AND TG004 LIKE '3%'  
+                                        AND TG004 NOT LIKE '307%' 
+                                        AND ISDATE(TG040)<>1
+                                        UNION ALL
+                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
+                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
+                                        WHERE TH001=TI001 AND TH002=TI002 
+                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TI004 LIKE '4%' 
+                                        AND TI037='Y' 
+                                        AND TI061>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
+                                        UNION ALL
+                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日不是日期' AS COMMET 
+                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
+                                        WHERE TH001=TI001 AND TH002=TI002 
+                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
+                                        AND TI004 LIKE '4%' 
+                                        AND TI037='Y' 
+                                        AND ISDATE(TI061)<>1
+                                        ) 
+                                        AS TEMP 
+                                        WHERE  TH004 IN (
+                                        SELECT MB001
+                                        FROM [TK].dbo.INVMB WITH(NOLOCK) 
+                                        WHERE MB022 NOT IN ('N')
+                                        )
+                                        ORDER BY TH004  
+                                            ");
+
+                // 這裡一定要 ToString()
+                adapterLOTCHECK = new SqlDataAdapter(sbSql.ToString(), sqlConn);
+                sqlCmdBuilderLOTCHECK = new SqlCommandBuilder(adapterLOTCHECK);
+
+                sqlConn.Open();
+                dsLOTCHECK.Clear();
+
+                adapterLOTCHECK.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapterLOTCHECK.SelectCommand.Connection = sqlConn;
+
+                using (var command = adapterLOTCHECK.SelectCommand)
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            command.Cancel();   // ← 這裡真正中斷查詢
+                            sqlConn.Close();
+                            return null;
+                        }
+
+                        // 確保 TableName 一致
+                        dsLOTCHECK.Load(reader, LoadOption.OverwriteChanges, "dsLOTCHECK");
+                    }
+                }
+
+                if (dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Count == 0)
+                {
+                    DataRow row = dsLOTCHECK.Tables["dsLOTCHECK"].NewRow();
+                    row[0] = "本日無資料"; // 只填第一欄
+                    dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Add(row);
+                }
+
+                return dsLOTCHECK.Tables["dsLOTCHECK"];
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            finally
+            {
+                if (sqlConn != null && sqlConn.State != ConnectionState.Closed)
+                {
+                    sqlConn.Close();
+                }
+            }
+        }
+
 
 
 
@@ -24630,7 +24907,9 @@ namespace TKMQ
                 SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
                 BODY.AppendFormat("Dear SIR" + Environment.NewLine +
                                   "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
+
+                DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
+                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
             }
             catch (OperationCanceledException)
             {
