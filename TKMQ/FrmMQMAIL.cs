@@ -24841,16 +24841,24 @@ namespace TKMQ
         public void CALL_IT_ALARM()
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_IT();
-            string MESS = "現在溫度已超過25度!!";
+            DataTable DT_FIND_IT_CHECKS_ALARM = FIND_IT_CHECKS_ALARM();
 
-
-            if (DTFIND_USER_GUID.Rows.Count > 0)
+            if(DT_FIND_IT_CHECKS_ALARM!=null && DT_FIND_IT_CHECKS_ALARM.Rows.Count>=1)
             {
-                foreach (DataRow DR in DTFIND_USER_GUID.Rows)
-                {                    
-                    ADD_TB_EIP_PRIV_MESS_IT(DR["USER_GUID"].ToString(), MESS);
+                string MESS = "現在溫度是 "+ DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + " 度!!";
+
+                if (DTFIND_USER_GUID.Rows.Count > 0)
+                {
+                    foreach (DataRow DR in DTFIND_USER_GUID.Rows)
+                    {
+                        ADD_TB_EIP_PRIV_MESS_IT(DR["USER_GUID"].ToString(), MESS);
+                    }
                 }
             }
+           
+
+
+           
            
         }
 
@@ -24885,12 +24893,90 @@ namespace TKMQ
                                     [USER_GUID]
                                     ,[ACCOUNT]
                                     ,[NAME]      
-                                    FROM [UOF].[dbo].[TB_EB_USER]
+                                    FROM [UOF].[dbo].[TB_EB_USER]  WITH(NOLOCK)
                                     WHERE  [NAME]  IN 
                                     (
 	                                    SELECT  [NAMES]
 	                                    FROM [UOF].[dbo].[Z_UOF_IT_MESSAGES]
                                     )
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count > 0)
+                {
+                    return DS.Tables["DS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
+
+        public DataTable FIND_IT_CHECKS_ALARM()
+        {
+            DataSet DS = new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"                                     
+                                    SELECT 
+                                    TOP 1
+                                    [NO]
+                                    ,[日期時間]
+                                    ,[log_table].[機台名稱]
+                                    ,[類型]
+                                    ,CONVERT(decimal(16,2),[控項_1]) AS '控項_1'
+                                    ,[Z_UOF_IT_ALARMS].[LIMITSUPS]
+                                    ,[Z_UOF_IT_ALARMS].[機台名稱]
+   
+                                    FROM [192.168.1.221\SQLSERVER].[TK_FOOD].[dbo].[log_table]  WITH(NOLOCK)
+                                    ,[UOF].[dbo].[Z_UOF_IT_ALARMS]  WITH(NOLOCK)
+                                    WHERE 1=1
+                                    AND [Z_UOF_IT_ALARMS].[機台名稱]=[log_table].[機台名稱]
+                                    AND [控項_1]>[LIMITSUPS]
+                                    ORDER BY [日期時間] DESC
                                    ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
@@ -25750,12 +25836,16 @@ namespace TKMQ
             //通知副總，總務未簽核的表單
             PREPARE_UOF_TASK_QC_UOF_FORM(cts1.Token);
 
+            MessageBox.Show("OK");
+
         }
 
         private void button60_Click(object sender, EventArgs e)
         {
             //資訊-溫濕度警報
             CALL_IT_ALARM();
+
+            MessageBox.Show("OK");
         }
         #endregion
 
