@@ -61,7 +61,6 @@
             this.button49 = new System.Windows.Forms.Button();
             this.button50 = new System.Windows.Forms.Button();
             this.button21 = new System.Windows.Forms.Button();
-            this.button22 = new System.Windows.Forms.Button();
             this.button30 = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.button24 = new System.Windows.Forms.Button();
@@ -84,6 +83,8 @@
             this.button56 = new System.Windows.Forms.Button();
             this.button57 = new System.Windows.Forms.Button();
             this.button58 = new System.Windows.Forms.Button();
+            this.button22 = new System.Windows.Forms.Button();
+            this.button59 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -102,7 +103,7 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button59 = new System.Windows.Forms.Button();
+            this.button60 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -209,6 +210,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button58, 6, 9);
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
             this.tableLayoutPanel1.Controls.Add(this.button59, 0, 7);
+            this.tableLayoutPanel1.Controls.Add(this.button60, 0, 11);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -452,6 +454,7 @@
             // 
             // button39
             // 
+            this.button39.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button39.Location = new System.Drawing.Point(723, 243);
             this.button39.Name = "button39";
             this.button39.Size = new System.Drawing.Size(197, 34);
@@ -462,9 +465,10 @@
             // 
             // button36
             // 
+            this.button36.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button36.Location = new System.Drawing.Point(723, 203);
             this.button36.Name = "button36";
-            this.button36.Size = new System.Drawing.Size(145, 34);
+            this.button36.Size = new System.Drawing.Size(197, 34);
             this.button36.TabIndex = 35;
             this.button36.Text = "業務活動通知行銷-測試";
             this.button36.UseVisualStyleBackColor = true;
@@ -492,6 +496,7 @@
             // 
             // button47
             // 
+            this.button47.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button47.Location = new System.Drawing.Point(723, 283);
             this.button47.Name = "button47";
             this.button47.Size = new System.Drawing.Size(197, 34);
@@ -532,6 +537,7 @@
             // 
             // button21
             // 
+            this.button21.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button21.Location = new System.Drawing.Point(723, 483);
             this.button21.Name = "button21";
             this.button21.Size = new System.Drawing.Size(197, 34);
@@ -540,19 +546,9 @@
             this.button21.UseVisualStyleBackColor = true;
             this.button21.Click += new System.EventHandler(this.button21_Click);
             // 
-            // button22
-            // 
-            this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button22.Location = new System.Drawing.Point(3, 243);
-            this.button22.Name = "button22";
-            this.button22.Size = new System.Drawing.Size(168, 34);
-            this.button22.TabIndex = 24;
-            this.button22.Text = "副總-總務未核單";
-            this.button22.UseVisualStyleBackColor = true;
-            this.button22.Click += new System.EventHandler(this.button22_Click);
-            // 
             // button30
             // 
+            this.button30.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button30.Location = new System.Drawing.Point(723, 323);
             this.button30.Name = "button30";
             this.button30.Size = new System.Drawing.Size(197, 34);
@@ -606,9 +602,10 @@
             // 
             // button33
             // 
+            this.button33.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button33.Location = new System.Drawing.Point(723, 3);
             this.button33.Name = "button33";
-            this.button33.Size = new System.Drawing.Size(145, 34);
+            this.button33.Size = new System.Drawing.Size(197, 34);
             this.button33.TabIndex = 32;
             this.button33.Text = "溫濕度警報-測試";
             this.button33.UseVisualStyleBackColor = true;
@@ -616,9 +613,10 @@
             // 
             // button35
             // 
+            this.button35.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button35.Location = new System.Drawing.Point(723, 83);
             this.button35.Name = "button35";
-            this.button35.Size = new System.Drawing.Size(145, 34);
+            this.button35.Size = new System.Drawing.Size(197, 34);
             this.button35.TabIndex = 34;
             this.button35.Text = "派車-測試";
             this.button35.UseVisualStyleBackColor = true;
@@ -626,9 +624,10 @@
             // 
             // button52
             // 
+            this.button52.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button52.Location = new System.Drawing.Point(723, 123);
             this.button52.Name = "button52";
-            this.button52.Size = new System.Drawing.Size(145, 34);
+            this.button52.Size = new System.Drawing.Size(197, 34);
             this.button52.TabIndex = 104;
             this.button52.Text = "到貨檢查進貨";
             this.button52.UseVisualStyleBackColor = true;
@@ -771,6 +770,7 @@
             // 
             // button58
             // 
+            this.button58.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.button58.Location = new System.Drawing.Point(723, 363);
             this.button58.Name = "button58";
             this.button58.Size = new System.Drawing.Size(197, 34);
@@ -778,6 +778,28 @@
             this.button58.Text = "研發-2001.產品開發+包裝設計申請單";
             this.button58.UseVisualStyleBackColor = true;
             this.button58.Click += new System.EventHandler(this.button58_Click);
+            // 
+            // button22
+            // 
+            this.button22.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button22.Location = new System.Drawing.Point(3, 243);
+            this.button22.Name = "button22";
+            this.button22.Size = new System.Drawing.Size(168, 34);
+            this.button22.TabIndex = 24;
+            this.button22.Text = "副總-總務未核單";
+            this.button22.UseVisualStyleBackColor = true;
+            this.button22.Click += new System.EventHandler(this.button22_Click);
+            // 
+            // button59
+            // 
+            this.button59.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button59.Location = new System.Drawing.Point(3, 283);
+            this.button59.Name = "button59";
+            this.button59.Size = new System.Drawing.Size(168, 34);
+            this.button59.TabIndex = 110;
+            this.button59.Text = "副總-品保未核單";
+            this.button59.UseVisualStyleBackColor = true;
+            this.button59.Click += new System.EventHandler(this.button59_Click);
             // 
             // tabPage2
             // 
@@ -1027,16 +1049,16 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button59
+            // button60
             // 
-            this.button59.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button59.Location = new System.Drawing.Point(3, 283);
-            this.button59.Name = "button59";
-            this.button59.Size = new System.Drawing.Size(168, 34);
-            this.button59.TabIndex = 110;
-            this.button59.Text = "副總-品保未核單";
-            this.button59.UseVisualStyleBackColor = true;
-            this.button59.Click += new System.EventHandler(this.button59_Click);
+            this.button60.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button60.Location = new System.Drawing.Point(3, 443);
+            this.button60.Name = "button60";
+            this.button60.Size = new System.Drawing.Size(168, 34);
+            this.button60.TabIndex = 111;
+            this.button60.Text = "資訊-溫濕度警報";
+            this.button60.UseVisualStyleBackColor = true;
+            this.button60.Click += new System.EventHandler(this.button60_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1143,5 +1165,6 @@
         private System.Windows.Forms.Button button57;
         private System.Windows.Forms.Button button58;
         private System.Windows.Forms.Button button59;
+        private System.Windows.Forms.Button button60;
     }
 }

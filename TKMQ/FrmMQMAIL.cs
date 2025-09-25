@@ -24838,6 +24838,115 @@ namespace TKMQ
             }
         }
 
+        public void ADD_TB_EIP_PRIV_MESS_IT(string USER_GUID, string MESS)
+        {
+            Guid NEW = Guid.NewGuid();
+            string MESSAGE_GUID = NEW.ToString();
+            string TOPIC = "系統通知-溫溼度-機房" + DateTime.Now.ToString("yyyyMMddHHmmss");
+            string MESSAGE_CONTENT = MESS;
+            string MESSAGE_TO = USER_GUID;
+            string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
+            string REPLY_MESSAGE_GUID = null;
+            string CREATE_TIME = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
+            string READED_TIME = null;
+            string REPLY_TIME = null;
+            string FROM_DELETED = "0";
+            string TO_DELETED = "0";
+            string FILE_GROUP_ID = null;
+            string MASTER_GUID = NEW.ToString();
+            string EVENT_ID = null;
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+            connectionString = sqlConn.ConnectionString.ToString();
+
+            StringBuilder queryString = new StringBuilder();
+
+
+
+
+            queryString.AppendFormat(@"                     
+                                        INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
+                                        (
+                                        [MESSAGE_GUID]
+                                        ,[TOPIC]
+                                        ,[MESSAGE_CONTENT]
+                                        ,[MESSAGE_TO]
+                                        ,[MESSAGE_FROM]
+                                        ,[REPLY_MESSAGE_GUID]
+                                        ,[CREATE_TIME]
+                                        ,[READED_TIME]
+                                        ,[REPLY_TIME]
+                                        ,[FROM_DELETED]
+                                        ,[TO_DELETED]
+                                        ,[FILE_GROUP_ID]
+                                        ,[MASTER_GUID]
+                                        ,[EVENT_ID]
+                                        )
+                                        VALUES
+                                        (
+                                        '{0}'
+                                        ,'{1}' 
+                                        ,'{2}' 
+                                        , '{3}'
+                                        , '{4}'
+                                        , NULL
+                                        , '{5}'
+                                        , NULL
+                                        , NULL
+                                        , '0'
+                                        , '0'
+                                        , ''
+                                        , '{6}'
+                                        , ''
+                                        )
+                                        ", MESSAGE_GUID
+                                        , TOPIC
+                                        , MESSAGE_CONTENT
+                                        , MESSAGE_TO
+                                        , MESSAGE_FROM
+                                        , CREATE_TIME
+                                        , MASTER_GUID
+
+                                        );
+
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+
+                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);
+
+                    command.Connection.Open();
+
+                    int count = command.ExecuteNonQuery();
+
+                    connection.Close();
+                    connection.Dispose();
+
+                }
+            }
+            catch (Exception EX)
+            {
+
+            }
+            finally
+            {
+
+            }
+
+
+        }
+
         #endregion
 
         #region BUTTON
@@ -25556,6 +25665,11 @@ namespace TKMQ
 
         }
 
+        private void button60_Click(object sender, EventArgs e)
+        {
+            //資訊-溫濕度警報
+            ADD_TB_EIP_PRIV_MESS_IT("b6f50a95-17ec-47f2-b842-4ad12512b431","現在溫度已超過25度!!");
+        }
         #endregion
 
 
