@@ -25015,7 +25015,7 @@ namespace TKMQ
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "系統通知-溫溼度-機房" + DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
+            string TOPIC = "系統通知-機房-" + MESS +" "+ DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
             string MESSAGE_CONTENT = MESS;
             string MESSAGE_TO = USER_GUID;
             string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
