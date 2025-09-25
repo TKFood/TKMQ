@@ -198,7 +198,7 @@ namespace TKMQ
             timer3.Start();
 
             /// 設定 30 分鐘
-            timer4.Interval = 60 *1000*1; // 60 分鐘 
+            timer4.Interval = 60 *1000*60; // 60 分鐘 
             timer4.Tick += timer4_Tick;
             timer4.Start();
 
