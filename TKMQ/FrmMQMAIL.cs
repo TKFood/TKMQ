@@ -24838,11 +24838,98 @@ namespace TKMQ
             }
         }
 
+        public void CALL_IT_ALARM()
+        {
+            DataTable DTFIND_USER_GUID = FIND_USER_GUID_IT();
+            string MESS = "現在溫度已超過25度!!";
+
+
+            if (DTFIND_USER_GUID.Rows.Count > 0)
+            {
+                foreach (DataRow DR in DTFIND_USER_GUID.Rows)
+                {                    
+                    ADD_TB_EIP_PRIV_MESS_IT(DR["USER_GUID"].ToString(), MESS);
+                }
+            }
+           
+        }
+
+        public DataTable FIND_USER_GUID_IT()
+        {
+            DataSet DS= new DataSet();
+
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+
+                sbSql.AppendFormat(@"                                     
+                                    SELECT 
+                                    [USER_GUID]
+                                    ,[ACCOUNT]
+                                    ,[NAME]      
+                                    FROM [UOF].[dbo].[TB_EB_USER]
+                                    WHERE  [NAME]  IN 
+                                    (
+	                                    SELECT  [NAMES]
+	                                    FROM [UOF].[dbo].[Z_UOF_IT_MESSAGES]
+                                    )
+                                   ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                DS.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(DS, "DS");
+                sqlConn.Close();
+
+
+
+                if (DS.Tables["DS"].Rows.Count > 0)
+                {
+                    return DS.Tables["DS"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+
+        }
         public void ADD_TB_EIP_PRIV_MESS_IT(string USER_GUID, string MESS)
         {
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "系統通知-溫溼度-機房" + DateTime.Now.ToString("yyyyMMddHHmmss");
+            string TOPIC = "系統通知-溫溼度-機房" + DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
             string MESSAGE_CONTENT = MESS;
             string MESSAGE_TO = USER_GUID;
             string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
@@ -25668,7 +25755,7 @@ namespace TKMQ
         private void button60_Click(object sender, EventArgs e)
         {
             //資訊-溫濕度警報
-            ADD_TB_EIP_PRIV_MESS_IT("b6f50a95-17ec-47f2-b842-4ad12512b431","現在溫度已超過25度!!");
+            CALL_IT_ALARM();
         }
         #endregion
 
