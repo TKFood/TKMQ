@@ -41,7 +41,10 @@ using System.Net.Mime;
 namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
-    {       
+    {
+        private DateTime timer4_lastRun = DateTime.MinValue;
+        private int timer4_runCountToday = 0;
+        private DateTime timer4_lastResetDate = DateTime.MinValue;
         // 全域共用的錯誤訊息紀錄
         private static readonly StringBuilder errorMessages = new StringBuilder();
         //設定 Timeout 時間   
@@ -193,6 +196,11 @@ namespace TKMQ
             timer3.Interval = (int)TimeSpan.FromDays(1).TotalMilliseconds; // 設置為一天的毫秒數
             timer3.Tick += new EventHandler(timer3_Tick);
             timer3.Start();
+
+            /// 設定 30 分鐘
+            timer4.Interval = 60 *1000*1; // 60 分鐘 
+            timer4.Tick += timer4_Tick;
+            timer4.Start();
 
             CLEAREXCEL();
 
@@ -405,6 +413,33 @@ namespace TKMQ
 
         }
 
+        //每30分鐘執行1次
+        private void timer4_Tick(object sender, EventArgs e)
+        {
+            DateTime now = DateTime.Now;
+
+            // 每天凌晨自動歸零
+            if (now.Date != timer4_lastResetDate.Date)
+            {
+                timer4_runCountToday = 0;
+                timer4_lastResetDate = now.Date;
+            }
+
+            // 避免重複觸發：必須距離上次執行超過 1 分鐘
+            if ((now - timer4_lastRun).TotalMinutes >= 1 && timer4_runCountToday < 5)
+            {
+                timer4_lastRun = now;
+                timer4_runCountToday++;
+                try
+                {
+                    //資訊-溫濕度警報
+                    CALL_IT_ALARM();
+                }
+                catch (Exception EX)
+                { }
+            }
+
+        }
 
         /// <summary>
         ///  //每日寄送
@@ -24974,6 +25009,7 @@ namespace TKMQ
                                     FROM [192.168.1.221\SQLSERVER].[TK_FOOD].[dbo].[log_table]  WITH(NOLOCK)
                                     ,[UOF].[dbo].[Z_UOF_IT_ALARMS]  WITH(NOLOCK)
                                     WHERE 1=1
+                                    AND CAST([日期時間] AS DATE) = CAST(GETDATE() AS DATE)
                                     AND [Z_UOF_IT_ALARMS].[機台名稱]=[log_table].[機台名稱]
                                     AND [控項_1]>[LIMITSUPS]
                                     ORDER BY [日期時間] DESC
@@ -25847,8 +25883,9 @@ namespace TKMQ
 
             MessageBox.Show("OK");
         }
+
         #endregion
 
-
+      
     }
 }

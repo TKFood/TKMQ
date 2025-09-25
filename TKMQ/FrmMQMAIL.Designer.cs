@@ -104,6 +104,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.button60 = new System.Windows.Forms.Button();
+            this.timer4 = new System.Windows.Forms.Timer(this.components);
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -1060,6 +1061,10 @@
             this.button60.UseVisualStyleBackColor = true;
             this.button60.Click += new System.EventHandler(this.button60_Click);
             // 
+            // timer4
+            // 
+            this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -1166,5 +1171,6 @@
         private System.Windows.Forms.Button button58;
         private System.Windows.Forms.Button button59;
         private System.Windows.Forms.Button button60;
+        private System.Windows.Forms.Timer timer4;
     }
 }
