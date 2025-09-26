@@ -24875,7 +24875,7 @@ namespace TKMQ
 
         public void CALL_IT_ALARM()
         {
-            DataTable DTFIND_USER_GUID = FIND_USER_GUID_IT();
+            DataTable DTFIND_USER_GUID = FIND_Z_UOF_IT_ALARMS_SENDTO();
             DataTable DT_FIND_IT_CHECKS_ALARM = FIND_IT_CHECKS_ALARM();
 
             if(DT_FIND_IT_CHECKS_ALARM!=null && DT_FIND_IT_CHECKS_ALARM.Rows.Count>=1)
@@ -24897,7 +24897,7 @@ namespace TKMQ
            
         }
 
-        public DataTable FIND_USER_GUID_IT()
+        public DataTable FIND_Z_UOF_IT_ALARMS_SENDTO()
         {
             DataSet DS= new DataSet();
 
@@ -24932,7 +24932,7 @@ namespace TKMQ
                                     WHERE  [NAME]  IN 
                                     (
 	                                    SELECT  [NAMES]
-	                                    FROM [UOF].[dbo].[Z_UOF_IT_MESSAGES]
+	                                    FROM [UOF].[dbo].[Z_UOF_IT_ALARMS_SENDTO]
                                     )
                                    ");
 
