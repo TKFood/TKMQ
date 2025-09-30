@@ -24876,26 +24876,20 @@ namespace TKMQ
 
         public void CALL_IT_ALARM()
         {
-            DataTable DTFIND_USER_GUID = FIND_Z_UOF_IT_ALARMS_SENDTO();
             DataTable DT_FIND_IT_CHECKS_ALARM = FIND_IT_CHECKS_ALARM();
+            DataTable IT_ALARMS_SENDTO = FIND_Z_UOF_IT_ALARMS_SENDTO();
 
-            if(DT_FIND_IT_CHECKS_ALARM!=null && DT_FIND_IT_CHECKS_ALARM.Rows.Count>=1)
+            string NAMES_DEFAULTS = "張健洲";
+
+            if (DT_FIND_IT_CHECKS_ALARM != null && DT_FIND_IT_CHECKS_ALARM.Rows.Count >= 1)
             {
-                string MESS = "現在溫度是 "+ DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + " 度!!";
+                string MESS = "現在機房溫度是 " + DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + " 度!!";
 
-                if (DTFIND_USER_GUID.Rows.Count > 0)
-                {
-                    foreach (DataRow DR in DTFIND_USER_GUID.Rows)
-                    {
-                        ADD_TB_EIP_PRIV_MESS_IT(DR["USER_GUID"].ToString(), MESS);
-                    }
-                }
+                ADD_IT_A001_TB_WKF_EXTERNAL_TASK(NAMES_DEFAULTS, MESS);
+
             }
-           
 
 
-           
-           
         }
 
         public DataTable FIND_Z_UOF_IT_ALARMS_SENDTO()
@@ -25012,8 +25006,9 @@ namespace TKMQ
                                     ,[UOF].[dbo].[Z_UOF_IT_ALARMS]  WITH(NOLOCK)
                                     WHERE 1=1
                                     AND CAST([日期時間] AS DATE) = CAST(GETDATE() AS DATE)
+                                    AND [日期時間]>=DATEADD(minute, -30, GETDATE())
                                     AND [Z_UOF_IT_ALARMS].[機台名稱]=[log_table].[機台名稱]
-                                    AND [控項_1]>[LIMITSUPS]
+                                    --AND [控項_1]>[LIMITSUPS]
                                     ORDER BY [日期時間] DESC
                                    ");
 
@@ -25158,11 +25153,9 @@ namespace TKMQ
 
         }
 
-        public void ADD_IT_A001_TB_WKF_EXTERNAL_TASK()
-        {
-            DataTable IT_ALARMS_SENDTO = FIND_Z_UOF_IT_ALARMS_SENDTO();
-
-            DataTable IT_USERDEP = SEARCHUOFUSERDEP("張健洲");
+        public void ADD_IT_A001_TB_WKF_EXTERNAL_TASK(string NAMES,string MESSAGES)
+        {        
+            DataTable IT_USERDEP = SEARCHUOFUSERDEP(NAMES);
 
             string account, groupId, jobTitleId, fillerName, fillerUserGuid;
             string DEPNAME, DEPNO;
@@ -25204,7 +25197,7 @@ namespace TKMQ
 
             // 一般欄位
             AddFieldItem(xmlDoc, FormFieldValue, "ID", "", fillerName, fillerUserGuid, account);
-            AddFieldItem(xmlDoc, FormFieldValue, "ID1", "TEST", fillerName, fillerUserGuid, account);
+            AddFieldItem(xmlDoc, FormFieldValue, "ID1", MESSAGES, fillerName, fillerUserGuid, account);
            
 
             // 寫入資料庫
@@ -26097,9 +26090,8 @@ namespace TKMQ
         private void button60_Click(object sender, EventArgs e)
         {
             //資訊-溫濕度警報
-            //CALL_IT_ALARM();
-
-            ADD_IT_A001_TB_WKF_EXTERNAL_TASK();
+            CALL_IT_ALARM();
+                        
             MessageBox.Show("OK");
         }
 
