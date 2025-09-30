@@ -434,7 +434,7 @@ namespace TKMQ
                 try
                 {
                     //資訊-溫濕度警報
-                    //CALL_IT_ALARM();
+                    CALL_IT_ALARM();
                 }
                 catch (Exception EX)
                 { }
