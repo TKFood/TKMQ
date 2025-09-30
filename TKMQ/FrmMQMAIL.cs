@@ -38,6 +38,7 @@ using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using System.Net.Mime;
 
+
 namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
@@ -433,7 +434,7 @@ namespace TKMQ
                 try
                 {
                     //資訊-溫濕度警報
-                    CALL_IT_ALARM();
+                    //CALL_IT_ALARM();
                 }
                 catch (Exception EX)
                 { }
@@ -24936,6 +24937,7 @@ namespace TKMQ
                                     )
                                    ");
 
+
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
 
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
@@ -25154,6 +25156,222 @@ namespace TKMQ
             }
 
 
+        }
+
+        public void ADD_IT_A001_TB_WKF_EXTERNAL_TASK()
+        {
+            DataTable IT_ALARMS_SENDTO = FIND_Z_UOF_IT_ALARMS_SENDTO();
+
+            DataTable IT_USERDEP = SEARCHUOFUSERDEP("張健洲");
+
+            string account, groupId, jobTitleId, fillerName, fillerUserGuid;
+            string DEPNAME, DEPNO;
+                       
+            account = IT_USERDEP.Rows[0]["ACCOUNT"].ToString();
+            groupId = IT_USERDEP.Rows[0]["GROUP_ID"].ToString();
+            jobTitleId = IT_USERDEP.Rows[0]["TITLE_ID"].ToString();
+            fillerName = IT_USERDEP.Rows[0]["NAME"].ToString();
+            fillerUserGuid = IT_USERDEP.Rows[0]["USER_GUID"].ToString();
+            DEPNAME = IT_USERDEP.Rows[0]["DEPNAME"].ToString();
+            DEPNO = IT_USERDEP.Rows[0]["DEPNO"].ToString();
+            
+
+            string EXTERNAL_FORM_NBR = "A001.資訊通知單"+DateTime.Now.ToString("yyyyMMddHHmmss");
+            int rowscounts = 0;
+
+            XmlDocument xmlDoc = new XmlDocument();
+            XmlElement Form = xmlDoc.CreateElement("Form");
+            string FORMID = SEARCHFORM_UOF_VERSION_ID("A001.資訊通知單");
+            if (!string.IsNullOrEmpty(FORMID))
+            {
+                Form.SetAttribute("formVersionId", FORMID);
+            }
+            Form.SetAttribute("urgentLevel", "2");
+            xmlDoc.AppendChild(Form);
+
+            XmlElement Applicant = xmlDoc.CreateElement("Applicant");
+            Applicant.SetAttribute("account", account);
+            Applicant.SetAttribute("groupId", groupId);
+            Applicant.SetAttribute("jobTitleId", jobTitleId);
+            Form.AppendChild(Applicant);
+
+            XmlElement Comment = xmlDoc.CreateElement("Comment");
+            Comment.InnerText = "申請者意見";
+            Applicant.AppendChild(Comment);
+
+            XmlElement FormFieldValue = xmlDoc.CreateElement("FormFieldValue");
+            Form.AppendChild(FormFieldValue);
+
+            // 一般欄位
+            AddFieldItem(xmlDoc, FormFieldValue, "ID", "", fillerName, fillerUserGuid, account);
+            AddFieldItem(xmlDoc, FormFieldValue, "ID1", "TEST", fillerName, fillerUserGuid, account);
+           
+
+            // 寫入資料庫
+            Class1 TKID = new Class1();
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            using (SqlConnection connection = new SqlConnection(sqlsb.ConnectionString))
+            {
+                string queryString = $@"
+                                        INSERT INTO [UOF].dbo.TB_WKF_EXTERNAL_TASK
+                                        (EXTERNAL_TASK_ID, FORM_INFO, STATUS, EXTERNAL_FORM_NBR)
+                                        VALUES (NEWID(), @XML, 2, '{EXTERNAL_FORM_NBR}')
+                                    ";
+                using (SqlCommand command = new SqlCommand(queryString, connection))
+                {
+                    command.Parameters.Add("@XML", SqlDbType.NVarChar).Value = Form.OuterXml;
+                    connection.Open();
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+    
+        public DataTable SEARCHUOFUSERDEP(string NAME)
+        {
+            SqlDataAdapter adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+            DataSet ds1 = new DataSet();
+
+            try
+            {
+                //connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
+                //sqlConn = new SqlConnection(connectionString);
+
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [GROUP_NAME] AS 'DEPNAME'
+                                    ,[TB_EB_EMPL_DEP].[GROUP_ID]+','+[GROUP_NAME]+',False' AS 'DEPNO'
+                                    ,[TB_EB_USER].[USER_GUID]
+                                    ,[ACCOUNT]
+                                    ,[NAME]
+                                    ,[TB_EB_EMPL_DEP].[GROUP_ID]
+                                    ,[TITLE_ID]     
+                                    ,[GROUP_NAME]
+                                    ,[GROUP_CODE]
+                                    FROM [UOF].[dbo].[TB_EB_USER],[UOF].[dbo].[TB_EB_EMPL_DEP],[UOF].[dbo].[TB_EB_GROUP]
+                                    WHERE [TB_EB_USER].[USER_GUID]=[TB_EB_EMPL_DEP].[USER_GUID]
+                                    AND [TB_EB_EMPL_DEP].[GROUP_ID]=[TB_EB_GROUP].[GROUP_ID]
+                                    AND ISNULL([TB_EB_GROUP].[GROUP_CODE],'')<>''       
+                                    AND [TB_EB_EMPL_DEP].ORDERS='0'                       
+                                    AND [NAME]='{0}'
+                              
+                                    ", NAME);
+
+
+                adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "ds1");
+                sqlConn.Close();
+
+                if (ds1.Tables["ds1"].Rows.Count >= 1)
+                {
+                    return ds1.Tables["ds1"];
+
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                sqlConn.Close();
+            }
+        }
+        public string SEARCHFORM_UOF_VERSION_ID(string formName)
+        {
+            try
+            {
+                Class1 TKID = new Class1();
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
+
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                using (SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString))
+                {
+                    string sql = @"
+                                SELECT TOP 1 RTRIM(LTRIM(FORM_VERSION_ID)) AS FORM_VERSION_ID
+                                FROM [UOF].dbo.TB_WKF_FORM_VERSION V
+                                JOIN [UOF].dbo.TB_WKF_FORM F ON V.FORM_ID = F.FORM_ID
+                                WHERE V.ISSUE_CTL = 1
+                                    AND F.FORM_NAME = @FORM_NAME
+                                ORDER BY V.FORM_ID, V.VERSION DESC";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, sqlConn))
+                    {
+                        cmd.Parameters.AddWithValue("@FORM_NAME", formName);
+
+                        sqlConn.Open();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                return reader["FORM_VERSION_ID"].ToString();
+                            }
+                        }
+                    }
+                }
+
+                return "";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+        /// <summary>
+        /// 建立 FieldItem
+        /// </summary>
+        /// <param name="xmlDoc"></param>
+        /// <param name="parent"></param>
+        /// <param name="fieldId"></param>
+        /// <param name="fieldValue"></param>
+        /// <param name="fillerName"></param>
+        /// <param name="fillerUserGuid"></param>
+        /// <param name="fillerAccount"></param>
+        /// <param name="realValue"></param>
+        /// <returns></returns>
+        private XmlElement AddFieldItem(XmlDocument xmlDoc, XmlElement parent, string fieldId, string fieldValue, string fillerName, string fillerUserGuid, string fillerAccount, string realValue = "", string customValue = "")
+        {
+            XmlElement fieldItem = xmlDoc.CreateElement("FieldItem");
+            fieldItem.SetAttribute("fieldId", fieldId);
+            fieldItem.SetAttribute("fieldValue", fieldValue);
+            fieldItem.SetAttribute("realValue", realValue);
+            fieldItem.SetAttribute("customValue", customValue);
+            fieldItem.SetAttribute("enableSearch", "True");
+            fieldItem.SetAttribute("fillerName", fillerName);
+            fieldItem.SetAttribute("fillerUserGuid", fillerUserGuid);
+            fieldItem.SetAttribute("fillerAccount", fillerAccount);
+            fieldItem.SetAttribute("fillSiteId", "");
+            parent.AppendChild(fieldItem);
+            return fieldItem;
         }
 
         #endregion
@@ -25879,8 +26097,9 @@ namespace TKMQ
         private void button60_Click(object sender, EventArgs e)
         {
             //資訊-溫濕度警報
-            CALL_IT_ALARM();
+            //CALL_IT_ALARM();
 
+            ADD_IT_A001_TB_WKF_EXTERNAL_TASK();
             MessageBox.Show("OK");
         }
 
