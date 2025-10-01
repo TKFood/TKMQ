@@ -179,7 +179,7 @@ namespace TKMQ
         }
 
         private void FrmMQMAIL_Load(object sender, EventArgs e)
-        {
+        { 
             timer1.Enabled = true;
             timer1.Interval = 1000 * 60;
             //timer1.Interval = 1000 ;
