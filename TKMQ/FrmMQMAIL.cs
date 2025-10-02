@@ -24883,7 +24883,7 @@ namespace TKMQ
 
             if (DT_FIND_IT_CHECKS_ALARM != null && DT_FIND_IT_CHECKS_ALARM.Rows.Count >= 1)
             {
-                string MESS = "現在時間: "+DateTime.Now.ToString("yyyy/MM/dd HH:mm")+" 的機房溫度是 " + DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + " 度!!";
+                string MESS = "警告!! 機房溫度: " + DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + "  度!!，現在時間: " + DateTime.Now.ToString("yyyy/MM/dd HH:mm");
 
                 ADD_IT_A001_TB_WKF_EXTERNAL_TASK(NAMES_DEFAULTS, MESS);
 
