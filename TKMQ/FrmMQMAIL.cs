@@ -12470,6 +12470,7 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"   
+                           --20251030 國內業績表
                             DECLARE @EndOfMonth DATE = DATEADD(DAY, -1, DATEADD(MONTH, 1, DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE())));  -- 當月最後一天
                             WITH Dates AS (
                                 SELECT CAST(DATEADD(DAY, 1 - DAY(GETDATE()), GETDATE()) AS DATE) AS DateValue
@@ -12479,16 +12480,33 @@ namespace TKMQ
                                 WHERE DateValue < @EndOfMonth -- 強制遞迴只到當月最後一天
                             )
 
-                            SELECT *
-                            ,CASE WHEN 國內月目前總業績>0 AND 國內月目標業績>0 THEN CONVERT(decimal(16,4),國內月目前總業績/國內月目標業績) ELSE 0 END '國內累積達成率'
+                            SELECT 
+                            *
+                            ,CASE WHEN 國內月目前總業績>0 AND 國內業銷月總目標業績>0 THEN CONVERT(decimal(16,4),國內月目前總業績/國內業銷月總目標業績) ELSE 0 END '國內累積達成率'
+                            ,CASE WHEN 國內月目前經銷業績>0 AND 國內經銷月目標業績>0 THEN CONVERT(decimal(16,4),國內月目前經銷業績/國內經銷月目標業績) ELSE 0 END '國內經銷累積達成率'
+                            ,CASE WHEN 國內月目前全聯業績>0 AND 國內全聯月目標業績>0 THEN CONVERT(decimal(16,4),國內月目前全聯業績/國內全聯月目標業績) ELSE 0 END '國內全聯累積達成率'
+
                             FROM
                             (
-	                            SELECT NATIONS, (SUM(銷貨) + SUM(銷退)) AS '國內月目前總業績'
+	                            SELECT NATIONS
+	                            , (SUM(總銷貨) + SUM(總銷退)) AS '國內月目前總業績'
+	                            , (SUM(經銷銷貨) + SUM(經銷銷退)) AS '國內月目前經銷業績'
+	                            , (SUM(全聯銷貨) + SUM(全聯銷退)) AS '國內月目前全聯業績'
 	                            ,(
 		                            SELECT ISNULL(INTARGETMONEYS, 0)
 		                            FROM [TK].[dbo].[ZTARGETMONEYS]
 		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, GETDATE(), 112), 1, 6)
-		                            ) AS '國內月目標業績'
+		                            ) AS '國內業銷月總目標業績'
+	                            ,(
+		                            SELECT ISNULL(INTARGETMONEYSSALES, 0)
+		                            FROM [TK].[dbo].[ZTARGETMONEYS]
+		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, GETDATE(), 112), 1, 6)
+		                            ) AS '國內經銷月目標業績'
+	                            ,(
+		                            SELECT ISNULL(INTARGETMONEYSPXMART, 0)
+		                            FROM [TK].[dbo].[ZTARGETMONEYS]
+		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, GETDATE(), 112), 1, 6)
+		                            ) AS '國內全聯月目標業績'
 
 	                            FROM (
 		                            SELECT 
@@ -12514,11 +12532,11 @@ namespace TKMQ
 					                            )        
 					                            AND TG006 = MV001
                                                 AND NOT EXISTS (
-													SELECT 1 
-													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
-													WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
-												)
-			                            ) AS '銷貨',
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+			                            ) AS '總銷貨',
 			                            (
 				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
 				                            FROM [TK].dbo.COPTI WITH(NOLOCK) , [TK].dbo.COPTJ WITH(NOLOCK) 
@@ -12533,11 +12551,103 @@ namespace TKMQ
 					                            )    
 					                            AND TI006 = MV001
                                                 AND NOT EXISTS (
-													SELECT 1 
-													FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
-													WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
-												)
-			                            ) AS '銷退'
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+			                            ) AS '總銷退'
+			                            ,(
+				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) , [TK].dbo.COPTH WITH(NOLOCK) 
+				                            WHERE TG001 = TH001
+					                            AND TG002 = TH002
+					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TG023 = 'Y'
+					                            AND TG001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') 
+					                            )        
+					                            AND TG006 = MV001
+                                                AND NOT EXISTS (
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+					                            AND TG004 NOT IN
+						                            (
+							                            SELECT  [MA001]  FROM [TK].[dbo].[Z_SALES_DAILY_MA001_PXMART]
+						                            )
+			                            ) AS '經銷銷貨',
+			                            (
+				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) , [TK].dbo.COPTJ WITH(NOLOCK) 
+				                            WHERE TI001 = TJ001
+					                            AND TI002 = TJ002
+					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TI019 = 'Y'
+					                            AND TI001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') 
+					                            )    
+					                            AND TI006 = MV001
+                                                AND NOT EXISTS (
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+					                            AND TI004 NOT IN
+						                            (
+							                            SELECT  [MA001]  FROM [TK].[dbo].[Z_SALES_DAILY_MA001_PXMART]
+						                            )
+			                            ) AS '經銷銷退'
+			                            ,(
+				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
+				                            FROM [TK].dbo.COPTG WITH(NOLOCK) , [TK].dbo.COPTH WITH(NOLOCK) 
+				                            WHERE TG001 = TH001
+					                            AND TG002 = TH002
+					                            AND TG003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TG023 = 'Y'
+					                            AND TG001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('23.銷貨單') 
+					                            )        
+					                            AND TG006 = MV001
+                                                AND NOT EXISTS (
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTG.TG020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+					                            AND TG004  IN
+						                            (
+							                            SELECT  [MA001]  FROM [TK].[dbo].[Z_SALES_DAILY_MA001_PXMART]
+						                            )
+			                            ) AS '全聯銷貨'
+			                            ,(
+				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * -1, 0))
+				                            FROM [TK].dbo.COPTI WITH(NOLOCK) , [TK].dbo.COPTJ WITH(NOLOCK) 
+				                            WHERE TI001 = TJ001
+					                            AND TI002 = TJ002
+					                            AND TI003 = CONVERT(NVARCHAR, CONVERT(VARCHAR(8), DateValue, 112) , 112)
+					                            AND TI019 = 'Y'
+					                            AND TI001 IN ( 
+						                            SELECT [TG001]
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_TG001]
+						                            WHERE [KINDS] IN ('24.銷退單') 
+					                            )    
+					                            AND TI006 = MV001
+                                                AND NOT EXISTS (
+						                            SELECT 1 
+						                            FROM [TK].[dbo].[Z_SALES_DAILY_NOT_IN_COMMENTS] AS B
+						                            WHERE COPTI.TI020 LIKE '%' + B.[COMMENTS] + '%'
+					                            )
+					                            AND TI004  IN
+						                            (
+							                            SELECT  [MA001]  FROM [TK].[dbo].[Z_SALES_DAILY_MA001_PXMART]
+						                            )
+			                            ) AS '全聯銷退'
 		                            FROM Dates
 		                            LEFT JOIN [TK].[dbo].[Z_SALES_DAILY_REPORTS] ON 1=1
 	                            ) AS TEMP
@@ -13423,8 +13533,8 @@ namespace TKMQ
             SQL1 = SETSQLNEW();
             SQL_IN = SETSQLNEW_IN();
             SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV6.frx"); 
-
+            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV7.frx"); 
+             
             //20210902密
             Class1 TKID = new Class1();//用new 建立類別實體
             SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
