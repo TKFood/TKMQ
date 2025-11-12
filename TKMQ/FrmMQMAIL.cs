@@ -429,8 +429,7 @@ namespace TKMQ
             // 避免重複觸發：必須距離上次執行超過 1 分鐘
             if ((now - timer4_lastRun).TotalMinutes >= 1 && timer4_runCountToday < 5)
             {
-                timer4_lastRun = now;
-                timer4_runCountToday++;
+                timer4_lastRun = now;                
                 try
                 {
                     //資訊-溫濕度警報
@@ -24993,6 +24992,8 @@ namespace TKMQ
 
             if (DT_FIND_IT_CHECKS_ALARM != null && DT_FIND_IT_CHECKS_ALARM.Rows.Count >= 1)
             {
+                //限制1天最多通知5次
+                timer4_runCountToday++;
                 string MESS = "警告!! 機房溫度: " + DT_FIND_IT_CHECKS_ALARM.Rows[0]["控項_1"].ToString() + "  度!!，現在時間: " + DateTime.Now.ToString("yyyy/MM/dd HH:mm");
 
                 ADD_IT_A001_TB_WKF_EXTERNAL_TASK(NAMES_DEFAULTS, MESS);
