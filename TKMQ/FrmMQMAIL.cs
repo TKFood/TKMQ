@@ -23767,6 +23767,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>業務進度回覆</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>設計負責人</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>設計回覆</th>");
+                        BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>採購回覆</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>品保回覆</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>專案階段</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>是否結案</th>");
@@ -23791,6 +23792,9 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>" + DR["設計負責人"] + "</td>");
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
                                 + DR["設計回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
+                                + "</td>");
+                            BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
+                                + DR["採購回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
                                 + "</td>");
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:12%;'>"
                             + DR["品保回覆"].ToString().Replace("\r\n", "<br>").Replace("\n", "<br>").Replace("\r", "<br>")
@@ -23913,6 +23917,7 @@ namespace TKMQ
                                     ,[TASTESREPLYS] AS '業務進度回覆'
                                     ,[DESIGNER] AS '設計負責人'
                                     ,[DESIGNREPLYS] AS '設計回覆'
+                                    ,[PURREPLYS] AS '採購回覆'
                                     ,[QCREPLYS] AS '品保回覆'
                                     ,[STAGES] AS '專案階段'
                                     ,[ISCLOSED] AS '是否結案'
