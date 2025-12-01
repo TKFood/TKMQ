@@ -1131,13 +1131,14 @@ namespace TKMQ
                 //行銷用
                 try
                 {
-                    //每週通知，1006.樣品試吃回覆單，還未回覆的明細   
-                    using (CancellationTokenSource cts5 = new CancellationTokenSource())
-                    {
-                        cts5.CancelAfter(timeoutMilliseconds);
-                        SENDEMAIL_TB_SALES_PROMOTIONS(cts5.Token);
-                        Thread.Sleep(1000);
-                    }
+                    //20251201 暫停
+                    ////每週通知，1006.樣品試吃回覆單，還未回覆的明細   
+                    //using (CancellationTokenSource cts5 = new CancellationTokenSource())
+                    //{
+                    //    cts5.CancelAfter(timeoutMilliseconds);
+                    //    SENDEMAIL_TB_SALES_PROMOTIONS(cts5.Token);
+                    //    Thread.Sleep(1000);
+                    //}
                 }
                 catch (Exception EX)
                 {
@@ -25879,6 +25880,8 @@ namespace TKMQ
         }
         private void button36_Click(object sender, EventArgs e)
         {
+
+            //20251201 暫停
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
