@@ -22125,7 +22125,16 @@ namespace TKMQ
             SqlCommand cmd = new SqlCommand();
             int result;
 
-        
+            DataTable DT_NOTIN = FIND_TBDAILYDAYSFACTORYSNOTIN();
+            if (DT_NOTIN != null && DT_NOTIN.Rows.Count >= 1)
+            {
+                foreach (DataRow DR in DT_NOTIN.Rows)
+                {
+                    sbSql99.AppendFormat(@" AND MB001 NOT LIKE '{0}%'", DR["MB001"].ToString().Trim());
+                }
+
+            }
+
 
             try
             {
@@ -22244,6 +22253,7 @@ namespace TKMQ
 	                                    AND ISNULL(A.MA001,'')<>'' 
 	                                    AND ISNULL(A.MA002,'')<>'' 
 	                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%')
+                                        {1}
 
                                     ) AS TEMP2
                                     ) AS TEMP
@@ -22273,7 +22283,7 @@ namespace TKMQ
                                     ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
 
                                     "
-                                    , SDATES
+                                    , SDATES, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -22743,7 +22753,17 @@ namespace TKMQ
             SqlTransaction tran;
             SqlCommand cmd = new SqlCommand();
             int result;
-            
+
+            DataTable DT_NOTIN = FIND_TBDAILYDAYSFACTORYSNOTIN();
+            if (DT_NOTIN != null && DT_NOTIN.Rows.Count >= 1)
+            {
+                foreach (DataRow DR in DT_NOTIN.Rows)
+                {
+                    sbSql99.AppendFormat(@" AND MB001 NOT LIKE '{0}%'", DR["MB001"].ToString().Trim());
+                }
+
+            }
+
             try
             {
                 //20210902密
@@ -22860,6 +22880,7 @@ namespace TKMQ
 		                                    AND ISNULL(A.MA001,'')<>'' 
 		                                    and ISNULL(A.MA002,'')<>'' 
                                             AND (MB001 LIKE '4%' OR MB001 LIKE '5%')
+                                            {3}
 
 	                                    ) AS TEMP2
                                     ) AS TEMP
@@ -22887,7 +22908,7 @@ namespace TKMQ
                                         FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                                     ) AS R ON T.ID = R.ID AND T.YM = R.YM;
                                     "
-                                    , SMONTHS, SDATES, EDATES
+                                    , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
 
                 sbSql.AppendFormat(@" ");
@@ -22990,6 +23011,75 @@ namespace TKMQ
 
         }
 
+
+        public DataTable FIND_TBDAILYDAYSFACTORYSNOTIN()
+        {
+            DataTable DT = new DataTable();
+
+            SqlDataAdapter adapter1 = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
+            DataSet ds1 = new DataSet();
+            StringBuilder sbSql = new StringBuilder();
+            StringBuilder sbSqlQuery = new StringBuilder();
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"                                     
+                                    SELECT 
+                                    [MB001]
+                                    FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYSNOTIN]
+                                                                        
+                                    ");
+
+
+                adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
+                sqlConn.Open();
+                ds1.Clear();
+                adapter1.Fill(ds1, "ds1");
+                sqlConn.Close();
+
+
+                if (ds1.Tables["ds1"].Rows.Count >= 1)
+                {
+                    return ds1.Tables["ds1"];
+
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+                sqlConn.Close();
+            }
+
+
+
+        }
         public DataTable SERACH_MAIL_STORES_REPORTS()
         {
             SqlDataAdapter adapter = new SqlDataAdapter();
