@@ -22505,7 +22505,7 @@ namespace TKMQ
                                                 ORDER BY [本期銷售] DESC, [MB001], [MB002]
                                             ) AS NewRank
                                         FROM [TKMK].[dbo].[TBDAILYMONTHS]
-                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
+                                    ) AS R ON T.ID = R.ID AND T.YM = R.YM;
                                     "
                                     , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
@@ -22700,7 +22700,7 @@ namespace TKMQ
                                                 ORDER BY [本期銷售] DESC, [MB001], [MB002]
                                             ) AS NewRank
                                         FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES]
-                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
+                                    ) AS R ON T.ID = R.ID AND T.YM = R.YM;
                                     "
                                     , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
@@ -22878,14 +22878,14 @@ namespace TKMQ
                                         SELECT
                                             [ID],
                                             [YM],
-                                            [MB001],
+                                            [MB001], 
                                             [MB002],
                                             RANK() OVER (
                                                 PARTITION BY [YM] 
                                                 ORDER BY [本期銷售] DESC, [MB001], [MB002]
                                             ) AS NewRank
                                         FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
-                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
+                                    ) AS R ON T.ID = R.ID AND T.YM = R.YM;
                                     "
                                     , SMONTHS, SDATES, EDATES
                                     );
