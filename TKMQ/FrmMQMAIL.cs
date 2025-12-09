@@ -21132,9 +21132,7 @@ namespace TKMQ
             //新增每日記錄
             //ADD_TBDAILYPOSTB(yesterday, before_yesterday);
             //新增每日記錄，重試機制
-            TBDAILYDAYS_RetryAddDailyPost(yesterday);
-            //新增當月記錄
-            //ADD_TBDAILYPOSTBMONTH(SMONTHS, firstDayOfMonth, yesterday, lastDayOfLastMonthday);
+            TBDAILYDAYS_RetryAddDailyPost(yesterday);            
             //新增當月記錄，重試機制
             TBDAILYMONTHS_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday);
 
@@ -21874,6 +21872,21 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
 
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYDAYS] AS T
+                                    INNER JOIN (                                        
+                                        SELECT
+                                            [ID],
+                                            [YMD],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YMD] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYDAYS]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
                                     "
                                     , SDATES, sbSql99.ToString()
                                     );
@@ -22053,6 +22066,22 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
 
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYDAYSSTORES] AS T
+                                    INNER JOIN (
+                                        -- 導出表 (Derived Table)：計算每個 YMD 的銷售排名
+                                        SELECT
+                                            [ID],
+                                            [YMD],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YMD] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYDAYSSTORES]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
                                     "
                                     , SDATES, sbSql99.ToString()
                                     );
@@ -22226,6 +22255,23 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
 
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS] AS T
+                                    INNER JOIN (
+                                        -- 導出表 (Derived Table)：計算每個 YMD 的銷售排名
+                                        SELECT
+                                            [ID],
+                                            [YMD],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YMD] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
+
                                     "
                                     , SDATES
                                     );
@@ -22360,6 +22406,7 @@ namespace TKMQ
                                     ,[本期轉撥入]
                                     ,[本期轉撥出]
                                     )
+
                                     SELECT 
                                     '{0}' AS YM
                                     ,MB001
@@ -22442,6 +22489,23 @@ namespace TKMQ
                                     UPDATE [TKMK].[dbo].[TBDAILYMONTHS]
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
+
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYMONTHS] AS T
+                                    INNER JOIN (
+                                        -- 導出表 (Derived Table)：計算每個 YMD 的銷售排名
+                                        SELECT
+                                            [ID],
+                                            [YM],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YM] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYMONTHS]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
                                     "
                                     , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
@@ -22621,6 +22685,22 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
 
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES] AS T
+                                    INNER JOIN (
+                                        -- 導出表 (Derived Table)：計算每個 YMD 的銷售排名
+                                        SELECT
+                                            [ID],
+                                            [YM],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YM] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
                                     "
                                     , SMONTHS, SDATES, EDATES, sbSql99.ToString()
                                     );
@@ -22790,6 +22870,22 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
 
+                                    UPDATE T
+                                    SET [銷售排名] = R.NewRank
+                                    FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS] AS T
+                                    INNER JOIN (
+                                        -- 導出表 (Derived Table)：計算每個 YMD 的銷售排名
+                                        SELECT
+                                            [ID],
+                                            [YM],
+                                            [MB001],
+                                            [MB002],
+                                            RANK() OVER (
+                                                PARTITION BY [YM] 
+                                                ORDER BY [本期銷售] DESC, [MB001], [MB002]
+                                            ) AS NewRank
+                                        FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                                    ) AS R ON T.ID = R.ID AND T.YMD = R.YMD;
                                     "
                                     , SMONTHS, SDATES, EDATES
                                     );
@@ -23025,9 +23121,10 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYDAYS]
                             WHERE [YMD]='{0}'
-                            ORDER BY [YMD],[MB001]
+                            ORDER BY [YMD],[銷售排名],[MB001]
 
                          
 
@@ -23099,9 +23196,10 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYMONTHS]
                             WHERE [YM]='{0}'
-                            ORDER BY [YM],[MB001]                     
+                            ORDER BY [YM],[銷售排名],[MB001]                     
 
                             ", SMONTHS, SDATES, EDATES);
 
@@ -23170,9 +23268,10 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYDAYSSTORES]
                             WHERE [YMD]='{0}'
-                            ORDER BY [YMD],[MB001]                         
+                            ORDER BY [YMD],[銷售排名],[MB001]                         
 
                             ", SDAYS);
 
@@ -23242,9 +23341,10 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES]
                             WHERE [YM]='{0}'
-                            ORDER BY [YM],[MB001]                     
+                            ORDER BY [YM],[銷售排名],[MB001]                     
 
                             ", SMONTHS, SDATES, EDATES);
 
@@ -23274,10 +23374,11 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
                             WHERE [YMD]='{0}'
                             AND [MB002] NOT LIKE '%試吃%'
-                            ORDER BY [YMD],[MB001]                         
+                            ORDER BY [YMD],[銷售排名],[MB001]                         
 
                             ", SDAYS);
             Report report1 = new Report();
@@ -23334,10 +23435,11 @@ namespace TKMQ
                             ,[本期轉撥入]
                             ,[本期轉撥出]
                             ,[其他]
+                            ,[銷售排名]
                             FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                             WHERE [YM]='{0}'
                             AND [MB002] NOT LIKE '%試吃%'
-                            ORDER BY [YM],[MB001]                     
+                            ORDER BY [YM],[銷售排名],[MB001]                     
 
                             ", SMONTHS, SDATES, EDATES);
 
