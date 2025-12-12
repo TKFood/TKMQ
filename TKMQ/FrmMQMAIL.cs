@@ -21872,6 +21872,18 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
 
+                                    UPDATE  [TKMK].[dbo].[TBDAILYDAYS]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YMD]='{0}'
+
+                                    UPDATE  [TKMK].[dbo].[TBDAILYDAYS]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YMD]='{0}'
+
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
                                     FROM [TKMK].[dbo].[TBDAILYDAYS] AS T
@@ -22065,6 +22077,13 @@ namespace TKMQ
                                     UPDATE [TKMK].[dbo].[TBDAILYDAYSSTORES]
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
+
+                                    UPDATE  [TKMK].[dbo].[TBDAILYDAYSSTORES]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YMD]='{0}'
+
 
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
@@ -22264,6 +22283,12 @@ namespace TKMQ
                                     UPDATE [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YMD]='{0}'
+
+                                    UPDATE  [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YMD]='{0}'
 
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
@@ -22500,6 +22525,12 @@ namespace TKMQ
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
 
+                                    UPDATE  [TKMK].[dbo].[TBDAILYMONTHS]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YM]='{0}'
+
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
                                     FROM [TKMK].[dbo].[TBDAILYMONTHS] AS T
@@ -22694,6 +22725,12 @@ namespace TKMQ
                                     UPDATE [TKMK].[dbo].[TBDAILYMONTHSSTORES]
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
+
+                                    UPDATE  [TKMK].[dbo].[TBDAILYMONTHSSTORES]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YM]='{0}'
 
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
@@ -22890,6 +22927,12 @@ namespace TKMQ
                                     UPDATE [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                                     SET [其他]=[期末庫存]+[本期銷售]-[本期入庫]+[本期領用]-[本期轉撥入]+[本期轉撥出]-[期初庫存]
                                     WHERE [YM]='{0}'
+
+                                    UPDATE  [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
+                                    SET [售價]=MB047,[進價]=MB050
+                                    FROM [TK].dbo.INVMB 
+                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    AND [YM]='{0}'
 
                                     UPDATE T
                                     SET [銷售排名] = R.NewRank
@@ -23212,6 +23255,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYDAYS]
                             WHERE [YMD]='{0}'
                             ORDER BY [YMD],[銷售排名],[MB001]
@@ -23287,6 +23332,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYMONTHS]
                             WHERE [YM]='{0}'
                             ORDER BY [YM],[銷售排名],[MB001]                     
@@ -23359,6 +23406,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYDAYSSTORES]
                             WHERE [YMD]='{0}'
                             ORDER BY [YMD],[銷售排名],[MB001]                         
@@ -23432,6 +23481,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYMONTHSSTORES]
                             WHERE [YM]='{0}'
                             ORDER BY [YM],[銷售排名],[MB001]                     
@@ -23465,6 +23516,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
                             WHERE [YMD]='{0}'
                             AND [MB002] NOT LIKE '%試吃%'
@@ -23526,6 +23579,8 @@ namespace TKMQ
                             ,[本期轉撥出]
                             ,[其他]
                             ,[銷售排名]
+                            ,[售價]
+                            ,[進價]
                             FROM [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                             WHERE [YM]='{0}'
                             AND [MB002] NOT LIKE '%試吃%'
