@@ -22081,7 +22081,7 @@ namespace TKMQ
                                     UPDATE  [TKMK].[dbo].[TBDAILYDAYSSTORES]
                                     SET [售價]=MB047,[進價]=MB050
                                     FROM [TK].dbo.INVMB 
-                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    WHERE INVMB.MB001=[TBDAILYDAYSSTORES].[MB001]
                                     AND [YMD]='{0}'
 
 
@@ -22287,7 +22287,7 @@ namespace TKMQ
                                     UPDATE  [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
                                     SET [售價]=MB047,[進價]=MB050
                                     FROM [TK].dbo.INVMB 
-                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    WHERE INVMB.MB001=[TBDAILYDAYSFACTORYS].[MB001]
                                     AND [YMD]='{0}'
 
                                     UPDATE T
@@ -22729,7 +22729,7 @@ namespace TKMQ
                                     UPDATE  [TKMK].[dbo].[TBDAILYMONTHSSTORES]
                                     SET [售價]=MB047,[進價]=MB050
                                     FROM [TK].dbo.INVMB 
-                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    WHERE INVMB.MB001=[TBDAILYMONTHSSTORES].[MB001]
                                     AND [YM]='{0}'
 
                                     UPDATE T
@@ -22931,7 +22931,7 @@ namespace TKMQ
                                     UPDATE  [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
                                     SET [售價]=MB047,[進價]=MB050
                                     FROM [TK].dbo.INVMB 
-                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    WHERE INVMB.MB001=[TBDAILYMONTHSFACTORYS].[MB001]
                                     AND [YM]='{0}'
 
                                     UPDATE T
