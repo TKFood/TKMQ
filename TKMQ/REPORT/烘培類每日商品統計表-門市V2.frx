@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Report ScriptLanguage="CSharp" ReportInfo.Created="06/30/2025 14:55:30" ReportInfo.Modified="12/12/2025 14:49:35" ReportInfo.CreatorVersion="2016.4.4.0">
+<Report ScriptLanguage="CSharp" ReportInfo.Created="06/30/2025 14:55:30" ReportInfo.Modified="12/15/2025 09:30:50" ReportInfo.CreatorVersion="2016.4.4.0">
   <ScriptText>using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -49,7 +49,7 @@ namespace FastReport
 }
 </ScriptText>
   <Dictionary>
-    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUHuMdZ0rHlv8W+rkrE6JEfp">
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUFojiWX7F9EJqVP6RdpHnSL">
       <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="SELECT&#13;&#10;[ID]&#13;&#10;,[YMD] AS '日期'&#13;&#10;,[MB001] AS '品號'&#13;&#10;,[MB002] AS '品名'&#13;&#10;,[MB001]&#13;&#10;,[MB002]&#13;&#10;,[期初庫存]&#13;&#10;,[期末庫存]&#13;&#10;,[本期銷售]&#13;&#10;,[本期入庫]&#13;&#10;,[本期領用]&#13;&#10;,[本期轉撥入]&#13;&#10;,[本期轉撥出]&#13;&#10;,[其他]&#13;&#10;,[銷售排名]&#13;&#10;,[售價]&#13;&#10;,[進價]&#13;&#10;FROM [TKMK].[dbo].[TBDAILYDAYSSTORES]&#13;&#10;WHERE [YMD]='20251208'&#13;&#10;ORDER BY [YMD],[銷售排名],[MB001]">
         <Column Name="ID" DataType="System.Decimal"/>
         <Column Name="品號" DataType="System.String"/>
@@ -89,7 +89,7 @@ namespace FastReport
       <TextObject Name="Text25" Left="1020.6" Width="75.6" Height="18.9" Border.Lines="All" Text="期末庫存" HorzAlign="Center" VertAlign="Center"/>
       <TextObject Name="Text3" Left="1096.2" Width="94.5" Height="18.9" Border.Lines="All" Fill.Color="Gold" Text="銷售數量排名" HorzAlign="Center" VertAlign="Center"/>
       <TextObject Name="Text27" Left="1190.7" Width="66.15" Height="18.9" Border.Lines="All" Text="售價" HorzAlign="Center" VertAlign="Center"/>
-      <TextObject Name="Text29" Left="1256.85" Width="66.15" Height="18.9" Border.Lines="All" Text="進價" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text29" Left="1256.85" Width="85.05" Height="18.9" Border.Lines="All" Text="外購品的進價" HorzAlign="Center" VertAlign="Center"/>
     </PageHeaderBand>
     <DataBand Name="Data1" Top="47" Width="1436.4" Height="18.9" CanGrow="true" DataSource="Table">
       <TextObject Name="Text4" Width="151.2" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.日期]" HorzAlign="Center" VertAlign="Center"/>
@@ -105,7 +105,7 @@ namespace FastReport
       <TextObject Name="Text24" Left="1020.6" Width="75.6" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.期末庫存]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="0" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center"/>
       <TextObject Name="Text2" Left="1096.2" Width="94.5" Height="18.9" Border.Lines="All" Fill.Color="Gold" CanGrow="true" GrowToBottom="true" Text="[Table.銷售排名]" HorzAlign="Center" VertAlign="Center"/>
       <TextObject Name="Text26" Left="1190.7" Width="66.15" Height="18.9" Border.Lines="All" AfterDataEvent="Text26_AfterData" Text="[Table.售價]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="0" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Center" VertAlign="Center"/>
-      <TextObject Name="Text28" Left="1256.85" Width="66.15" Height="18.9" Border.Lines="All" AfterDataEvent="Text28_AfterData" Text="[Table.進價]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="0" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text28" Left="1256.85" Width="85.05" Height="18.9" Border.Lines="All" AfterDataEvent="Text28_AfterData" Text="[Table.進價]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="0" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Center" VertAlign="Center"/>
     </DataBand>
     <PageFooterBand Name="PageFooter1" Top="70.49" Width="1436.4"/>
   </ReportPage>

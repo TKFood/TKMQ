@@ -21146,7 +21146,7 @@ namespace TKMQ
             //新增當月記錄-觀光
             TBDAILYMONTHSFACTORYS_RetryAddDailyPost(SMONTHS, firstDayOfMonth, yesterday);
 
-            DataSet ds = new DataSet();
+            DataSet ds = new DataSet(); 
             DataTable DT = new DataTable();
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
