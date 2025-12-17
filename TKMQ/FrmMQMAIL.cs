@@ -14909,24 +14909,24 @@ namespace TKMQ
 
                     BODY.AppendFormat(@"</tr> ");
 
+                    // 先定義好重複使用的樣式，方便後續維護
+                    string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+
                     foreach (DataRow DR in DT_PURNOTIN.Rows)
                     {
-
-                        BODY.AppendFormat(@"<tr >");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預交日"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購單別"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購單號"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["序號"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨但未進數量"].ToString() + "</td>");
-                        BODY.AppendFormat(@"</tr> ");
-
-
+                        BODY.Append("<tr>");
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["預交日"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["廠商"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購單別"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購單號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["序號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品名"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["規格"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購數量"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["單位"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["到貨但未進數量"]);
+                        BODY.Append("</tr>");
                     }
                     BODY.AppendFormat(@"</table> ");
 
