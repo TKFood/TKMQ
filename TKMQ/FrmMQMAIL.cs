@@ -23682,10 +23682,15 @@ namespace TKMQ
 
                             foreach (DataRow DR in DT_DATAS.Rows)
                             {
-                                // 定義統一的 Style，方便維護且減少重複字串
                                 string tdStyle = @"style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體;""";
 
-                                BODY.Append("<tr>");
+                                // 1. 判斷是否合格，準備整行的樣式
+                                string isQualified = DR["是否合格"]?.ToString() ?? "";
+                                string rowStyle = (isQualified == "不合格") ? "style=\"color: red;\"" : "";
+
+                                // 2. 在 tr 加入 rowStyle
+                                BODY.Append($@"<tr {rowStyle}>");
+
                                 BODY.Append($@"<td {tdStyle}>{DR["到貨日"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["廠商"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["品號"]}</td>");
@@ -23697,10 +23702,11 @@ namespace TKMQ
                                 BODY.Append($@"<td {tdStyle}>{DR["製造有效天數"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["本日有效天數"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["有效百分比"]}</td>");
-                                BODY.Append($@"<td {tdStyle}>{DR["是否合格"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{isQualified}</td>"); // 使用剛才判斷過的變數
                                 BODY.Append($@"<td {tdStyle}>{DR["單別"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["單號"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["序號"]}</td>");
+
                                 BODY.Append("</tr>");
                             }
 
