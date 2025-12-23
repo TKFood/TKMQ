@@ -85,6 +85,7 @@
             this.button58 = new System.Windows.Forms.Button();
             this.button22 = new System.Windows.Forms.Button();
             this.button59 = new System.Windows.Forms.Button();
+            this.button60 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -103,8 +104,9 @@
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
-            this.button60 = new System.Windows.Forms.Button();
             this.timer4 = new System.Windows.Forms.Timer(this.components);
+            this.button61 = new System.Windows.Forms.Button();
+            this.button62 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -158,6 +160,7 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 37F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
+            this.tableLayoutPanel1.Controls.Add(this.button61, 5, 0);
             this.tableLayoutPanel1.Controls.Add(this.button1, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.button2, 2, 1);
             this.tableLayoutPanel1.Controls.Add(this.button5, 3, 0);
@@ -212,6 +215,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
             this.tableLayoutPanel1.Controls.Add(this.button59, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button60, 0, 11);
+            this.tableLayoutPanel1.Controls.Add(this.button62, 4, 9);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -802,6 +806,17 @@
             this.button59.UseVisualStyleBackColor = true;
             this.button59.Click += new System.EventHandler(this.button59_Click);
             // 
+            // button60
+            // 
+            this.button60.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button60.Location = new System.Drawing.Point(3, 443);
+            this.button60.Name = "button60";
+            this.button60.Size = new System.Drawing.Size(168, 34);
+            this.button60.TabIndex = 111;
+            this.button60.Text = "資訊-溫濕度警報";
+            this.button60.UseVisualStyleBackColor = true;
+            this.button60.Click += new System.EventHandler(this.button60_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -975,7 +990,7 @@
             // 
             this.previewControl1.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.previewControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.previewControl1.Font = new System.Drawing.Font("宋体", 9F);
+            this.previewControl1.Font = new System.Drawing.Font("SimSun", 9F);
             this.previewControl1.Location = new System.Drawing.Point(0, 0);
             this.previewControl1.Margin = new System.Windows.Forms.Padding(4);
             this.previewControl1.Name = "previewControl1";
@@ -1050,20 +1065,28 @@
             // 
             this.timer3.Tick += new System.EventHandler(this.timer3_Tick);
             // 
-            // button60
-            // 
-            this.button60.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button60.Location = new System.Drawing.Point(3, 443);
-            this.button60.Name = "button60";
-            this.button60.Size = new System.Drawing.Size(168, 34);
-            this.button60.TabIndex = 111;
-            this.button60.Text = "資訊-溫濕度警報";
-            this.button60.UseVisualStyleBackColor = true;
-            this.button60.Click += new System.EventHandler(this.button60_Click);
-            // 
             // timer4
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
+            // 
+            // button61
+            // 
+            this.button61.Location = new System.Drawing.Point(691, 3);
+            this.button61.Name = "button61";
+            this.button61.Size = new System.Drawing.Size(26, 34);
+            this.button61.TabIndex = 112;
+            this.button61.Text = "採購今日未傳真";
+            this.button61.UseVisualStyleBackColor = true;
+            // 
+            // button62
+            // 
+            this.button62.Location = new System.Drawing.Point(540, 363);
+            this.button62.Name = "button62";
+            this.button62.Size = new System.Drawing.Size(145, 34);
+            this.button62.TabIndex = 113;
+            this.button62.Text = "進貨效期檢查 ";
+            this.button62.UseVisualStyleBackColor = true;
+            this.button62.Click += new System.EventHandler(this.button62_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1071,7 +1094,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 625);
             this.Controls.Add(this.tabControl1);
-            this.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.Font = new System.Drawing.Font("PMingLiU", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FrmMQMAIL";
             this.Text = "FrmMQMAIL";
@@ -1172,5 +1195,7 @@
         private System.Windows.Forms.Button button59;
         private System.Windows.Forms.Button button60;
         private System.Windows.Forms.Timer timer4;
+        private System.Windows.Forms.Button button61;
+        private System.Windows.Forms.Button button62;
     }
 }

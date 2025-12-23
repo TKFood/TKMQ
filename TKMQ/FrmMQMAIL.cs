@@ -23641,76 +23641,86 @@ namespace TKMQ
                 BODY.Clear();
 
 
-                SUBJEST.AppendFormat(@"系統通知-請查收-每日-到貨的有效期通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+             
 
-                //ERP 採購相關單別、單號未核準的明細
-                //
-                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                    + "<br>" + "系統通知-請查收-每日-到貨的有效期通知，謝謝"
-                    + " <br>"
-                    );
-
-
-
-
-                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                try
                 {
-                    if (DT_DATAS.Rows.Count > 0)
+                    SUBJEST.AppendFormat(@"系統通知-請查收-每日-到貨的有效期通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                    //ERP 採購相關單別、單號未核準的明細
+                    //
+                    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                        + "<br>" + "系統通知-請查收-每日-到貨的有效期通知，謝謝"
+                        + " <br>"
+                        );
+                    if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                     {
-                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-                        BODY.AppendFormat(@"<table> ");
-                        BODY.AppendFormat(@"<tr >");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">到貨日</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">數量</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效日期</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製造日期</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製造有效天數</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">本日有效天數</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效百分比</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否合格</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
-                        ;
-                        BODY.AppendFormat(@"</tr> ");
-
-                        foreach (DataRow DR in DT_DATAS.Rows)
+                        if (DT_DATAS.Rows.Count > 0)
                         {
+                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
+                            BODY.AppendFormat(@"<table> ");
                             BODY.AppendFormat(@"<tr >");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨日"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["數量"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日期"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造日期"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造有效天數"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["本日有效天數"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效百分比"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["是否合格"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單號"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["序號"].ToString() + "</td>");
-
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">到貨日</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">數量</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效日期</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製造日期</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製造有效天數</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">本日有效天數</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">有效百分比</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否合格</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單別</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
+                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
+                            ;
                             BODY.AppendFormat(@"</tr> ");
 
+                            foreach (DataRow DR in DT_DATAS.Rows)
+                            {
 
+                                BODY.AppendFormat(@"<tr >");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨日"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["數量"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日期"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造日期"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造有效天數"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["本日有效天數"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效百分比"].ToString() + "</td>");
+                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["是否合格"].ToString() + "</td>");
+                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
+                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單號"].ToString() + "</td>");
+                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["序號"].ToString() + "</td>");
+
+                                BODY.AppendFormat(@"</tr> ");
+
+
+                            }
+                            BODY.AppendFormat(@"</table> ");
                         }
-                        BODY.AppendFormat(@"</table> ");
                     }
+                    else
+                    {
+                        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
+                    }
+
                 }
-                else
+                catch (Exception  EX)
                 {
-                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
                 }
+                finally
+                {
+
+                }
+                
 
                 try
                 {
@@ -23807,62 +23817,62 @@ namespace TKMQ
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 string YESTERDAYS = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
-                sbSql.AppendFormat(@"                                   
-                                   
+                sbSql.AppendFormat(@"     
                                     SELECT 
                                     *
-                                    , (CONVERT(NVARCHAR, CAST(
+                                    , (CONVERT(NVARCHAR, 有效百分比) + '%') AS '有效百分比顯示'
+                                    , (CASE 
+                                        WHEN 產地 = 'TW' AND 有效百分比 >= 50.0 THEN '合格'
+                                        WHEN 產地 <> 'TW' OR ISNULL(產地,'')='' AND 有效百分比 >= 33.34 THEN '合格' -- 1/3 約為 33.33%
+                                        ELSE '不合格' 
+                                      END) AS '是否合格'
+                                FROM (
+                                    SELECT 
+                                        廠商代號, 到貨日, 廠商, 品號, 品名, 規格, 數量, 單位, 批號, 有效日期, 製造日期, 
+                                        單別, 單號, 序號, TODAYS, 產地, 製造有效天數, 本日有效天數,
+                                        CAST(
                                             CASE 
                                                 WHEN 本日有效天數 > 0 AND 製造有效天數 > 0 
                                                 THEN 本日有效天數 * 100.0 / 製造有效天數 
                                                 ELSE 0 
-                                            END 
-                                        AS DECIMAL(10,2))) + '%') AS '有效百分比'
-                                    ,( CASE WHEN  CAST(
-                                            CASE 
-                                                WHEN 本日有效天數 > 0 AND 製造有效天數 > 0 
-                                                THEN 本日有效天數 * 100.0 / 製造有效天數 
-                                                ELSE 0 
-                                            END 
-                                        AS DECIMAL(10,2))>=34 THEN '1/3效期內-合格' ELSE '不合格' END ) AS '是否合格'
-                                    FROM 
-                                    (
-                                    SELECT 
-                                    TG005 AS '廠商代號'
-                                    ,TG003 AS '到貨日'
-                                    ,MA002 AS '廠商'
-                                    ,TH004 AS '品號'
-                                    ,TH005 AS '品名'
-                                    ,TH006 AS '規格'
-                                    ,TH007 AS '數量'
-                                    ,TH008 AS '單位'
-                                    ,TH036 AS '有效日期'
-                                    ,TH117 AS '製造日期'
-                                    ,TH001 AS '單別'
-                                    ,TH002 AS '單號'
-                                    ,TH003 AS '序號'
-                                    ,CONVERT(NVARCHAR,GETDATE(),112) AS 'TODAYS'
-                                    ,(CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,TH117,TH036) ELSE 0 END) AS '製造有效天數'
-                                    ,(CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,GETDATE(),TH036) ELSE 0 END) AS '本日有效天數'
-                                    FROM [TK].dbo.PURTG,[TK] WITH(NOLOCK) .dbo.PURTH WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002
-                                    AND TG005=MA001
-                                    AND PURTG.CREATE_DATE LIKE '{0}%'
+                                            END AS DECIMAL(10,2)) AS '有效百分比'
+                                    FROM (
+                                        -- 第一部分：進貨單 PURTG/TH
+                                        SELECT 
+                                            TG005 AS '廠商代號', TG003 AS '到貨日', MA002 AS '廠商',
+                                            TH004 AS '品號', TH005 AS '品名', TH006 AS '規格',
+                                            TH007 AS '數量', TH008 AS '單位', TH010 AS '批號', TH036 AS '有效日期', TH117 AS '製造日期',
+                                            TH001 AS '單別', TH002 AS '單號', TH003 AS '序號',
+                                            CONVERT(NVARCHAR, GETDATE(), 112) AS 'TODAYS',
+                                            MB113 AS '產地',
+                                            (CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,TH117,TH036) ELSE 0 END) AS '製造有效天數',
+                                            (CASE WHEN ISDATE(TH036)=1 AND ISDATE(TH117)=1 THEN DATEDIFF(DAY,GETDATE(),TH036) ELSE 0 END) AS '本日有效天數'
+                                        FROM [TK].dbo.PURTG WITH(NOLOCK)
+                                        JOIN [TK].dbo.PURTH WITH(NOLOCK) ON TG001=TH001 AND TG002=TH002
+                                        JOIN [TK].dbo.PURMA WITH(NOLOCK) ON TG005=MA001
+                                        LEFT JOIN [TK].dbo.INVMB WITH(NOLOCK) ON TH004=MB001 -- 取得產地 MB113
+                                        WHERE PURTG.CREATE_DATE LIKE '{0}%'
 
-                                    UNION ALL
-                                    SELECT 
-                                    'A11A','客供料',TA003,TB004,TB005,TB006,TB007,TB008,TB015,TB033,TB001,TB002,TB003
-                                    ,CONVERT(NVARCHAR,GETDATE(),112) AS 'TODAYS'
-                                    ,(CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,TB033,TB015) ELSE 0 END) AS 'VALIDDAYS'
-                                    ,(CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,GETDATE(),TB015) ELSE 0 END) AS 'STILLDAYS'
-                                    FROM [TK].dbo.INVTA WITH(NOLOCK) ,[TK].dbo.INVTB WITH(NOLOCK) 
-                                    WHERE TA001=TB001 AND TA002=TB002
-                                    AND TA001 IN ('A11A')
-                                    AND INVTA.CREATE_DATE LIKE '{0}%'
+                                        UNION ALL
 
-                                    ) AS TEMP
-                                    ORDER BY 到貨日,廠商代號,品號
-
+                                        -- 第二部分：庫存調整 INVTA/TB (客供料)
+                                        SELECT 
+                                            'A11A', TA003, '客供料',
+                                            TB004, TB005, TB006,
+                                            TB007, TB008, TB014, TB015, TB033,
+                                            TB001, TB002, TB003,
+                                            CONVERT(NVARCHAR, GETDATE(), 112),
+                                            MB113 AS '產地',
+                                            (CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,TB033,TB015) ELSE 0 END) AS '製造有效天數',
+                                            (CASE WHEN ISDATE(TB015)=1 AND ISDATE(TB033)=1 THEN DATEDIFF(DAY,GETDATE(),TB015) ELSE 0 END) AS '本日有效天數'
+                                        FROM [TK].dbo.INVTA WITH(NOLOCK)
+                                        JOIN [TK].dbo.INVTB WITH(NOLOCK) ON TA001=TB001 AND TA002=TB002
+                                        LEFT JOIN [TK].dbo.INVMB WITH(NOLOCK) ON TB004=MB001 -- 取得產地 MB113
+                                        WHERE TA001 IN ('A11A')
+                                        AND INVTA.CREATE_DATE LIKE '{0}%'
+                                    ) AS SUB
+                                ) AS TEMP
+                                ORDER BY 到貨日, 廠商代號, 品號
 
                                     ", YESTERDAYS);
 
@@ -26461,8 +26471,13 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+        private void button62_Click(object sender, EventArgs e)
+        {
+            //進貨效期檢查
+            
+        }
         #endregion
 
-      
+
     }
 }
