@@ -23828,8 +23828,8 @@ namespace TKMQ
                                     *
                                     , (CONVERT(NVARCHAR, 有效百分比) + '%') AS '有效百分比顯示'
                                     , (CASE 
-                                        WHEN 產地 = 'TW' AND 有效百分比 >= 50.0 THEN '合格'
-                                        WHEN 產地 <> 'TW' OR ISNULL(產地,'')='' AND 有效百分比 >= 33.34 THEN '合格' -- 1/3 約為 33.33%
+                                        WHEN 產地 = 'TW' AND 有效百分比 >= 67 THEN '合格'
+                                        WHEN 產地 <> 'TW' OR ISNULL(產地,'')='' AND 有效百分比 >= 50 THEN '合格' 
                                         ELSE '不合格' 
                                       END) AS '是否合格'
                                 FROM (
