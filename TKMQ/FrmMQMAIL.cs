@@ -13,7 +13,7 @@ using System.Configuration;
 using FastReport;
 using FastReport.Data;
 using System.Net.Mail;//<-基本上發mail就用這個class
-using Excel = Microsoft.Office.Interop.Excel;
+using Excel = Microsoft.Office.Interop.Excel; // 為 Interop 設定別名
 using System.Drawing;
 using System.Diagnostics;
 using System.Threading;
@@ -23682,28 +23682,28 @@ namespace TKMQ
 
                             foreach (DataRow DR in DT_DATAS.Rows)
                             {
+                                // 定義統一的 Style，方便維護且減少重複字串
+                                string tdStyle = @"style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體;""";
 
-                                BODY.AppendFormat(@"<tr >");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["到貨日"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品號"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["數量"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效日期"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造日期"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製造有效天數"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["本日有效天數"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效百分比"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["是否合格"].ToString() + "</td>");
-                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單別"].ToString() + "</td>");
-                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單號"].ToString() + "</td>");
-                                //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["序號"].ToString() + "</td>");
-
-                                BODY.AppendFormat(@"</tr> ");
-
-
+                                BODY.Append("<tr>");
+                                BODY.Append($@"<td {tdStyle}>{DR["到貨日"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["廠商"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["品號"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["品名"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["數量"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["單位"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["有效日期"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["製造日期"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["製造有效天數"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["本日有效天數"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["有效百分比"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["是否合格"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["單別"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["單號"]}</td>");
+                                BODY.Append($@"<td {tdStyle}>{DR["序號"]}</td>");
+                                BODY.Append("</tr>");
                             }
+
                             BODY.AppendFormat(@"</table> ");
                         }
                     }
