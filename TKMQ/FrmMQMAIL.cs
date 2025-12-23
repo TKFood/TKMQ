@@ -26477,11 +26477,7 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
-        private void button62_Click(object sender, EventArgs e)
-        {
-            //進貨效期檢查
-            
-        }
+   
         #endregion
 
 
