@@ -23827,11 +23827,14 @@ namespace TKMQ
                                     SELECT 
                                     *
                                     , (CONVERT(NVARCHAR, 有效百分比) + '%') AS '有效百分比顯示'
-                                    , (CASE 
+                                     , (CASE 
                                         WHEN 產地 = 'TW' AND 有效百分比 >= 67 THEN '合格'
+		                                WHEN 產地 = 'TW' AND 品號 IN (SELECT [MB001]  FROM [TKRESEARCH].[dbo].[TB_ORIENTS_CHECKLISTS_LOTNO_TW_CHECKVALIDS]) AND 有效百分比 >= 50 THEN '合格'
+		                                WHEN 產地 <> 'TW' AND 品號 IN (SELECT [MB001]  FROM [TKRESEARCH].[dbo].[TB_ORIENTS_CHECKLISTS_LOTNO_NOTTW_CHECKVALIDS]) AND 有效百分比 >= 50 THEN '合格'
                                         WHEN 產地 <> 'TW' OR ISNULL(產地,'')='' AND 有效百分比 >= 50 THEN '合格' 
+		                                WHEN ISNULL(批號,'')='' THEN '無批號'
                                         ELSE '不合格' 
-                                      END) AS '是否合格'
+                                        END) AS '是否合格'
                                 FROM (
                                     SELECT 
                                         廠商代號, 到貨日, 廠商, 品號, 品名, 規格, 數量, 單位, 批號, 有效日期, 製造日期, 
