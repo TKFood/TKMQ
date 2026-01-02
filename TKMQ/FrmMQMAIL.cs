@@ -22522,7 +22522,7 @@ namespace TKMQ
                                     UPDATE  [TKMK].[dbo].[TBDAILYMONTHS]
                                     SET [售價]=MB051,[進價]=MB050
                                     FROM [TK].dbo.INVMB 
-                                    WHERE INVMB.MB001=[TBDAILYDAYS].[MB001]
+                                    WHERE INVMB.MB001=[TBDAILYMONTHS].[MB001]
                                     AND [YM]='{0}'
 
                                     UPDATE T
