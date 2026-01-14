@@ -11245,7 +11245,13 @@ namespace TKMQ
                                     ,ISNULL((SELECT TOP 1 TH003 FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) WHERE TH001=TI001 AND TH002=TI002 AND TI004=LA001 AND TI010=LA016 AND TI037='Y' ORDER BY TH003 ASC),'') AS '託外生產日期'
 
                                     FROM [TK].dbo.INVLA  WITH(NOLOCK) 
-                                    WHERE  (LA009 IN ('20001','21001','30001','30002','30003','30004')) 
+                                    WHERE (
+                                    LA009 IN (
+		                                    SELECT
+		                                    [LA009]
+		                                    FROM [TKMQ].[dbo].[POSINV_LA009] WITH(NOLOCK) 
+		                                    )
+                                    )
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
                                     AND ISDATE(LA016)=1
                                     GROUP BY  LA009,LA001,LA016
@@ -11255,9 +11261,7 @@ namespace TKMQ
                                     LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
                                     WHERE MB002 NOT LIKE '%暫停%'
                                     ORDER BY LA009,LA001,LA016
-                                    ORDER BY LA009,LA001,LA016
-                                    ORDER BY LA009,LA001,LA016
-                                    ORDER BY LA009,LA001,LA016
+                                   
 
 
                                     ", TODAY);
