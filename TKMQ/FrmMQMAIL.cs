@@ -2037,119 +2037,273 @@ namespace TKMQ
 
             }
         }
-
         public void ExportDataSetToExcel(DataSet ds, string TopathFile)
         {
-            //Creae an Excel application instance
             Excel.Application excelApp = new Excel.Application();
+            // 1. 效能優化：關閉畫面更新與警示
+            excelApp.ScreenUpdating = false;
+            excelApp.DisplayAlerts = false;
 
-            //Create an Excel workbook instance and open it from the predefined location
-            Excel.Workbook excelWorkBook = excelApp.Workbooks.Open(TopathFile);
-            Excel.Range wRange;
-            Excel.Range wRangepathFile;
-            Excel.Range wRangepathFilePURTA;
+            Excel.Workbooks workbooks = excelApp.Workbooks;
+            Excel.Workbook excelWorkBook = workbooks.Open(TopathFile);
 
-            //Add a new worksheet to workbook with the Datatable name
-            Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
-
-
-            foreach (DataTable table in ds.Tables)
+            try
             {
-                excelWorkSheet.Name = table.TableName;
-
-                for (int i = 1; i < table.Columns.Count + 1; i++)
+                foreach (DataTable table in ds.Tables)
                 {
-                    excelWorkSheet.Cells[1, i] = table.Columns[i - 1].ColumnName;
-                    //畫框線
-                    wRange = excelWorkSheet.Cells[1, i];
-                    wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-                    wRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
-                    wRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-                }
+                    // 新增工作表
+                    Excel.Worksheet excelWorkSheet = (Excel.Worksheet)excelWorkBook.Sheets.Add();
+                    excelWorkSheet.Name = table.TableName;
 
-                for (int j = 0; j < table.Rows.Count; j++)
-                {
-                    for (int k = 0; k < table.Columns.Count; k++)
+                    int rowCount = table.Rows.Count;
+                    int colCount = table.Columns.Count;
+
+                    // 2. 建立二維陣列 (索引從 0 開始)
+                    // 陣列大小：[列數 + 標題列, 欄數]
+                    object[,] dataBatch = new object[rowCount + 1, colCount];
+
+                    // 3. 填充標題列
+                    for (int i = 0; i < colCount; i++)
                     {
-                        excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
-
-                        wRange = excelWorkSheet.Cells[j + 2, k + 1];
-
-                        //畫框線
-                        wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-
-                        //pathFilePURTA檢查需求差異量是否為負，為負就紅字
-                        //string tt = table.Rows[j].ItemArray[k].ToString();
-
-                        if (TopathFile.Equals(pathFile.ToString()) && k == 16 && string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()))
-                        {
-                            string STARTCELL = "A" + (j + 2).ToString();
-                            string ENDCELL = "AI" + (j + 2).ToString();
-                            Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);
-                            newRng.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-
-                        }
-
-                        //pathFilePURTA檢查需求差異量是否為負，為負就紅字
-                        //string tt = table.Rows[j].ItemArray[k].ToString();
-
-                        if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 9 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-
-                        //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
-                        // Set the range to fill. pathFileMOCINVCHECK
-
-                        if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-
-                        if (TopathFile.Equals(pathFileMOCINVCHECK) && k == 4 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-                        //pathFileMOCCOP
-                        if (TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-                        if (TopathFile.Equals(pathFileMOCCOP) && k == 18 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-                        //pathFileINVMC
-                        if (TopathFile.Equals(pathFileINVMC) && k == 7 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-                        {
-                            wRange.Select();
-                            wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-                        }
-
-
+                        dataBatch[0, i] = table.Columns[i].ColumnName;
                     }
+
+                    // 4. 填充資料列 (將 DataTable 轉存至 Array)
+                    for (int r = 0; r < rowCount; r++)
+                    {
+                        for (int c = 0; c < colCount; c++)
+                        {
+                            dataBatch[r + 1, c] = table.Rows[r][c].ToString();
+                        }
+                    }
+
+                    // 5. 一次性寫入 Excel 範圍
+                    Excel.Range startCell = (Excel.Range)excelWorkSheet.Cells[1, 1];
+                    Excel.Range endCell = (Excel.Range)excelWorkSheet.Cells[rowCount + 1, colCount];                
+                    Excel.Range fullRange = excelWorkSheet.Range[startCell, endCell];
+                    fullRange.Value2 = dataBatch;
+
+                    // 6. 批次格式設定 (框線、對齊)
+                    fullRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+
+                    // 標題列置中加粗
+                    // 將 Cells[x, y] 強制轉型為 Excel.Range
+                    Excel.Range cell1 = (Excel.Range)excelWorkSheet.Cells[1, 1];
+                    Excel.Range cell2 = (Excel.Range)excelWorkSheet.Cells[1, colCount];
+                    // 使用 Range[cell1, cell2] 取得標題列範圍
+                    Excel.Range headerRange = excelWorkSheet.Range[cell1, cell2];
+                    headerRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+                    headerRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                    headerRange.Font.Bold = true;
+
+                    // 7. 處理特殊紅字邏輯 (在記憶體判斷，僅對特定 Cell 變色)
+                    // 這裡雖然仍有迴圈，但只做「變色」而不做「寫入」，速度會快很多
+                    for (int j = 0; j < rowCount; j++)
+                    {
+                        int excelRowIdx = j + 2; // Excel 的資料從第 2 列開始
+
+                        // 邏輯 1: pathFile 檢查第 16 欄為空 (整行變紅)
+                        if (TopathFile.Equals(pathFile.ToString()) && string.IsNullOrEmpty(table.Rows[j][16].ToString()))
+                        {
+                            Excel.Range rowRange = excelWorkSheet.get_Range("A" + excelRowIdx, "AI" + excelRowIdx);
+                            rowRange.Font.Color = ColorTranslator.ToOle(Color.Red);
+                        }
+
+                        // 邏輯 2: pathFilePURTA 檢查第 9 欄 < 0 (儲存格變紅)
+                        if (TopathFile.Equals(pathFilePURTA.ToString()))
+                        {
+                            decimal val;
+                            if (decimal.TryParse(table.Rows[j][9].ToString(), out val) && val < 0)
+                            {
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 9 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+                            }
+                        }
+
+                        // 邏輯 3: pathFileINVMOCTA 檢查第 6 欄 > 0
+                        if (TopathFile.Equals(pathFileINVMOCTA.ToString()))
+                        {
+                            decimal val;
+                            if (decimal.TryParse(table.Rows[j][6].ToString(), out val) && val > 0)
+                            {
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 6 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+                            }
+                        }
+
+                        // 邏輯 4: pathFileMOCINVCHECK 檢查第 4 欄 < 0
+                        if (TopathFile.Equals(pathFileMOCINVCHECK.ToString()))
+                        {
+                            decimal val;
+                            if (decimal.TryParse(table.Rows[j][4].ToString(), out val) && val < 0)
+                            {
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 4 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+                            }
+                        }
+
+                        // 邏輯 5: pathFileMOCCOP 檢查第 16 欄 < 0 或第 18 欄 > 0
+                        if (TopathFile.Equals(pathFileMOCCOP.ToString()))
+                        {
+                            decimal val16, val18;
+                            if (decimal.TryParse(table.Rows[j][16].ToString(), out val16) && val16 < 0)
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 16 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+
+                            if (decimal.TryParse(table.Rows[j][18].ToString(), out val18) && val18 > 0)
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 18 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+                        }
+
+                        // 邏輯 6: pathFileINVMC 檢查第 7 欄 < 0
+                        if (TopathFile.Equals(pathFileINVMC.ToString()))
+                        {
+                            decimal val;
+                            if (decimal.TryParse(table.Rows[j][7].ToString(), out val) && val < 0)
+                            {
+                                ((Excel.Range)excelWorkSheet.Cells[excelRowIdx, 7 + 1]).Font.Color = ColorTranslator.ToOle(Color.Red);
+                            }
+                        }
+                    }
+
+                    // 自動調整欄寬 (全部完成後做一次)
+                    excelWorkSheet.Columns.AutoFit();
+
+                    // 釋放工作表物件
+                    Marshal.ReleaseComObject(excelWorkSheet);
                 }
 
-                //設定為按照內容自動調整欄寬
-                excelWorkSheet.Columns.AutoFit();
+                excelWorkBook.Save();
             }
+            catch (Exception ex)
+            {
+                throw new Exception("Export 發生錯誤: " + ex.Message);
+            }
+            finally
+            {
+                // 8. 確保資源關閉與釋放
+                if (excelWorkBook != null)
+                {
+                    excelWorkBook.Close();
+                    Marshal.ReleaseComObject(excelWorkBook);
+                }
 
+                excelApp.ScreenUpdating = true; // 恢復畫面更新
+                excelApp.Quit();
+                Marshal.ReleaseComObject(excelApp);
 
-
-            excelWorkBook.Save();
-            excelWorkBook.Close();
-            excelApp.Quit();
-
-            // 释放COM对象
-            Marshal.ReleaseComObject(excelWorkSheet);
-            Marshal.ReleaseComObject(excelWorkBook);
-            Marshal.ReleaseComObject(excelApp);
+                // 強制垃圾回收（處理 Excel 程序殘留）
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
         }
+        //public void ExportDataSetToExcel(DataSet ds, string TopathFile)
+        //{
+        //    //Creae an Excel application instance
+        //    Excel.Application excelApp = new Excel.Application();
+
+        //    //Create an Excel workbook instance and open it from the predefined location
+        //    Excel.Workbook excelWorkBook = excelApp.Workbooks.Open(TopathFile);
+        //    Excel.Range wRange;
+        //    Excel.Range wRangepathFile;
+        //    Excel.Range wRangepathFilePURTA;
+
+        //    //Add a new worksheet to workbook with the Datatable name
+        //    Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
+
+
+        //    foreach (DataTable table in ds.Tables)
+        //    {
+        //        excelWorkSheet.Name = table.TableName;
+
+        //        for (int i = 1; i < table.Columns.Count + 1; i++)
+        //        {
+        //            excelWorkSheet.Cells[1, i] = table.Columns[i - 1].ColumnName;
+        //            //畫框線
+        //            wRange = excelWorkSheet.Cells[1, i];
+        //            wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+        //            wRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
+        //            wRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+        //        }
+
+        //        for (int j = 0; j < table.Rows.Count; j++)
+        //        {
+        //            for (int k = 0; k < table.Columns.Count; k++)
+        //            {
+        //                excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
+
+        //                wRange = excelWorkSheet.Cells[j + 2, k + 1];
+
+        //                //畫框線
+        //                wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+
+        //                //pathFilePURTA檢查需求差異量是否為負，為負就紅字
+        //                //string tt = table.Rows[j].ItemArray[k].ToString();
+
+        //                if (TopathFile.Equals(pathFile.ToString()) && k == 16 && string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()))
+        //                {
+        //                    string STARTCELL = "A" + (j + 2).ToString();
+        //                    string ENDCELL = "AI" + (j + 2).ToString();
+        //                    Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);
+        //                    newRng.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+
+        //                }
+
+        //                //pathFilePURTA檢查需求差異量是否為負，為負就紅字
+        //                //string tt = table.Rows[j].ItemArray[k].ToString();
+
+        //                if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 9 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+
+        //                //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
+        //                // Set the range to fill. pathFileMOCINVCHECK
+
+        //                if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+
+        //                if (TopathFile.Equals(pathFileMOCINVCHECK) && k == 4 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+        //                //pathFileMOCCOP
+        //                if (TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+        //                if (TopathFile.Equals(pathFileMOCCOP) && k == 18 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+        //                //pathFileINVMC
+        //                if (TopathFile.Equals(pathFileINVMC) && k == 7 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
+        //                {
+        //                    wRange.Select();
+        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
+        //                }
+
+
+        //            }
+        //        }
+
+        //        //設定為按照內容自動調整欄寬
+        //        excelWorkSheet.Columns.AutoFit();
+        //    }
+
+
+
+        //    excelWorkBook.Save();
+        //    excelWorkBook.Close();
+        //    excelApp.Quit();
+
+        //    // 释放COM对象
+        //    Marshal.ReleaseComObject(excelWorkSheet);
+        //    Marshal.ReleaseComObject(excelWorkBook);
+        //    Marshal.ReleaseComObject(excelApp);
+        //}
 
         public void SERACHMAIL()
         {
@@ -10932,8 +11086,8 @@ namespace TKMQ
                                     ,LA016 AS '有效日'
                                     ,NUMS AS '庫存數量'
                                     ,(CASE WHEN  ISDATE(生產日期)=1 THEN 生產日期 WHEN  ISDATE(進貨日期)=1 THEN 進貨日期 WHEN  ISDATE(託外生產日期)=1 THEN 託外生產日期 ELSE 0 END )  AS '生產-進貨日期'
-                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'{0}') WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,'{0}') WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,'{0}') ELSE 0 END ) AS '在倉日期'
-                                    ,(DATEDIFF(DAY,'{0}',LA016))  AS '有效天數'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,getdate()) WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,getdate()) WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,getdate()) ELSE 0 END ) AS '在倉日期'
+                                    ,(DATEDIFF(DAY,getdate(),LA016))  AS '有效天數'
                                     FROM 
                                     (
                                     SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
@@ -11223,8 +11377,7 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@" 
-                                   --20230725 查INVLA
-
+                                  --20230725 查INVLA
                                     SELECT 
                                     LA009 AS '庫別代號'
                                     ,MC002 AS '庫別'
@@ -11235,8 +11388,8 @@ namespace TKMQ
                                     ,LA016 AS '有效日'
                                     ,NUMS AS '庫存數量'
                                     ,(CASE WHEN  ISDATE(生產日期)=1 THEN 生產日期 WHEN  ISDATE(進貨日期)=1 THEN 進貨日期 WHEN  ISDATE(託外生產日期)=1 THEN 託外生產日期 ELSE 0 END )  AS '生產-進貨日期'
-                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,'{0}') WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,'{0}') WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,'{0}') ELSE 0 END ) AS '在倉日期'
-                                    ,(DATEDIFF(DAY,'{0}',LA016))  AS '有效天數'
+                                    ,(CASE WHEN  ISDATE(生產日期)=1 THEN DATEDIFF(DAY,生產日期,getdate()) WHEN  ISDATE(進貨日期)=1 THEN DATEDIFF(DAY,進貨日期,getdate()) WHEN  ISDATE(託外生產日期)=1 THEN DATEDIFF(DAY,託外生產日期,getdate()) ELSE 0 END ) AS '在倉日期'
+                                    ,(DATEDIFF(DAY,getdate(),LA016))  AS '有效天數'
                                     FROM 
                                     (
                                     SELECT LA009,LA001,LA016,SUM(LA005*LA011) AS NUMS
@@ -11247,10 +11400,10 @@ namespace TKMQ
                                     FROM [TK].dbo.INVLA  WITH(NOLOCK) 
                                     WHERE (
                                     LA009 IN (
-		                                    SELECT
-		                                    [LA009]
-		                                    FROM [TKMQ].[dbo].[POSINV_LA009] WITH(NOLOCK) 
-		                                    )
+                                    SELECT
+                                    [LA009]
+                                    FROM [TKMQ].[dbo].[POSINV_LA009] WITH(NOLOCK) 
+                                    )
                                     )
                                     AND( LA001 LIKE '4%' OR LA001 LIKE '5%')
                                     AND ISDATE(LA016)=1
@@ -26076,7 +26229,7 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
-           
+
             SETPATH();
             SETFILE_POSINV(path_File_POSINV, cts1.Token);
             CLEAREXCEL();
