@@ -26250,8 +26250,7 @@ namespace TKMQ
             CLEAREXCEL();
 
             PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
-            PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
-            PREPARESENDEMAIL_COPTCD(path_File_COPTCD);
+
             MessageBox.Show("OK");
         }
 
