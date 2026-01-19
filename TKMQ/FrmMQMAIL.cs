@@ -23975,10 +23975,10 @@ namespace TKMQ
 
                 string YESTERDAYS = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
 
-                //1產地為 台灣 ('TW') 且 有效百分比 67 % 合格台灣產品的一般標竿。
+                //1產地為 台灣 ('TW') 且 有效百分比 50 % 合格台灣產品的一般標竿。
                 //2產地為 台灣('TW') 且 品號在[TW特定清單] 內 且 有效百分比  50 % 合格針對台灣特定品項放寬門檻至 50 %。
                 //3產地 不是台灣 且 品號在[非TW特定清單] 內 且 有效百分比  34 % 合格針對海外特定品項大幅放寬門檻至 34 %。
-                //4產地 不是台灣(或產地為空值) 且 有效百分比  50 % 合格海外產品或未知產地的一般門檻為 50 %。
+                //4產地 不是台灣(或產地為空值) 且 有效百分比  34 % 合格海外產品或未知產地的一般門檻為 50 %。
                 //5批號為空值 或 Null無批號前面條件都不符合且沒填批號時的狀態。
                 //6以上皆不符合不合格例如有效百分比過低。
 
@@ -23987,11 +23987,11 @@ namespace TKMQ
                                     *
                                     , (CONVERT(NVARCHAR, 有效百分比) + '%') AS '有效百分比顯示'
                                      , (CASE 
-                                        WHEN 產地 = 'TW' AND 有效百分比 >= 67 THEN '合格'
+                                        WHEN 產地 = 'TW' AND 有效百分比 >= 50 THEN '合格'
 		                                WHEN 產地 = 'TW' AND 品號 IN (SELECT [MB001]  FROM [TKRESEARCH].[dbo].[TB_ORIENTS_CHECKLISTS_LOTNO_TW_CHECKVALIDS]) AND 有效百分比 >= 50 THEN '合格'
 		                                WHEN 產地 <> 'TW' AND 品號 IN (SELECT [MB001]  FROM [TKRESEARCH].[dbo].[TB_ORIENTS_CHECKLISTS_LOTNO_NOTTW_CHECKVALIDS]) AND 有效百分比 >=34 THEN '合格'
-                                        WHEN 產地 <> 'TW' AND 有效百分比 >= 50 THEN '合格' 
-		                                WHEN ISNULL(產地,'')='' AND 有效百分比 >= 50 THEN '合格'  
+                                        WHEN 產地 <> 'TW' AND 有效百分比 >= 34 THEN '合格' 
+		                                WHEN ISNULL(產地,'')='' AND 有效百分比 >= 34 THEN '合格'  
 		                                WHEN ISNULL(批號,'')='' THEN '無批號'
                                         ELSE '不合格' 
                                         END) AS '是否合格'
