@@ -26887,7 +26887,7 @@ namespace TKMQ
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
             //寄送MAIL，硯微墨+門市+觀光商品銷進統計表 
             SENDMAIL_INVLA_NOUSED(cts.Token);
-
+             
             MessageBox.Show("OK");
 
         }
