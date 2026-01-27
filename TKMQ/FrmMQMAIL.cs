@@ -1070,6 +1070,21 @@ namespace TKMQ
             {
                 //採購用
                 try
+                {
+                    //原料、物料的呆滯
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDMAIL_INVLA_NOUSED(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"進貨有效日檢查  失敗");
+                }
+                //採購用
+                try
                 {                    
                     //進貨有效日檢查
                     //進貨單+客供料單(A11A)
