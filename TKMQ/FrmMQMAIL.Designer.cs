@@ -106,6 +106,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
+            this.button62 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -935,6 +936,7 @@
             this.tableLayoutPanel3.Controls.Add(this.button40, 1, 8);
             this.tableLayoutPanel3.Controls.Add(this.button32, 1, 7);
             this.tableLayoutPanel3.Controls.Add(this.button54, 1, 2);
+            this.tableLayoutPanel3.Controls.Add(this.button62, 1, 3);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -1076,6 +1078,16 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
+            // button62
+            // 
+            this.button62.Location = new System.Drawing.Point(48, 123);
+            this.button62.Name = "button62";
+            this.button62.Size = new System.Drawing.Size(189, 34);
+            this.button62.TabIndex = 42;
+            this.button62.Text = "原料、物料的呆滯";
+            this.button62.UseVisualStyleBackColor = true;
+            this.button62.Click += new System.EventHandler(this.button62_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
@@ -1184,5 +1196,6 @@
         private System.Windows.Forms.Button button60;
         private System.Windows.Forms.Timer timer4;
         private System.Windows.Forms.Button button61;
+        private System.Windows.Forms.Button button62;
     }
 }

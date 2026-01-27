@@ -167,6 +167,7 @@ namespace TKMQ
         string path_File_COPTCD = null;
         string pathFile_SALES_MONEYS = null;
         string pathFile_QC_CHECK = null;
+        string pathFile_INVLA_NOUSED = null;
 
         FileInfo info;
         string[] tempFile;
@@ -24127,6 +24128,7 @@ namespace TKMQ
 
 
 
+
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -25910,6 +25912,244 @@ namespace TKMQ
             return fieldItem;
         }
 
+        public void SENDMAIL_INVLA_NOUSED(CancellationToken cancellationToken)
+        {
+            DataSet DS_SEND_MAIL_TO = new DataSet();
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            SETPATH();
+
+            DATES = DateTime.Now.ToString("yyyyMMdd");
+            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
+            pathFile_INVLA_NOUSED = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每週-原料、物料呆滯報表" + DATES.ToString() + ".pdf";
+            //pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".jpg";
+
+            //如果日期資料夾不存在就新增
+            if (!Directory.Exists(DirectoryNAME))
+            {
+                //新增資料夾
+                Directory.CreateDirectory(DirectoryNAME);
+            }
+
+
+            SAVEREPORT_INVLA_NOUSED(pathFile_INVLA_NOUSED, cancellationToken);
+
+            DS_SEND_MAIL_TO = SERACH_INVLA_NOUSED();
+
+            SUBJEST.Clear();
+            BODY.Clear();
+            SUBJEST.AppendFormat(@"每週-原料、物料呆滯報表-" + DateTime.Now.ToString("yyyy/MM/dd"));
+            BODY.AppendFormat("Dear All, ");
+            BODY.AppendFormat(Environment.NewLine + "檢附截至目前的原料、物料呆滯，請參考附件，謝謝");   
+
+            string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+            string NAME = ConfigurationManager.AppSettings["NAME"];
+            string PW = ConfigurationManager.AppSettings["PW"];
+
+            System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+            MyMail.Subject = SUBJEST.ToString();
+            //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+            MyMail.Body = BODY.ToString();
+            //MyMail.IsBodyHtml = true; //是否使用html格式
+
+            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+            Attachment attch = new Attachment(pathFile_INVLA_NOUSED);
+            MyMail.Attachments.Add(attch);
+
+
+            try
+            {
+                foreach (DataRow od in DS_SEND_MAIL_TO.Tables[0].Rows)
+                {
+                    MyMail.To.Add(od["MAIL"].ToString()); //設定收件者Email，多筆mail
+                }
+
+                //測試寄MAIL
+                //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+
+                //增加重試機制，避免短暫的網路問題導致失敗
+                int retryCount = 3;
+                for (int i = 0; i < retryCount; i++)
+                {
+                    try
+                    {
+                        MySMTP.Send(MyMail);
+                        MyMail.Dispose(); //釋放資源
+
+                        break; // 成功則跳出迴圈
+                    }
+                    catch (Exception EX)
+                    {
+                        if (i == retryCount - 1)
+                            throw; // 最後一次仍失敗則拋出異常
+                    }
+
+                    Task.Delay(5000); // 等待 5 秒再試
+                }
+
+                //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
+            }
+            catch (Exception EX)
+            {
+                ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
+                //EX.ToString();
+            }
+        }
+        public DataSet SERACH_INVLA_NOUSED()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT [SENDTO],[MAIL] 
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
+                                    WHERE [SENDTO]='INVLA_NOUSED'  
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public void SAVEREPORT_INVLA_NOUSED(string pathFileSALESMONEYS, CancellationToken cancellationToken)
+        {
+            Report report1 = new Report();
+            string FILENAME = pathFileSALESMONEYS;
+            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
+            StringBuilder SQL1 = new StringBuilder();
+
+            //報表單頭要改報表內的SQL，因為報表沒有放在DATA中，不會連動
+            StringBuilder SQL_IN = new StringBuilder();
+            StringBuilder SQL_OUT = new StringBuilder();
+
+            //舊日報用表格各自業務計算
+            //SQL1 = SETSQL();
+            //report1.Load(@"REPORT\國內、外業務部業績日報表V8.frx");
+
+            //新日報用業務+國內外，matrix表
+            SQL1 = SETSQL_INVLA_NOUSED();
+          
+            report1.Load(@"REPORT\呆滯原物料報表.frx");
+
+            //20210902密
+            Class1 TKID = new Class1();//用new 建立類別實體
+            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+            //資料庫使用者密碼解密
+            sqlsb.Password = TKID.Decryption(sqlsb.Password);
+            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+            String connectionString;
+            sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
+            //adapter1.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+
+            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
+            table.SelectCommand = SQL1.ToString();
+            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
+          
+
+            // prepare a report
+            report1.Prepare();
+            // create an instance of HTML export filter
+            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
+            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
+            // show the export options dialog and do the export
+            report1.Export(export, FILENAME);
+
+        }
+
+        public StringBuilder SETSQL_INVLA_NOUSED()
+        {
+            StringBuilder SB = new StringBuilder();
+
+            SB.AppendFormat(@"                              
+                            SELECT 
+                            LA001 AS '品號'
+                            ,NUMS AS '庫存量'
+                            ,LASTDAYS AS '上次的異動日'
+                            ,MB002 AS '品名'
+                            ,MB004 AS '單位'
+                            FROM
+                            (
+                                SELECT 
+                                    LA001,
+                                    SUM(LA005 * LA011) AS NUMS,
+                                    MIN(LA004) AS 'FIRSTDAYS',
+                                    MAX(LA004) AS 'LASTDAYS'
+                                FROM [TK].dbo.INVLA WITH(NOLOCK)
+                                WHERE (LA001 LIKE '1%' OR LA001 LIKE '2%')
+                                  AND LA001 NOT LIKE '199%'
+                                  AND LA001 NOT LIKE '299%'
+                                GROUP BY LA001
+                            ) AS TEMP
+                            LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
+                            WHERE NUMS > 0
+                            -- 篩選條件：最後異動日 (LASTDAYS) 距離今天已經超過 3 個月 (即小於 3 個月前的那天)
+                            AND CAST(LASTDAYS AS DATE) < DATEADD(MONTH, -3, GETDATE())
+                            ORDER BY LA001;
+                            ");
+
+
+            return SB;
+        }
+
         #endregion
 
         #region BUTTON
@@ -26639,7 +26879,19 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
-   
+        private void button62_Click(object sender, EventArgs e)
+        {
+            //原料、物料的呆滯
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
+            //寄送MAIL，硯微墨+門市+觀光商品銷進統計表 
+            SENDMAIL_INVLA_NOUSED(cts.Token);
+
+            MessageBox.Show("OK");
+
+        }
+
         #endregion
 
 

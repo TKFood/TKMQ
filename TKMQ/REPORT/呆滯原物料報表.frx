@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report ScriptLanguage="CSharp" ReportInfo.Created="01/27/2026 11:08:08" ReportInfo.Modified="01/27/2026 11:27:16" ReportInfo.CreatorVersion="2016.4.4.0">
+  <Dictionary>
+    <MsSqlDataConnection Name="Connection" ConnectionString="rijcmlqHwzMSgwTFaHpjtG3vsOj8Zy6q+uhwpDsytgWqwZQZyEQUQyQ022aWUGqU90pHzzNjHuzu89K+RQ2LIBVx1fpgNkNJhwC4eetn2/Uy0fMrO7zDUE5AmRb+0bcYI+lxqpN+i5gA3VDGcwlcfm6L9ZMsLrZ3U+wEDtHCQtd9vw2XUF2oKR8ZPM0ypt8luFLD4jE">
+      <TableDataSource Name="Table" DataType="System.Int32" Enabled="true" SelectCommand="&#13;&#10;SELECT &#13;&#10;LA001 AS '品號'&#13;&#10;,NUMS AS '庫存量'&#13;&#10;,LASTDAYS AS '上次的異動日'&#13;&#10;,MB002 AS '品名'&#13;&#10;,MB004 AS '單位'&#13;&#10;FROM&#13;&#10;(&#13;&#10;    SELECT &#13;&#10;        LA001,&#13;&#10;        SUM(LA005 * LA011) AS NUMS,&#13;&#10;        MIN(LA004) AS 'FIRSTDAYS',&#13;&#10;        MAX(LA004) AS 'LASTDAYS'&#13;&#10;    FROM [TK].dbo.INVLA WITH(NOLOCK)&#13;&#10;    WHERE (LA001 LIKE '1%' OR LA001 LIKE '2%')&#13;&#10;      AND LA001 NOT LIKE '199%'&#13;&#10;      AND LA001 NOT LIKE '299%'&#13;&#10;    GROUP BY LA001&#13;&#10;) AS TEMP&#13;&#10;LEFT JOIN [TK].dbo.INVMB ON MB001=LA001&#13;&#10;WHERE NUMS &gt; 0&#13;&#10;-- 篩選條件：最後異動日 (LASTDAYS) 距離今天已經超過 3 個月 (即小於 3 個月前的那天)&#13;&#10;AND CAST(LASTDAYS AS DATE) &lt; DATEADD(MONTH, -3, GETDATE())&#13;&#10;ORDER BY LA001;&#13;&#10;">
+        <Column Name="品號" DataType="System.String"/>
+        <Column Name="庫存量" DataType="System.Decimal"/>
+        <Column Name="上次的異動日" DataType="System.String"/>
+        <Column Name="品名" DataType="System.String"/>
+        <Column Name="單位" DataType="System.String"/>
+      </TableDataSource>
+    </MsSqlDataConnection>
+  </Dictionary>
+  <ReportPage Name="Page1" PaperHeight="1000">
+    <ReportTitleBand Name="ReportTitle1" Width="718.2" Height="18.9">
+      <TextObject Name="Text11" Width="302.4" Height="18.9" Text="原料、物料的呆滯" VertAlign="Center"/>
+    </ReportTitleBand>
+    <PageHeaderBand Name="PageHeader1" Top="23.5" Width="718.2" Height="18.9">
+      <TextObject Name="Text2" Width="132.3" Height="18.9" Border.Lines="All" Text="品號" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text4" Left="132.3" Width="340.2" Height="18.9" Border.Lines="All" Text="品名" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text6" Left="472.5" Width="85.05" Height="18.9" Border.Lines="All" Text="庫存量" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text8" Left="557.55" Width="66.15" Height="18.9" Border.Lines="All" Text="單位" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text10" Left="623.7" Width="94.5" Height="18.9" Border.Lines="All" Text="上次的異動日" HorzAlign="Center" VertAlign="Center"/>
+    </PageHeaderBand>
+    <DataBand Name="Data1" Top="47" Width="718.2" Height="18.9" CanGrow="true" DataSource="Table">
+      <TextObject Name="Text1" Width="132.3" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.品號]" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text3" Left="132.3" Width="340.2" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.品名]" VertAlign="Center"/>
+      <TextObject Name="Text5" Left="472.5" Width="85.05" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.庫存量]" Format="Number" Format.UseLocale="false" Format.DecimalDigits="2" Format.DecimalSeparator="." Format.GroupSeparator="," Format.NegativePattern="1" HorzAlign="Right" VertAlign="Center" WordWrap="false" Trimming="EllipsisCharacter"/>
+      <TextObject Name="Text7" Left="557.55" Width="66.15" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.單位]" HorzAlign="Center" VertAlign="Center"/>
+      <TextObject Name="Text9" Left="623.7" Width="94.5" Height="18.9" Border.Lines="All" CanGrow="true" GrowToBottom="true" Text="[Table.上次的異動日]" HorzAlign="Center" VertAlign="Center"/>
+    </DataBand>
+  </ReportPage>
+</Report>
