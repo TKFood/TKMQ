@@ -98,6 +98,7 @@
             this.button40 = new System.Windows.Forms.Button();
             this.button32 = new System.Windows.Forms.Button();
             this.button54 = new System.Windows.Forms.Button();
+            this.button62 = new System.Windows.Forms.Button();
             this.previewControl1 = new FastReport.Preview.PreviewControl();
             this.tabPage4 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
@@ -106,7 +107,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
-            this.button62 = new System.Windows.Forms.Button();
+            this.button63 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -215,6 +216,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button22, 0, 6);
             this.tableLayoutPanel1.Controls.Add(this.button59, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button60, 0, 11);
+            this.tableLayoutPanel1.Controls.Add(this.button63, 3, 12);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -995,6 +997,16 @@
             this.button54.UseVisualStyleBackColor = true;
             this.button54.Click += new System.EventHandler(this.button54_Click);
             // 
+            // button62
+            // 
+            this.button62.Location = new System.Drawing.Point(48, 123);
+            this.button62.Name = "button62";
+            this.button62.Size = new System.Drawing.Size(189, 34);
+            this.button62.TabIndex = 42;
+            this.button62.Text = "原料、物料的呆滯";
+            this.button62.UseVisualStyleBackColor = true;
+            this.button62.Click += new System.EventHandler(this.button62_Click);
+            // 
             // previewControl1
             // 
             this.previewControl1.BackColor = System.Drawing.SystemColors.AppWorkspace;
@@ -1078,15 +1090,15 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
-            // button62
+            // button63
             // 
-            this.button62.Location = new System.Drawing.Point(48, 123);
-            this.button62.Name = "button62";
-            this.button62.Size = new System.Drawing.Size(189, 34);
-            this.button62.TabIndex = 42;
-            this.button62.Text = "原料、物料的呆滯";
-            this.button62.UseVisualStyleBackColor = true;
-            this.button62.Click += new System.EventHandler(this.button62_Click);
+            this.button63.Location = new System.Drawing.Point(386, 483);
+            this.button63.Name = "button63";
+            this.button63.Size = new System.Drawing.Size(148, 34);
+            this.button63.TabIndex = 113;
+            this.button63.Text = "原物料待處理倉";
+            this.button63.UseVisualStyleBackColor = true;
+            this.button63.Click += new System.EventHandler(this.button63_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1197,5 +1209,6 @@
         private System.Windows.Forms.Timer timer4;
         private System.Windows.Forms.Button button61;
         private System.Windows.Forms.Button button62;
+        private System.Windows.Forms.Button button63;
     }
 }
