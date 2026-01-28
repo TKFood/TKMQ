@@ -26214,14 +26214,7 @@ namespace TKMQ
                             foreach (DataRow DR in DT_DATAS.Rows)
                             {
                                 string tdStyle = @"style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體;""";
-
-                                // 1. 判斷是否合格，準備整行的樣式
-                                string isQualified = DR["是否合格"]?.ToString() ?? "";
-                                string rowStyle = (isQualified == "不合格") ? "style=\"color: red;\"" : "";
-
-                                // 2. 在 tr 加入 rowStyle
-                                BODY.Append($@"<tr {rowStyle}>");
-
+                         
                                 BODY.Append($@"<td {tdStyle}>{DR["品號"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["品名"]}</td>");
                                 BODY.Append($@"<td {tdStyle}>{DR["庫存量"]}</td>");
