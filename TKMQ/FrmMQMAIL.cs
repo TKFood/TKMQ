@@ -1066,8 +1066,27 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             errorMessages.Clear();
 
+            
+
+
             try
             {
+                //採購用
+                try
+                {
+                    //原物料待處理倉
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {                        
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        //原物料待處理倉
+                        SENDMAIL_INVLA_PUR_NO_USED(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"原物料待處理倉  失敗");
+                }
                 //採購用
                 try
                 {
@@ -1081,7 +1100,7 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
-                    errorMessages.AppendLine($"進貨有效日檢查  失敗");
+                    errorMessages.AppendLine($"原料、物料的呆滯  失敗");
                 }
                 //採購用
                 try
