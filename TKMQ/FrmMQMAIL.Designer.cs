@@ -87,6 +87,7 @@
             this.button22 = new System.Windows.Forms.Button();
             this.button59 = new System.Windows.Forms.Button();
             this.button60 = new System.Windows.Forms.Button();
+            this.button63 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -107,7 +108,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
-            this.button63 = new System.Windows.Forms.Button();
+            this.button64 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -217,6 +218,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button59, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.button60, 0, 11);
             this.tableLayoutPanel1.Controls.Add(this.button63, 3, 12);
+            this.tableLayoutPanel1.Controls.Add(this.button64, 3, 13);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -827,6 +829,16 @@
             this.button60.UseVisualStyleBackColor = true;
             this.button60.Click += new System.EventHandler(this.button60_Click);
             // 
+            // button63
+            // 
+            this.button63.Location = new System.Drawing.Point(386, 483);
+            this.button63.Name = "button63";
+            this.button63.Size = new System.Drawing.Size(148, 34);
+            this.button63.TabIndex = 113;
+            this.button63.Text = "原物料待處理倉";
+            this.button63.UseVisualStyleBackColor = true;
+            this.button63.Click += new System.EventHandler(this.button63_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -1090,15 +1102,15 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
-            // button63
+            // button64
             // 
-            this.button63.Location = new System.Drawing.Point(386, 483);
-            this.button63.Name = "button63";
-            this.button63.Size = new System.Drawing.Size(148, 34);
-            this.button63.TabIndex = 113;
-            this.button63.Text = "原物料待處理倉";
-            this.button63.UseVisualStyleBackColor = true;
-            this.button63.Click += new System.EventHandler(this.button63_Click);
+            this.button64.Location = new System.Drawing.Point(386, 523);
+            this.button64.Name = "button64";
+            this.button64.Size = new System.Drawing.Size(148, 34);
+            this.button64.TabIndex = 114;
+            this.button64.Text = "外購品庫存";
+            this.button64.UseVisualStyleBackColor = true;
+            this.button64.Click += new System.EventHandler(this.button64_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1210,5 +1222,6 @@
         private System.Windows.Forms.Button button61;
         private System.Windows.Forms.Button button62;
         private System.Windows.Forms.Button button63;
+        private System.Windows.Forms.Button button64;
     }
 }
