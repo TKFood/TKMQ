@@ -88,6 +88,7 @@
             this.button59 = new System.Windows.Forms.Button();
             this.button60 = new System.Windows.Forms.Button();
             this.button63 = new System.Windows.Forms.Button();
+            this.button64 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -108,7 +109,6 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
-            this.button64 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -839,6 +839,16 @@
             this.button63.UseVisualStyleBackColor = true;
             this.button63.Click += new System.EventHandler(this.button63_Click);
             // 
+            // button64
+            // 
+            this.button64.Location = new System.Drawing.Point(386, 523);
+            this.button64.Name = "button64";
+            this.button64.Size = new System.Drawing.Size(148, 34);
+            this.button64.TabIndex = 114;
+            this.button64.Text = "外購品物料庫存";
+            this.button64.UseVisualStyleBackColor = true;
+            this.button64.Click += new System.EventHandler(this.button64_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -1101,16 +1111,6 @@
             // timer4
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
-            // 
-            // button64
-            // 
-            this.button64.Location = new System.Drawing.Point(386, 523);
-            this.button64.Name = "button64";
-            this.button64.Size = new System.Drawing.Size(148, 34);
-            this.button64.TabIndex = 114;
-            this.button64.Text = "外購品庫存";
-            this.button64.UseVisualStyleBackColor = true;
-            this.button64.Click += new System.EventHandler(this.button64_Click);
             // 
             // FrmMQMAIL
             // 
