@@ -26760,6 +26760,66 @@ namespace TKMQ
             }
         }
 
+        public DataTable CHECK_USE_TBPURGOODS()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"     
+                                    
+
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
