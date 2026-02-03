@@ -53,6 +53,9 @@ namespace TKMQ
         private const int EXE_timeoutMilliseconds = 1000*60*5;
         //時間單位：秒（Seconds），設定 SQL 最多 4 分鐘
         private const int SQL_TIMEOUT_LIMITS = 60*4;
+        private int lastRunMonth = 0;
+        private int lastRunMonth_Task15 = 0;
+        private int lastRunMonth_TaskQuarter = 0;
 
         private System.Timers.Timer timer;
 
@@ -195,7 +198,7 @@ namespace TKMQ
 
             // 在適當的地方設置 timer3 的屬性
             timer3.Enabled = true;
-            timer3.Interval = (int)TimeSpan.FromDays(1).TotalMilliseconds; // 設置為一天的毫秒數
+            timer3.Interval = 30000; //30 秒
             timer3.Tick += new EventHandler(timer3_Tick);
             timer3.Start();
 
@@ -211,10 +214,38 @@ namespace TKMQ
         #region FUNCTION      
         private void timer3_Tick(object sender, EventArgs e)
         {
-            // 檢查是否為每季度的1號
-            // 每3、6、9和12月的1號執行一次
-            if (DateTime.Now.Day == 1 && (DateTime.Now.Month % 3 == 0 || DateTime.Now.Month % 6 == 0 || DateTime.Now.Month % 9 == 0 || DateTime.Now.Month % 12 == 0))
+            // 指定日期執行
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            DateTime now = DateTime.Now;
+
+            // 每月 15 號，早上 9:40 執行1次
+            if (now.Day == 15 && now.Hour == 9 && now.Minute == 40 && lastRunMonth_Task15 != now.Month)
             {
+                lastRunMonth_Task15 = now.Month; // 執行後立即鎖定本月，剩餘的 30 秒內就不會再跑第二次
+
+                //採購用
+                try
+                {
+                    //原物料待處理倉
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        //原物料待處理倉
+                        SENDMAIL_INVLA_PUR_NO_USED(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"原物料待處理倉  失敗");
+                }
+            }
+
+
+            // 每3、6、9和12月的1號執行一次，早上 9:40 執行1次
+            if (DateTime.Now.Day == 1 && (DateTime.Now.Month % 3 == 0 || DateTime.Now.Month % 6 == 0 || DateTime.Now.Month % 9 == 0 || DateTime.Now.Month % 12 == 0) && now.Hour == 9 && now.Minute == 40 && lastRunMonth_TaskQuarter != now.Month)
+            {
+                lastRunMonth_TaskQuarter = now.Month; // 執行後立即鎖定本月，剩餘的 30 秒內就不會再跑第二次
                 // 執行您的操作
                 ///版費退回
                 try
@@ -1082,22 +1113,6 @@ namespace TKMQ
 
             try
             {
-                //採購用
-                try
-                {
-                    //原物料待處理倉
-                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
-                    {                        
-                        cts1.CancelAfter(timeoutMilliseconds);
-                        //原物料待處理倉
-                        SENDMAIL_INVLA_PUR_NO_USED(cts1.Token);
-                        Thread.Sleep(1000);
-                    }
-                }
-                catch (Exception EX)
-                {
-                    errorMessages.AppendLine($"原物料待處理倉  失敗");
-                }
                 //採購用
                 try
                 {
