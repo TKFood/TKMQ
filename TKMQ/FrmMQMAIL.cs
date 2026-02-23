@@ -26186,8 +26186,10 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"                              
-                            SELECT 
+                           SELECT 
                             LA001 AS '品號'
+                            ,LA016 AS '批號'
+                            ,LA009 AS '庫別' 
                             ,NUMS AS '庫存量'
                             ,LASTDAYS AS '上次的異動日'
                             ,MB002 AS '品名'
@@ -26196,14 +26198,16 @@ namespace TKMQ
                             (
                                 SELECT 
                                     LA001,
+		                            LA016,
+		                            LA009,
                                     SUM(LA005 * LA011) AS NUMS,
                                     MIN(LA004) AS 'FIRSTDAYS',
                                     MAX(LA004) AS 'LASTDAYS'
                                 FROM [TK].dbo.INVLA WITH(NOLOCK)
                                 WHERE (LA001 LIKE '1%' OR LA001 LIKE '2%')
-                                  AND LA001 NOT LIKE '199%'
-                                  AND LA001 NOT LIKE '299%'
-                                GROUP BY LA001
+                                    AND LA001 NOT LIKE '199%'
+                                    AND LA001 NOT LIKE '299%'
+                                GROUP BY LA001,LA016,LA009
                             ) AS TEMP
                             LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
                             WHERE NUMS > 0
@@ -27596,7 +27600,7 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-            //寄送MAIL，硯微墨+門市+觀光商品銷進統計表 
+            //寄送MAIL
             SENDMAIL_INVLA_NOUSED(cts.Token);
              
             MessageBox.Show("OK");
