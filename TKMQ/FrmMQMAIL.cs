@@ -26211,6 +26211,7 @@ namespace TKMQ
                             ) AS TEMP
                             LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
                             WHERE NUMS > 0
+                            1AND LA001+LA016 NOT IN (SELECT [LA001]+[LA016] FROM [TK].[dbo].[Z_INVLA_NOTIN])
                             -- 篩選條件：最後異動日 (LASTDAYS) 距離今天已經超過 3 個月 (即小於 3 個月前的那天)
                             AND CAST(LASTDAYS AS DATE) < DATEADD(MONTH, -3, GETDATE())
                             ORDER BY LA001;
