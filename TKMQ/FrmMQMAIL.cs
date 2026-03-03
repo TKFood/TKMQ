@@ -26186,37 +26186,38 @@ namespace TKMQ
             StringBuilder SB = new StringBuilder();
 
             SB.AppendFormat(@"                              
-                           SELECT 
+                            SELECT 
                             LA001 AS '品號'
                             ,LA016 AS '批號'
-                            ,LA009 AS '庫別' 
+                            ,MC002 AS '庫別' 
                             ,NUMS AS '庫存量'
                             ,LASTDAYS AS '上次的異動日'
                             ,MB002 AS '品名'
                             ,MB004 AS '單位'
                             FROM
                             (
-                                SELECT 
-                                    LA001,
-		                            LA016,
-		                            LA009,
-                                    SUM(LA005 * LA011) AS NUMS,
-                                    MIN(LA004) AS 'FIRSTDAYS',
-                                    MAX(LA004) AS 'LASTDAYS'
-                                FROM [TK].dbo.INVLA WITH(NOLOCK)
-                                WHERE (LA001 LIKE '1%' OR LA001 LIKE '2%')
-                                    AND LA001 NOT LIKE '199%'
-                                    AND LA001 NOT LIKE '299%'
-                                GROUP BY LA001,LA016,LA009
+                            SELECT 
+                                LA001,
+	                            LA016,
+	                            LA009,
+                                SUM(LA005 * LA011) AS NUMS,
+                                MIN(LA004) AS 'FIRSTDAYS',
+                                MAX(LA004) AS 'LASTDAYS'
+                            FROM [TK].dbo.INVLA WITH(NOLOCK)
+                            WHERE (LA001 LIKE '1%' OR LA001 LIKE '2%')
+                                AND LA001 NOT LIKE '199%'
+                                AND LA001 NOT LIKE '299%'
+                            GROUP BY LA001,LA016,LA009
                             ) AS TEMP
                             LEFT JOIN [TK].dbo.INVMB ON MB001=LA001
+                            LEFT JOIN [TK].dbo.CMSMC ON MC001=LA009
                             WHERE NUMS > 0
                             AND LA001 IN (
-                                SELECT LA001
-                                FROM [TK].dbo.INVLA
-                                WHERE 1=1
-                                GROUP  BY LA001
-                                HAVING SUM(LA005 * LA011) >0)
+                            SELECT LA001
+                            FROM [TK].dbo.INVLA
+                            WHERE 1=1
+                            GROUP  BY LA001
+                            HAVING SUM(LA005 * LA011) >0)
                             AND LA001+LA016 NOT IN (SELECT [LA001]+[LA016] FROM [TK].[dbo].[Z_INVLA_NOTIN])
                             -- 篩選條件：最後異動日 (LASTDAYS) 距離今天已經超過 3 個月 (即小於 3 個月前的那天)
                             AND CAST(LASTDAYS AS DATE) < DATEADD(MONTH, -3, GETDATE())
@@ -27065,7 +27066,7 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
-
+             
             SENDEMAIL_DAILY_MOCMANULINE(cts1.Token);
             MessageBox.Show("OK");
 
