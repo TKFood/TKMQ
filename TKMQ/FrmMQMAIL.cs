@@ -27065,7 +27065,7 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
-
+             
             SENDEMAIL_DAILY_MOCMANULINE(cts1.Token);
             MessageBox.Show("OK");
 
