@@ -19511,7 +19511,9 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購數量</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已到貨數量</th>");
-                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預計到貨日</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購預計到貨日</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製令預計到貨日</th>");
+                        
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -19528,7 +19530,8 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購數量"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已到貨數量"].ToString() + "</td>");
-                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預計到貨日"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購預計到貨日"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製令預計到貨日"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
 
@@ -19636,11 +19639,12 @@ namespace TKMQ
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
-                                   --20250116 查託外採購單未到貨明細
+                                  --20250116 查託外採購單未到貨明細
                                     SELECT 
                                     TC001 AS '託外採購單別',
                                     TC002 AS '託外採購單號',
                                     TC045,
+                                    TD012 AS '採購預計到貨日',
                                     TA001 AS '託外製令單別',
                                     TA002 AS '託外製令單號',
                                     TA006 AS '品號',
@@ -19648,12 +19652,13 @@ namespace TKMQ
                                     TA007 AS '單位',
                                     TA015 AS '採購數量',
                                     TA017 AS '已到貨數量',
-                                    TA010 AS '預計到貨日',
+                                    TA010 AS '製令預計到貨日',
                                     TI004,
                                     TI005,
                                     TI007,
                                     TI008
                                     FROM [TK].dbo.PURTC WITH(NOLOCK) 
+                                    LEFT JOIN [TK].dbo.PURTD WITH(NOLOCK)  ON TC001=TD001 AND TC002=TD002
                                     LEFT JOIN [TK].dbo.MOCTA  WITH(NOLOCK) ON TA001+TA002=TC045
                                     LEFT JOIN [TK].dbo.MOCTI  WITH(NOLOCK) ON TI013=TA001 AND TI014=TA002
                                     WHERE ISNULL(TC045,'')<>''
