@@ -19644,7 +19644,7 @@ namespace TKMQ
                                     TC001 AS '託外採購單別',
                                     TC002 AS '託外採購單號',
                                     TC045,
-                                    TD012 AS '採購預計到貨日',
+                                    (SELECT TOP 1 TD012 FROM  [TK].dbo.PURTD WITH(NOLOCK)  WHERE TC001=TD001 AND TC002=TD002 ) AS '採購預計到貨日',
                                     TA001 AS '託外製令單別',
                                     TA002 AS '託外製令單號',
                                     TA006 AS '品號',
@@ -19657,8 +19657,8 @@ namespace TKMQ
                                     TI005,
                                     TI007,
                                     TI008
-                                    FROM [TK].dbo.PURTC WITH(NOLOCK) 
-                                    LEFT JOIN [TK].dbo.PURTD WITH(NOLOCK)  ON TC001=TD001 AND TC002=TD002
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK)
+
                                     LEFT JOIN [TK].dbo.MOCTA  WITH(NOLOCK) ON TA001+TA002=TC045
                                     LEFT JOIN [TK].dbo.MOCTI  WITH(NOLOCK) ON TI013=TA001 AND TI014=TA002
                                     WHERE ISNULL(TC045,'')<>''
