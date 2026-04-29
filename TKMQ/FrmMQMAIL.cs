@@ -15256,7 +15256,7 @@ namespace TKMQ
                 //託外採購單比對託外製令+託外入庫
                 //一般採購比對進貨單
                 sbSql.AppendFormat(@"                                      
-                                    SELECT 
+                                   SELECT 
                                     ISNULL((SELECT SUM(NUMS) FROM  [TKWAREHOUSE].[dbo].[TBPURINCHECK] WHERE [TBPURINCHECK].TC001=TEMP.採購單別 AND [TBPURINCHECK].TC002=TEMP.採購單號 AND [TBPURINCHECK].TD003=TEMP.序號),0) AS '到貨但未進數量'
                                     ,*
                                     FROM 
@@ -15304,7 +15304,11 @@ namespace TKMQ
                                     AND TC014='Y'
                                     AND TD008>0
                                     AND ISNULL(TC045,'')<>''
-                                    AND TC045 NOT IN (SELECT TI013+TI014 FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) WHERE TH001=TI001 AND TH002=TI002 AND TH023='Y' AND TI013=SUBSTRING(TC045,1,4)  AND TI014=SUBSTRING(TC045,5,11)  )
+                                    AND ISNULL(
+                                        (SELECT SUM(TI007) 
+                                         FROM [TK].dbo.MOCTI WITH(NOLOCK)
+                                         INNER JOIN [TK].dbo.MOCTH WITH(NOLOCK) ON TI001=TH001 AND TI002=TH002 
+                                         WHERE TH023='Y' AND TI013+TI014=TC045), 0) <= 0
                                     AND TD012 >= CONVERT(NVARCHAR, DATEADD(DAY, -7, GETDATE()), 112)
                                     AND TD012 <= CONVERT(NVARCHAR, DATEADD(DAY, 0, GETDATE()), 112)
                                     ) AS TEMP
