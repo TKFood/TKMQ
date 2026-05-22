@@ -19516,8 +19516,9 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購數量</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已到貨數量</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購預計到貨日</th>");
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">進貨單總進貨數量</th>");
                         //BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製令預計到貨日</th>");
-                        
+
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -19535,6 +19536,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購數量"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已到貨數量"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購預計到貨日"].ToString() + "</td>");
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["進貨單總進貨數量"].ToString() + "</td>");
                             //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製令預計到貨日"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
@@ -19643,8 +19645,7 @@ namespace TKMQ
                 //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
-                                  --20250116 查託外採購單未到貨明細
-                                    SELECT 
+                                  SELECT 
                                     TC001 AS '託外採購單別',
                                     TC002 AS '託外採購單號',
                                     TC045,
@@ -19657,14 +19658,11 @@ namespace TKMQ
                                     TA015 AS '採購數量',
                                     TA017 AS '已到貨數量',
                                     TA010 AS '製令預計到貨日',
-                                    TI004,
-                                    TI005,
-                                    TI007,
-                                    TI008
-                                    FROM [TK].dbo.PURTC WITH(NOLOCK)
+                                    (SELECT ISNULL(SUM(TI007),0) FROM [TK].dbo.MOCTI  WITH(NOLOCK) WHERE TI013=TA001 AND TI014=TA002) '進貨單總進貨數量'
 
+                                    FROM [TK].dbo.PURTC WITH(NOLOCK)
                                     LEFT JOIN [TK].dbo.MOCTA  WITH(NOLOCK) ON TA001+TA002=TC045
-                                    LEFT JOIN [TK].dbo.MOCTI  WITH(NOLOCK) ON TI013=TA001 AND TI014=TA002
+
                                     WHERE ISNULL(TC045,'')<>''
                                     AND TC001='A334'
                                     AND TC014 NOT IN ('V')
