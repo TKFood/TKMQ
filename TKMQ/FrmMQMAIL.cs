@@ -5101,173 +5101,99 @@ namespace TKMQ
 
 
                 sbSql.AppendFormat(@"  
-                                    SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
-                                    FROM 
-                                    ( 
-	                                SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
-	                                FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-	                                WHERE TG001=TH001 AND TG002=TH002 
-	                                AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-	                                AND TH030='Y' 
-	                                AND TH117>TG003
-	                                UNION ALL 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '1%' 
-                                    AND TH010<>TH036 
-                                    UNION ALL 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '2%' 
-                                    AND TH010<>TH117 
-                                    UNION ALL 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '3%' 
-                                    AND TH010<>TH117 
-                                    UNION ALL 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '4%' 
-                                    AND TH010<>TH036 
-                                    UNION ALL 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '5%' 
-                                    AND TH010<>TH036 
-                                    UNION ALL 
-                                    SELECT  '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH004 LIKE '1%' 
-                                    AND ISDATE(TH010)<>1
-                                    AND TH009 NOT LIKE '21%'
-                                    UNION ALL 
-                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                    WHERE TF001=TG001 AND TF002=TG002 
-                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TG022='Y' 
-                                    AND TG004 LIKE '3%'  
-                                    AND TG004 NOT LIKE '307%' 
-                                    AND TG017<>TG040 
-                                    UNION ALL 
-                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                    WHERE TF001=TG001 AND TF002=TG002 
-                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TG022='Y' 
-                                    AND TG004 LIKE '4%' 
-                                    AND TG017<>TG018 
+                                    -- 定義動態日期變數，避免在迴圈中重複計算 GETDATE()
+                                    DECLARE @TargetDate NVARCHAR(8) = CONVERT(NVARCHAR(8), DATEADD(DAY, -7, GETDATE()), 112);
+                                    DECLARE @Today NVARCHAR(8) = CONVERT(NVARCHAR(8), GETDATE(), 112);
 
-                                    UNION ALL 
-                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
-                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                    WHERE TF001=TG001 AND TF002=TG002 
-                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TG022='Y' 
-                                    AND TG004 LIKE '3%'  
-                                    AND TG004 NOT LIKE '307%' 
-                                    AND ISDATE(TG017)<>1
-                                    UNION ALL 
-                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '3%'   
-                                    AND TI037='Y' 
-                                    AND TI010<>TI061 
-                                    AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
-                                    UNION ALL 
-                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '4%' 
-                                    AND TI037='Y' 
-                                    AND TI010<>TI011
-                                    UNION ALL 
-                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '4%' 
-                                    AND TI037='Y' 
-                                    AND ISDATE(TI011)<>1
-                                    UNION 
+                                    WITH Filtered_INVMB AS (
+                                        -- 先將不需要稽核的品號過濾掉 (減少後續 JOIN 的資料量)
+                                        SELECT MB001 
+                                        FROM [TK].dbo.INVMB WITH(NOLOCK) 
+                                        WHERE MB022 <> 'N'
+                                    ),
+                                    Combined_Data AS (
+                                        -----------------------------------------------------------------------------------
+                                        -- 1. 進貨單區塊 (原 7 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '進貨單' AS KINDS, TH004, TH005, TH010, TH036, TH117, TH001, TH002, TH003,
+                                            CASE 
+                                                WHEN TH117 > TG003 THEN '製造日是未來日'
+                                                WHEN TH117 > @Today THEN '製造日是未來日'
+                                                WHEN TH004 LIKE '1%' AND TH010 <> TH036 THEN '批號<>有效日'
+                                                WHEN (TH004 LIKE '2%' OR TH004 LIKE '3%') AND TH010 <> TH117 THEN '批號<>製造日'
+                                                WHEN (TH004 LIKE '4%' OR TH004 LIKE '5%') AND TH010 <> TH036 THEN '批號<>有效日'
+                                                WHEN TH004 LIKE '1%' AND ISDATE(TH010) <> 1 AND TH009 NOT LIKE '21%' THEN '批號日錯誤'
+                                                WHEN ISDATE(TH117) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.PURTG AS TG WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.PURTH AS TH WITH(NOLOCK) ON TG001 = TH001 AND TG002 = TH002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TH.TH004 = MB.MB001
+                                        WHERE TG003 >= @TargetDate 
+                                          AND TH030 = 'Y'
 
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND TH117>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                    UNION ALL
-                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                    WHERE TG001=TH001 AND TG002=TH002 
-                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TH030='Y' 
-                                    AND ISDATE(TH117)<>1
-                                    UNION ALL
-                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                    WHERE TF001=TG001 AND TF002=TG002 
-                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TG022='Y' 
-                                    AND TG004 LIKE '3%'  
-                                    AND TG004 NOT LIKE '307%' 
-                                    AND TG040>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                    UNION ALL
-                                    SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                    WHERE TF001=TG001 AND TF002=TG002 
-                                    AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TG022='Y' 
-                                    AND TG004 LIKE '3%'  
-                                    AND TG004 NOT LIKE '307%' 
-                                    AND ISDATE(TG040)<>1
-                                    UNION ALL
-                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
-                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '4%' 
-                                    AND TI037='Y' 
-                                    AND TI061>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                    UNION ALL
-                                    SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日不是日期' AS COMMET 
-                                    FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                    WHERE TH001=TI001 AND TH002=TI002 
-                                    AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                    AND TI004 LIKE '4%' 
-                                    AND TI037='Y' 
-                                    AND ISDATE(TI061)<>1
-                                    ) 
-                                    AS TEMP 
-                                    WHERE  TH004 IN (
-                                    SELECT MB001
-                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                    WHERE MB022 NOT IN ('N')
+                                        UNION ALL
+
+                                        -----------------------------------------------------------------------------------
+                                        -- 2. 入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '入庫單' AS KINDS, TG004, TG005, TG017, TG018, 
+                                            -- 部分舊邏輯製造日帶的是 TF003，其餘帶 TG040，在此統一依原邏輯分流
+                                            CASE WHEN TG004 LIKE '[14]%' THEN TF003 ELSE TG040 END,
+                                            TG001, TG002, TG003,
+                                            CASE 
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG017 <> TG040 THEN '批號<>製造日'
+                                                WHEN TG004 LIKE '4%' AND TG017 <> TG018 THEN '批號<>有效日'
+                                                WHEN TG004 LIKE '1%' AND TG017 <> TG018 THEN '批號<>有效日'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG017) <> 1 THEN '批號日錯誤'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG040 > @Today THEN '製造日是未來日'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG040) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.MOCTF AS TF WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.MOCTG AS TG WITH(NOLOCK) ON TF001 = TG001 AND TF002 = TG002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TG.TG004 = MB.MB001
+                                        WHERE TF003 >= @TargetDate 
+                                          AND TG022 = 'Y'
+
+                                        UNION ALL
+
+                                        -----------------------------------------------------------------------------------
+                                        -- 3. 託外入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '託外入庫單' AS KINDS, TI004, TI005, TI010, TI011, TI061, TI001, TI002, TI003,
+                                            CASE 
+                                                WHEN TI004 LIKE '3%' AND TI010 <> TI061 AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001') THEN '批號<>製造日'
+                                                WHEN TI004 LIKE '4%' AND TI010 <> TI011 THEN '批號<>有效日'
+                                                WHEN TI004 LIKE '4%' AND ISDATE(TI011) <> 1 THEN '批號不是日期'
+                                                WHEN TI004 LIKE '4%' AND TI061 >= @Today THEN '製造日是未來日'
+                                                WHEN TI004 LIKE '4%' AND ISDATE(TI061) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.MOCTH AS TH WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.MOCTI AS TI WITH(NOLOCK) ON TH001 = TI001 AND TH002 = TI002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TI.TI004 = MB.MB001
+                                        WHERE TI061 >= @TargetDate 
+                                          AND TI037 = 'Y'
                                     )
-                                    ORDER BY TH004  
+                                    SELECT 
+                                        KINDS,
+                                        TH004 AS '品號',
+                                        TH005 AS '品名',
+                                        TH010 AS '批號',
+                                        TH036 AS '有效日',
+                                        TH117 AS '製造日',
+                                        TH001 AS '單別',
+                                        TH002 AS '單號',
+                                        TH003 AS '序號',
+                                        COMMET AS '備註'
+                                    FROM Combined_Data
+                                    -- 只篩選出符合異常註記的列
+                                    WHERE COMMET IS NOT NULL
+                                    ORDER BY TH004;
                                     ");
 
 
@@ -5357,173 +5283,99 @@ namespace TKMQ
                 sbSqlQuery.Clear();
 
                 sbSql.AppendFormat(@"
-                                    SELECT KINDS,TH004 AS '品號',TH005 AS '品名',TH010 AS '批號',TH036 AS '有效日',TH117 AS '製造日',TH001 AS '單別',TH002 AS '單號',TH003 AS '序號',COMMET AS '備註' 
-                                        FROM 
-                                        ( 
-	                                    SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
-	                                    FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-	                                    WHERE TG001=TH001 AND TG002=TH002 
-	                                    AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-	                                    AND TH030='Y' 
-	                                    AND TH117>TG003
-	                                    UNION ALL 
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '1%' 
-                                        AND TH010<>TH036 
-                                        UNION ALL 
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '2%' 
-                                        AND TH010<>TH117 
-                                        UNION ALL 
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>製造日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '3%' 
-                                        AND TH010<>TH117 
-                                        UNION ALL 
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '4%' 
-                                        AND TH010<>TH036 
-                                        UNION ALL 
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號<>有效日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '5%' 
-                                        AND TH010<>TH036 
-                                        UNION ALL 
-                                        SELECT  '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'批號日錯誤' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH004 LIKE '1%' 
-                                        AND ISDATE(TH010)<>1
-                                        AND TH009 NOT LIKE '21%'
-                                        UNION ALL 
-                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號<>製造日' AS COMMET 
-                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                        WHERE TF001=TG001 AND TF002=TG002 
-                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TG022='Y' 
-                                        AND TG004 LIKE '3%'  
-                                        AND TG004 NOT LIKE '307%' 
-                                        AND TG017<>TG040 
-                                        UNION ALL 
-                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TF003,TG001,TG002,TG003,'批號<>有效日' AS COMMET 
-                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                        WHERE TF001=TG001 AND TF002=TG002 
-                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TG022='Y' 
-                                        AND TG004 LIKE '4%' 
-                                        AND TG017<>TG018 
+                                   -- 定義動態日期變數，避免在迴圈中重複計算 GETDATE()
+                                    DECLARE @TargetDate NVARCHAR(8) = CONVERT(NVARCHAR(8), DATEADD(DAY, -7, GETDATE()), 112);
+                                    DECLARE @Today NVARCHAR(8) = CONVERT(NVARCHAR(8), GETDATE(), 112);
 
-                                        UNION ALL 
-                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'批號日錯誤' AS COMMET 
-                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                        WHERE TF001=TG001 AND TF002=TG002 
-                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TG022='Y' 
-                                        AND TG004 LIKE '3%'  
-                                        AND TG004 NOT LIKE '307%' 
-                                        AND ISDATE(TG017)<>1
-                                        UNION ALL 
-                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>製造日' AS COMMET 
-                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                        WHERE TH001=TI001 AND TH002=TI002 
-                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TI004 LIKE '3%'   
-                                        AND TI037='Y' 
-                                        AND TI010<>TI061 
-                                        AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001')  
-                                        UNION ALL 
-                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號<>有效日' AS COMMET 
-                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                        WHERE TH001=TI001 AND TH002=TI002 
-                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TI004 LIKE '4%' 
-                                        AND TI037='Y' 
-                                        AND TI010<>TI011
-                                        UNION ALL 
-                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'批號不是日期' AS COMMET 
-                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                        WHERE TH001=TI001 AND TH002=TI002 
-                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TI004 LIKE '4%' 
-                                        AND TI037='Y' 
-                                        AND ISDATE(TI011)<>1
-                                        UNION 
-
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日是未來日' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND TH117>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                        UNION ALL
-                                        SELECT '進貨單' AS KINDS,TG003,TH004,TH005,TH010,TH036,TH117,TH001,TH002,TH003,'製造日不是日期' AS COMMET 
-                                        FROM [TK].dbo.PURTG WITH(NOLOCK) ,[TK].dbo.PURTH  WITH(NOLOCK) 
-                                        WHERE TG001=TH001 AND TG002=TH002 
-                                        AND TG003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TH030='Y' 
-                                        AND ISDATE(TH117)<>1
-                                        UNION ALL
-                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日是未來日' AS COMMET 
-                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                        WHERE TF001=TG001 AND TF002=TG002 
-                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TG022='Y' 
-                                        AND TG004 LIKE '3%'  
-                                        AND TG004 NOT LIKE '307%' 
-                                        AND TG040>CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                        UNION ALL
-                                        SELECT '入庫單' AS KINDS ,TF003,TG004,TG005,TG017,TG018,TG040,TG001,TG002,TG003,'製造日不是日期' AS COMMET 
-                                        FROM [TK].dbo.MOCTF WITH(NOLOCK) ,[TK].dbo.MOCTG  WITH(NOLOCK) 
-                                        WHERE TF001=TG001 AND TF002=TG002 
-                                        AND TF003>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TG022='Y' 
-                                        AND TG004 LIKE '3%'  
-                                        AND TG004 NOT LIKE '307%' 
-                                        AND ISDATE(TG040)<>1
-                                        UNION ALL
-                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日是未來日' AS COMMET 
-                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                        WHERE TH001=TI001 AND TH002=TI002 
-                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TI004 LIKE '4%' 
-                                        AND TI037='Y' 
-                                        AND TI061>=CONVERT(NVARCHAR,DATEADD(DAY,-0,GETDATE()),112  ) 
-                                        UNION ALL
-                                        SELECT '託外入庫單' AS KINDS ,TH003,TI004,TI005,TI010,TI011,TI061,TI001,TI002,TI003,'製造日不是日期' AS COMMET 
-                                        FROM [TK].dbo.MOCTH WITH(NOLOCK) ,[TK].dbo.MOCTI  WITH(NOLOCK) 
-                                        WHERE TH001=TI001 AND TH002=TI002 
-                                        AND TI061>= CONVERT(NVARCHAR,DATEADD(DAY,-7,GETDATE()),112  ) 
-                                        AND TI004 LIKE '4%' 
-                                        AND TI037='Y' 
-                                        AND ISDATE(TI061)<>1
-                                        ) 
-                                        AS TEMP 
-                                        WHERE  TH004 IN (
-                                        SELECT MB001
+                                    WITH Filtered_INVMB AS (
+                                        -- 先將不需要稽核的品號過濾掉 (減少後續 JOIN 的資料量)
+                                        SELECT MB001 
                                         FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                        WHERE MB022 NOT IN ('N')
-                                        )
-                                        ORDER BY TH004  
+                                        WHERE MB022 <> 'N'
+                                    ),
+                                    Combined_Data AS (
+                                        -----------------------------------------------------------------------------------
+                                        -- 1. 進貨單區塊 (原 7 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '進貨單' AS KINDS, TH004, TH005, TH010, TH036, TH117, TH001, TH002, TH003,
+                                            CASE 
+                                                WHEN TH117 > TG003 THEN '製造日是未來日'
+                                                WHEN TH117 > @Today THEN '製造日是未來日'
+                                                WHEN TH004 LIKE '1%' AND TH010 <> TH036 THEN '批號<>有效日'
+                                                WHEN (TH004 LIKE '2%' OR TH004 LIKE '3%') AND TH010 <> TH117 THEN '批號<>製造日'
+                                                WHEN (TH004 LIKE '4%' OR TH004 LIKE '5%') AND TH010 <> TH036 THEN '批號<>有效日'
+                                                WHEN TH004 LIKE '1%' AND ISDATE(TH010) <> 1 AND TH009 NOT LIKE '21%' THEN '批號日錯誤'
+                                                WHEN ISDATE(TH117) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.PURTG AS TG WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.PURTH AS TH WITH(NOLOCK) ON TG001 = TH001 AND TG002 = TH002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TH.TH004 = MB.MB001
+                                        WHERE TG003 >= @TargetDate 
+                                          AND TH030 = 'Y'
+
+                                        UNION ALL
+
+                                        -----------------------------------------------------------------------------------
+                                        -- 2. 入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '入庫單' AS KINDS, TG004, TG005, TG017, TG018, 
+                                            -- 部分舊邏輯製造日帶的是 TF003，其餘帶 TG040，在此統一依原邏輯分流
+                                            CASE WHEN TG004 LIKE '[14]%' THEN TF003 ELSE TG040 END,
+                                            TG001, TG002, TG003,
+                                            CASE 
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG017 <> TG040 THEN '批號<>製造日'
+                                                WHEN TG004 LIKE '4%' AND TG017 <> TG018 THEN '批號<>有效日'
+                                                WHEN TG004 LIKE '1%' AND TG017 <> TG018 THEN '批號<>有效日'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG017) <> 1 THEN '批號日錯誤'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG040 > @Today THEN '製造日是未來日'
+                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG040) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.MOCTF AS TF WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.MOCTG AS TG WITH(NOLOCK) ON TF001 = TG001 AND TF002 = TG002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TG.TG004 = MB.MB001
+                                        WHERE TF003 >= @TargetDate 
+                                          AND TG022 = 'Y'
+
+                                        UNION ALL
+
+                                        -----------------------------------------------------------------------------------
+                                        -- 3. 託外入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
+                                        -----------------------------------------------------------------------------------
+                                        SELECT 
+                                            '託外入庫單' AS KINDS, TI004, TI005, TI010, TI011, TI061, TI001, TI002, TI003,
+                                            CASE 
+                                                WHEN TI004 LIKE '3%' AND TI010 <> TI061 AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001') THEN '批號<>製造日'
+                                                WHEN TI004 LIKE '4%' AND TI010 <> TI011 THEN '批號<>有效日'
+                                                WHEN TI004 LIKE '4%' AND ISDATE(TI011) <> 1 THEN '批號不是日期'
+                                                WHEN TI004 LIKE '4%' AND TI061 >= @Today THEN '製造日是未來日'
+                                                WHEN TI004 LIKE '4%' AND ISDATE(TI061) <> 1 THEN '製造日不是日期'
+                                                ELSE NULL 
+                                            END AS COMMET
+                                        FROM [TK].dbo.MOCTH AS TH WITH(NOLOCK) 
+                                        INNER JOIN [TK].dbo.MOCTI AS TI WITH(NOLOCK) ON TH001 = TI001 AND TH002 = TI002 
+                                        INNER JOIN Filtered_INVMB AS MB ON TI.TI004 = MB.MB001
+                                        WHERE TI061 >= @TargetDate 
+                                          AND TI037 = 'Y'
+                                    )
+                                    SELECT 
+                                        KINDS,
+                                        TH004 AS '品號',
+                                        TH005 AS '品名',
+                                        TH010 AS '批號',
+                                        TH036 AS '有效日',
+                                        TH117 AS '製造日',
+                                        TH001 AS '單別',
+                                        TH002 AS '單號',
+                                        TH003 AS '序號',
+                                        COMMET AS '備註'
+                                    FROM Combined_Data
+                                    -- 只篩選出符合異常註記的列
+                                    WHERE COMMET IS NOT NULL
+                                    ORDER BY TH004;
                                             ");
 
                 // 這裡一定要 ToString()
