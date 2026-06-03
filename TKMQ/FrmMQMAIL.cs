@@ -1,42 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.IO;
-using System.Data.SqlClient;
-using System.Configuration;
-using FastReport;
+﻿using FastReport;
 using FastReport.Data;
-using System.Net.Mail;//<-基本上發mail就用這個class
-using Excel = Microsoft.Office.Interop.Excel; // 為 Interop 設定別名
-using System.Drawing;
-using System.Diagnostics;
-using System.Threading;
 using NPOI.HSSF.UserModel;
-using NPOI.SS.UserModel;
 using NPOI.HSSF.Util;
+using NPOI.SS.Formula.Functions;
+using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
-using TKITDLL;
-using System.Net.Http;
-using System.Net;
-using System.Xml;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Collections.Specialized;
+using System;
 using System;
 using System.Collections.Generic;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
-using System.Xml.Linq;
+using System.Net.Http;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Mail;//<-基本上發mail就用這個class
 using System.Net.Mime;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Text;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml;
+using System.Xml.Linq;
+using TKITDLL;
+using Excel = Microsoft.Office.Interop.Excel; // 為 Interop 設定別名
 
 
 namespace TKMQ
@@ -5080,179 +5081,34 @@ namespace TKMQ
 
         public void SEARCHLOTCHECK(CancellationToken cancellationToken)
         {
-            //DateTime SEARCHDATE2 = DateTime.Now;           
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
+                DataSet DS = new DataSet();
+                DS.Tables.Add(DT);
 
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-
-                sbSql.AppendFormat(@"  
-                                    -- 定義動態日期變數，避免在迴圈中重複計算 GETDATE()
-                                    DECLARE @TargetDate NVARCHAR(8) = CONVERT(NVARCHAR(8), DATEADD(DAY, -7, GETDATE()), 112);
-                                    DECLARE @Today NVARCHAR(8) = CONVERT(NVARCHAR(8), GETDATE(), 112);
-
-                                    WITH Filtered_INVMB AS (
-                                        -- 先將不需要稽核的品號過濾掉 (減少後續 JOIN 的資料量)
-                                        SELECT MB001 
-                                        FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                        WHERE MB022 <> 'N'
-                                    ),
-                                    Combined_Data AS (
-                                        -----------------------------------------------------------------------------------
-                                        -- 1. 進貨單區塊 (原 7 個 UNION 合併為 1 個掃描)
-                                        -----------------------------------------------------------------------------------
-                                        SELECT 
-                                            '進貨單' AS KINDS, TH004, TH005, TH010, TH036, TH117, TH001, TH002, TH003,
-                                            CASE 
-                                                WHEN TH117 > TG003 THEN '製造日是未來日'
-                                                WHEN TH117 > @Today THEN '製造日是未來日'
-                                                WHEN TH004 LIKE '1%' AND TH010 <> TH036 THEN '批號<>有效日'
-                                                WHEN (TH004 LIKE '2%' OR TH004 LIKE '3%') AND TH010 <> TH117 THEN '批號<>製造日'
-                                                WHEN (TH004 LIKE '4%' OR TH004 LIKE '5%') AND TH010 <> TH036 THEN '批號<>有效日'
-                                                WHEN TH004 LIKE '1%' AND ISDATE(TH010) <> 1 AND TH009 NOT LIKE '21%' THEN '批號日錯誤'
-                                                WHEN ISDATE(TH117) <> 1 THEN '製造日不是日期'
-                                                ELSE NULL 
-                                            END AS COMMET
-                                        FROM [TK].dbo.PURTG AS TG WITH(NOLOCK) 
-                                        INNER JOIN [TK].dbo.PURTH AS TH WITH(NOLOCK) ON TG001 = TH001 AND TG002 = TH002 
-                                        INNER JOIN Filtered_INVMB AS MB ON TH.TH004 = MB.MB001
-                                        WHERE TG003 >= @TargetDate 
-                                          AND TH030 = 'Y'
-
-                                        UNION ALL
-
-                                        -----------------------------------------------------------------------------------
-                                        -- 2. 入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
-                                        -----------------------------------------------------------------------------------
-                                        SELECT 
-                                            '入庫單' AS KINDS, TG004, TG005, TG017, TG018, 
-                                            -- 部分舊邏輯製造日帶的是 TF003，其餘帶 TG040，在此統一依原邏輯分流
-                                            CASE WHEN TG004 LIKE '[14]%' THEN TF003 ELSE TG040 END,
-                                            TG001, TG002, TG003,
-                                            CASE 
-                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG017 <> TG040 THEN '批號<>製造日'
-                                                WHEN TG004 LIKE '4%' AND TG017 <> TG018 THEN '批號<>有效日'
-                                                WHEN TG004 LIKE '1%' AND TG017 <> TG018 THEN '批號<>有效日'
-                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG017) <> 1 THEN '批號日錯誤'
-                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND TG040 > @Today THEN '製造日是未來日'
-                                                WHEN TG004 LIKE '3%' AND TG004 NOT LIKE '307%' AND ISDATE(TG040) <> 1 THEN '製造日不是日期'
-                                                ELSE NULL 
-                                            END AS COMMET
-                                        FROM [TK].dbo.MOCTF AS TF WITH(NOLOCK) 
-                                        INNER JOIN [TK].dbo.MOCTG AS TG WITH(NOLOCK) ON TF001 = TG001 AND TF002 = TG002 
-                                        INNER JOIN Filtered_INVMB AS MB ON TG.TG004 = MB.MB001
-                                        WHERE TF003 >= @TargetDate 
-                                          AND TG022 = 'Y'
-
-                                        UNION ALL
-
-                                        -----------------------------------------------------------------------------------
-                                        -- 3. 託外入庫單區塊 (原 5 個 UNION 合併為 1 個掃描)
-                                        -----------------------------------------------------------------------------------
-                                        SELECT 
-                                            '託外入庫單' AS KINDS, TI004, TI005, TI010, TI011, TI061, TI001, TI002, TI003,
-                                            CASE 
-                                                WHEN TI004 LIKE '3%' AND TI010 <> TI061 AND TI001+TI002+TI003 NOT IN ('A591201906240010001','A591201911220010001','A591201911250030001') THEN '批號<>製造日'
-                                                WHEN TI004 LIKE '4%' AND TI010 <> TI011 THEN '批號<>有效日'
-                                                WHEN TI004 LIKE '4%' AND ISDATE(TI011) <> 1 THEN '批號不是日期'
-                                                WHEN TI004 LIKE '4%' AND TI061 >= @Today THEN '製造日是未來日'
-                                                WHEN TI004 LIKE '4%' AND ISDATE(TI061) <> 1 THEN '製造日不是日期'
-                                                ELSE NULL 
-                                            END AS COMMET
-                                        FROM [TK].dbo.MOCTH AS TH WITH(NOLOCK) 
-                                        INNER JOIN [TK].dbo.MOCTI AS TI WITH(NOLOCK) ON TH001 = TI001 AND TH002 = TI002 
-                                        INNER JOIN Filtered_INVMB AS MB ON TI.TI004 = MB.MB001
-                                        WHERE TI061 >= @TargetDate 
-                                          AND TI037 = 'Y'
-                                    )
-                                    SELECT 
-                                        KINDS,
-                                        TH004 AS '品號',
-                                        TH005 AS '品名',
-                                        TH010 AS '批號',
-                                        TH036 AS '有效日',
-                                        TH117 AS '製造日',
-                                        TH001 AS '單別',
-                                        TH002 AS '單號',
-                                        TH003 AS '序號',
-                                        COMMET AS '備註'
-                                    FROM Combined_Data
-                                    -- 只篩選出符合異常註記的列
-                                    WHERE COMMET IS NOT NULL
-                                    ORDER BY TH004;
-                                    ");
-
-
-                adapterLOTCHECK = new SqlDataAdapter(@"" + sbSql, sqlConn);
-                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
-
-                sqlCmdBuilderLOTCHECK = new SqlCommandBuilder(adapterLOTCHECK);
-
-
-                sqlConn.Open();
-                dsLOTCHECK.Clear();
-
-                // 設置查詢的超時時間，以秒為單位
-                // 設定查詢超時時間
-                adapterLOTCHECK.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                //adapterLOTCHECK.Fill(dsLOTCHECK, "dsLOTCHECK");
-                //sqlConn.Close();
-
-                // 新增 CancellationToken 的支援
-                adapterLOTCHECK.SelectCommand.Connection = sqlConn;
-                // 執行資料讀取
-                using (var command = adapterLOTCHECK.SelectCommand)
-                {
-                    using (var reader = command.ExecuteReader())
-                    {
-                        // 當讀取資料時，檢查是否被取消
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            //MessageBox.Show("操作已被取消");
-                            sqlConn.Close();
-                            return;
-                        }
-
-                        // 將資料填充進 DataSet
-                        dsLOTCHECK.Load(reader, LoadOption.OverwriteChanges, "dsLOTCHECK");
-                    }
-                }
-
-                sqlConn.Close();
-
-
-                if (dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Count == 0)
+                if (DT.Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
-                    DataRow row = dsLOTCHECK.Tables["dsLOTCHECK"].NewRow();
+                    DataRow row = DT.NewRow();
 
                     //指定每個欄位要儲存的資料                   
                     row[0] = "本日無資料"; ;
 
                     //新增資料至DataTable的dt內
-                    dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Add(row);
+                    DT.Rows.Add(row);
 
-                    ExportDataSetToExcel(dsLOTCHECK, pathFileLOTCHECK);
+                    ExportDataSetToExcel(DS, pathFileLOTCHECK);
                 }
                 else
                 {
-                    if (dsLOTCHECK.Tables["dsLOTCHECK"].Rows.Count >= 1)
+                    if (DT.Rows.Count >= 1)
                     {
-                        ExportDataSetToExcel(dsLOTCHECK, pathFileLOTCHECK);
+                        ExportDataSetToExcel(DS, pathFileLOTCHECK);
                     }
                 }
 
