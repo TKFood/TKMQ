@@ -5088,8 +5088,10 @@ namespace TKMQ
                 cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
                 DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts.Token);
+
                 DataSet DS = new DataSet();
-                DS.Tables.Add(DT);
+                DS.Tables.Add(DT.Copy());
+
 
                 if (DT.Rows.Count == 0)
                 {
@@ -5101,15 +5103,12 @@ namespace TKMQ
 
                     //新增資料至DataTable的dt內
                     DT.Rows.Add(row);
-
-                    ExportDataSetToExcel(DS, pathFileLOTCHECK);
                 }
-                else
+
+                
+                if (DT.Rows.Count >= 1)
                 {
-                    if (DT.Rows.Count >= 1)
-                    {
-                        ExportDataSetToExcel(DS, pathFileLOTCHECK);
-                    }
+                    ExportDataSetToExcel(DS, pathFileLOTCHECK);
                 }
 
             }
