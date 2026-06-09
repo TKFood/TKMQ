@@ -10255,6 +10255,7 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">新品建立日期</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">員購金額</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">第1天業務銷貨日</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務銷貨數量</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務銷貨金額</th>");
@@ -10284,6 +10285,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["規格"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["新品建立日期"].ToString() + "</td>");
+                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["員購金額"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["第1天業務銷貨日"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["業務銷貨數量"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["業務銷貨金額"].ToString() + "</td>");
@@ -10447,13 +10449,12 @@ namespace TKMQ
                 sbSql.AppendFormat(@"                                   
                                    
                                     SELECT  
-                                    SDATES AS '開始日'
-                                    ,EDATES AS '結束日'
-                                    ,MB001 AS '品號'
+                                    MB001 AS '品號'
                                     ,MB002 AS '品名'
                                     ,MB003 AS '規格'
                                     ,MB004 AS '單位'
                                     ,CREATE_DATE AS '新品建立日期'
+                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,員購金額)), 1), '.00', '') AS '員購金額'
                                     ,TOPTG003 AS '第1天業務銷貨日'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '業務銷貨數量'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '業務銷貨金額'
@@ -10474,37 +10475,38 @@ namespace TKMQ
 
                                     FROM 
                                     (
-                                    SELECT *
-                                    ,ISNULL(
-                                    (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                    FROM [TK].dbo.SASLA WITH(NOLOCK) 
-                                    WHERE LA005=MB001
-                                    AND CONVERT(NVARCHAR,LA015,112)>=SDATES
-                                    AND CONVERT(NVARCHAR,LA015,112)<='{1}')
-                                    ,0) AS PERCOSTS
-                                    FROM (
-                                    SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) LEFT JOIN [TK].dbo.INVMD WITH(NOLOCK)  ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
+                                        SELECT *
+                                        ,ISNULL(
+                                        (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
+                                        FROM [TK].dbo.SASLA WITH(NOLOCK) 
+                                        WHERE LA005=MB001
+                                        AND CONVERT(NVARCHAR,LA015,112)>='{0}'
+                                        AND CONVERT(NVARCHAR,LA015,112)<='{1}')
+                                        ,0) AS PERCOSTS
+                                        FROM (
+                                            SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
+                                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
+                                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
-                                    ,MB047 
-                                    ,MB050
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
+                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
+                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}' AND TB002 IN ('100000')),0) AS 員購金額
+                                            ,MB047
+                                            ,MB050
 
-                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                    WHERE 1=1
-                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
-
-                                    AND MB002 NOT LIKE '%試吃%'
-                                    AND CREATE_DATE>='{0}'
-                                    ) AS TEMP
+                                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
+                                            WHERE 1=1
+                                            AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
+                                            AND MB002 NOT LIKE '%試吃%'
+                                            AND ISNULL(MB002,'')<>''
+                                            AND CREATE_DATE>='{0}'
+                                        ) AS TEMP
                                     ) AS TEMP2
                                     WHERE 1=1
                                     ORDER BY 品號 DESC
@@ -10654,6 +10656,7 @@ namespace TKMQ
                                     ,MB003 AS '規格'
                                     ,MB004 AS '單位'
                                     ,CREATE_DATE AS '新品建立日期'
+                                    ,員購金額
                                     ,TOPTG003 AS '第1天業務銷貨日'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '業務銷貨數量'
                                     ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '業務銷貨金額'
@@ -10674,37 +10677,38 @@ namespace TKMQ
 
                                     FROM 
                                     (
-                                    SELECT *
-                                    ,ISNULL(
-                                    (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                    FROM [TK].dbo.SASLA WITH(NOLOCK) 
-                                    WHERE LA005=MB001
-                                    AND CONVERT(NVARCHAR,LA015,112)>='{0}'
-                                    AND CONVERT(NVARCHAR,LA015,112)<='{1}')
-                                    ,0) AS PERCOSTS
-                                    FROM (
-                                    SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                    ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
+                                        SELECT *
+                                        ,ISNULL(
+                                        (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
+                                        FROM [TK].dbo.SASLA WITH(NOLOCK) 
+                                        WHERE LA005=MB001
+                                        AND CONVERT(NVARCHAR,LA015,112)>='{0}'
+                                        AND CONVERT(NVARCHAR,LA015,112)<='{1}')
+                                        ,0) AS PERCOSTS
+                                        FROM (
+                                            SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
+                                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
+                                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                    ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                    ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
+                                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
+                                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
 
-                                    ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                    ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                    ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
-                                    ,MB047
-                                    ,MB050
+                                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
+                                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
+                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
+                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}' AND TB002 IN ('100000')),0) AS 員購金額
+                                            ,MB047
+                                            ,MB050
 
-                                    FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                    WHERE 1=1
-                                    AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
-                                    AND MB002 NOT LIKE '%試吃%'
-                                    AND ISNULL(MB002,'')<>''
-                                    AND CREATE_DATE>='{0}'
-                                    ) AS TEMP
+                                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
+                                            WHERE 1=1
+                                            AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
+                                            AND MB002 NOT LIKE '%試吃%'
+                                            AND ISNULL(MB002,'')<>''
+                                            AND CREATE_DATE>='{0}'
+                                        ) AS TEMP
                                     ) AS TEMP2
                                     WHERE 1=1
                                     ORDER BY 品號 DESC
