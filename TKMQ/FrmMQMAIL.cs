@@ -4576,6 +4576,7 @@ namespace TKMQ
                                     FROM [TK].dbo.PURTC WITH(NOLOCK) ,[TK].dbo.PURTD WITH(NOLOCK) ,[TK].dbo.PURMA WITH(NOLOCK) 
                                     WHERE TC001=TD001 AND TC002=TD002
                                     AND TC004=MA001
+                                    AND TC014 IN ('Y','N')
                                     AND TD016='N'
                                     ORDER BY MA001,TD004,TD012
                   
