@@ -249,28 +249,6 @@ namespace TKMQ
             }
 
 
-            // 每3、6、9和12月的1號執行一次，早上 9:40 執行1次
-            if (DateTime.Now.Day == 1 && (DateTime.Now.Month % 3 == 0 || DateTime.Now.Month % 6 == 0 || DateTime.Now.Month % 9 == 0 || DateTime.Now.Month % 12 == 0) && now.Hour == 9 && now.Minute == 40 && lastRunMonth_TaskQuarter != now.Month)
-            {
-                lastRunMonth_TaskQuarter = now.Month; // 執行後立即鎖定本月，剩餘的 30 秒內就不會再跑第二次
-                // 執行您的操作
-                ///版費退回
-                try
-                {
-                    DataTable DT = SEARCH_PURVERSIONSNUMS();
-                    if (DT != null && DT.Rows.Count >= 1)
-                    {
-                        SEND_PURVERSIONSNUMS(DT);
-                    }
-                }
-                catch (Exception EX)
-                {
-
-                }
-                finally { }
-
-
-            }
         }
         private void timer2_Tick(object sender, EventArgs e)
         {
@@ -1120,6 +1098,22 @@ namespace TKMQ
 
             try
             {
+               
+                try
+                {
+                    //版費提醒退費
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        UDPATE_PURVERSIONSNUMS_TOTALNUMS();
+                        SENDEMAIL_PURVERSIONS_NUMS(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"版費提醒退費");
+                }
                 //採購用
                 try
                 {
@@ -14030,193 +14024,11 @@ namespace TKMQ
             }
         }
 
-        public void NEW_PURVERSIONSNUMS()
-        {
-            try
-            {
-                DataTable DT = SEARCH_PURVERSIONSNUMS();
-                if (DT != null && DT.Rows.Count >= 1)
-                {
-                    SEND_PURVERSIONSNUMS(DT);
-                }
-            }
-            catch (Exception EX)
-            {
+       
 
-            }
-            finally { }
+        
 
-        }
-
-        public DataTable SEARCH_PURVERSIONSNUMS()
-        {
-            DataTable DT = new DataTable();
-            SqlDataAdapter Adapter1 = new SqlDataAdapter();
-            SqlCommandBuilder SqlCmdBuilder1 = new SqlCommandBuilder();
-            DataSet DS = new DataSet();
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
-                sbSql.AppendFormat(@"  
-                                    SELECT *
-                                    FROM [TKPUR].[dbo].[PURVERSIONSNUMS]
-                                    WHERE ISCLOSE='N'
-                                    AND TOTALNUMS>=TARGETNUMS 
-                                    ");
-
-                Adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                SqlCmdBuilder1 = new SqlCommandBuilder(Adapter1);
-                sqlConn.Open();
-                DS.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                Adapter1.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                Adapter1.Fill(DS, "DS");
-                sqlConn.Close();
-
-
-
-                if (DS.Tables["DS"].Rows.Count >= 1)
-                {
-                    return DS.Tables["DS"];
-                }
-                else
-                {
-                    return null;
-                }
-
-            }
-            catch (Exception EX)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        public void SEND_PURVERSIONSNUMS(DataTable DT)
-        {
-            try
-            {
-                if (DT != null && DT.Rows.Count >= 1)
-                {
-                    try
-                    {
-                        StringBuilder SUBJEST = new StringBuilder();
-                        StringBuilder BODY = new StringBuilder();
-
-                        ////加上附圖
-                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                        //LinkedResource res = new LinkedResource(path);
-                        //res.ContentId = Guid.NewGuid().ToString();
-
-                        SUBJEST.Clear();
-                        BODY.Clear();
-
-
-                        SUBJEST.AppendFormat(@"系統通知-老楊食品-版費可退回明細 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-                        //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-                        //ERP 採購相關單別、單號未核準的明細
-                        //
-                        BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-                            + "<br>" + "版費可退回明細如下"
-
-                            );
-
-
-                        if (DT != null && DT.Rows.Count > 0)
-                        {
-                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-                            BODY.AppendFormat(@"<table> ");
-                            BODY.AppendFormat(@"<tr >");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">版型</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">可退還的版費</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目標進貨量</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已進貨量</th>");
-                            BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">是否結案</th>");
-
-                            BODY.AppendFormat(@"</tr> ");
-
-                            foreach (DataRow DR in DT.Rows)
-                            {
-
-                                BODY.AppendFormat(@"<tr >");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["NAMES"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["MB001"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["MB002"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["BACKMONEYS"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TARGETNUMS"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["TOTALNUMS"].ToString() + "</td>");
-                                BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["ISCLOSE"].ToString() + "</td>");
-
-                                BODY.AppendFormat(@"</tr> ");
-
-                                //BODY.AppendFormat("<span></span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-                            }
-                            BODY.AppendFormat(@"</table> ");
-                        }
-                        else
-                        {
-                            BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
-                        }
-
-
-                        BODY.AppendFormat(" "
-                                     + "<br>" + "謝謝"
-
-                                     + "</span><br>");
-
-
-
-                        SENDE_TO_PURTYPES(SUBJEST, BODY);
-
-                    }
-                    catch (Exception EX)
-                    {
-
-                    }
-                    finally
-                    {
-
-                    }
-                }
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally { }
-        }
-
+       
         public void SENDEMAIL_DAILY_TKWH_CALENDAR(CancellationToken cancellationToken)
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
@@ -26935,6 +26747,221 @@ namespace TKMQ
             }
         }
 
+        public void SENDEMAIL_PURVERSIONS_NUMS(CancellationToken cancellationToken)
+        {
+            DataSet DS = new DataSet();                 
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_DATAS = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS = FINDPURCHECKMAILTO("PURTYPES");
+                DS_EMAIL_TO_EMAIL = DS.Tables[0];
+                DT_DATAS = SERACH_PURVERSIONS_NUMS();
+
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-請查收-版費提醒退費，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-版費提醒退費，謝謝"
+                    + " <br>"
+                    );
+
+
+
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                {
+
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">項目</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">版費</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目標數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">進貨數是</th>");
+                    
+                    BODY.AppendFormat(@"</tr> ");
+
+                    // 先定義好重複使用的樣式，方便後續維護
+                    string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+
+                    foreach (DataRow DR in DT_DATAS.Rows)
+                    {
+                        BODY.Append("<tr>");
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["項目"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品名"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["版費"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["目標數量"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["進貨數是"]);
+                     
+                        BODY.Append("</tr>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                try
+                {
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = SUBJEST.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                    try
+                    {
+                        foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+                    }
+                    catch (Exception EX)
+                    {
+                        //MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
+                    }
+                }
+                catch (Exception EX)
+                {
+
+                }
+                finally
+                {
+
+                }
+
+
+
+
+            }
+            catch (Exception EX)
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+        public DataTable SERACH_PURVERSIONS_NUMS()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+                //託外採購單比對託外製令+託外入庫
+                //一般採購比對進貨單
+                sbSql.AppendFormat(@"                                      
+                                   SELECT 
+                                    [ID]
+                                    ,[NAMES] AS '項目'
+                                    ,[MB001] AS '品號'
+                                    ,[MB002] AS '品名'
+                                    ,[BACKMONEYS] AS '版費'
+                                    ,[TARGETNUMS] AS '目標數量'
+                                    ,[TOTALNUMS] AS '進貨數是'
+                                    ,[ISCLOSE]
+                                    ,[PAYKINDS]
+                                    ,[CREATEDATES]
+                                    ,[COMMENTS]
+                                    FROM [TKPUR].[dbo].[PURVERSIONSNUMS]
+                                    WHERE ISCLOSE='N'
+                                    AND TOTALNUMS>=TARGETNUMS 
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -27312,8 +27339,14 @@ namespace TKMQ
         }
         private void button34_Click(object sender, EventArgs e)
         {
-            UDPATE_PURVERSIONSNUMS_TOTALNUMS();
-            NEW_PURVERSIONSNUMS();
+            UDPATE_PURVERSIONSNUMS_TOTALNUMS();           
+
+            //採購單的庫存量
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_PURVERSIONS_NUMS(cts1.Token);
 
             MessageBox.Show("完成");
         }
