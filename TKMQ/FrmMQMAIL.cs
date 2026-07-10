@@ -1325,6 +1325,22 @@ namespace TKMQ
             errorMessages.Clear();
             try
             {
+                //採購用                 
+                try
+                {
+                    //每日通知，採購單的庫存量
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+
+                        SENDEMAIL_PUR_CHECK_INVLA(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"採購單的庫存量 失敗");
+                }
                 //採購用 
                 try
                 {                   
@@ -26592,6 +26608,333 @@ namespace TKMQ
             }
         }
 
+        public void SENDEMAIL_PUR_CHECK_INVLA(CancellationToken cancellationToken)
+        {
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_PUR_CHECK_INVLA = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_PUR_CHECK_INVLA();
+                DT_PUR_CHECK_INVLA = SERACH_PUR_CHECK_INVLA();
+
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-請查收-預計採購的目前庫存量，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-預計採購的目前庫存量，謝謝"
+                    + " <br>"
+                    );
+
+
+
+                if (DT_PUR_CHECK_INVLA != null && DT_PUR_CHECK_INVLA.Rows.Count >= 1)
+                {
+
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購單別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購單號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">規格</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購數量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前庫存量</th>");
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    // 先定義好重複使用的樣式，方便後續維護
+                    string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+
+                    foreach (DataRow DR in DT_PUR_CHECK_INVLA.Rows)
+                    {
+                        BODY.Append("<tr>");
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["預交日"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["廠商"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購單別"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購單號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["序號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品名"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["規格"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["採購數量"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["單位"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["目前庫存量"]);
+                        BODY.Append("</tr>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                try
+                {
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = SUBJEST.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                    try
+                    {
+                        foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+                    }
+                    catch (Exception EX)
+                    {
+                        //MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
+                    }
+                }
+                catch (Exception EX)
+                {
+
+                }
+                finally
+                {
+
+                }
+
+
+
+
+            }
+            catch (Exception EX)
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+        public DataTable SERACH_PUR_CHECK_INVLA()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+                //託外採購單比對託外製令+託外入庫
+                //一般採購比對進貨單
+                sbSql.AppendFormat(@"                                      
+                                    SELECT 
+                                    TEMP.[預交日],
+                                    TEMP.[供應廠商],
+                                    TEMP.[廠商],
+                                    TEMP.[採購單別],
+                                    TEMP.[採購單號],
+                                    TEMP.[序號],
+                                    TEMP.[品號],
+                                    TEMP.[品名],
+                                    TEMP.[規格],
+                                    TEMP.[採購數量],
+                                    TEMP.[單位],
+                                    -- 整合後的庫存量，若沒庫存資料自動補 0
+                                    ISNULL(INV.CURRENT_STOCK, 0) AS '目前庫存量'
+                                FROM 
+                                (
+                                    SELECT 
+                                        TD.TD012 AS '預交日',
+                                        TC.TC004 AS '供應廠商',
+                                        MA.MA002 AS '廠商',
+                                        TD.TD001 AS '採購單別',
+                                        TD.TD002 AS '採購單號',
+                                        TD.TD003 AS '序號',
+                                        TD.TD004 AS '品號',
+                                        TD.TD005 AS '品名',
+                                        TD.TD006 AS '規格',
+                                        TD.TD008 AS '採購數量',
+                                        TD.TD009 AS '單位'
+                                    FROM [TK].dbo.PURTC TC WITH(NOLOCK)
+                                    INNER JOIN [TK].dbo.PURTD TD WITH(NOLOCK) ON TC.TC001 = TD.TD001 AND TC.TC002 = TD.TD002
+                                    INNER JOIN [TK].dbo.PURMA MA WITH(NOLOCK) ON MA.MA001 = TC.TC004
+                                    WHERE TD.TD016 = 'N' -- 已改成等號比對，效能較佳
+                                      AND TD.TD008 > 0
+                                      -- 統一處理採購日期的篩選 (建議用 112 格式對應 8 碼字串)
+                                      AND TC.TC003 BETWEEN CONVERT(NVARCHAR(8), DATEADD(DAY, -1, GETDATE()), 112) 
+                                                       AND CONVERT(NVARCHAR(8), DATEADD(DAY, 0, GETDATE()), 112)
+                                      -- 關鍵整合：用 OR 把原本分兩段 UNION 的邏輯併在一起
+                                      AND (
+                                          (TC.TC001 <> 'A334') 
+                                          OR 
+                                          (TC.TC001 = 'A334' AND ISNULL(TC.TC045, '') <> '')
+                                      )
+                                ) AS TEMP
+                                -- 優化核心：改用 LEFT JOIN 先行加總庫存，避免每一筆資料都去全表掃描 INVLA
+                                LEFT JOIN (
+                                    SELECT LA001, SUM(LA005 * LA011) AS CURRENT_STOCK
+                                    FROM [TK].dbo.INVLA WITH(NOLOCK)
+                                    GROUP BY LA001
+                                ) AS INV ON INV.LA001 = TEMP.[品號]
+                                ORDER BY TEMP.[採購單別], TEMP.[採購單號], TEMP.[序號];
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_MAIL_PUR_CHECK_INVLA()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='PURTD_CHECK_INVLA'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -27357,6 +27700,17 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
+        private void button65_Click(object sender, EventArgs e)
+        {
+            //採購單的庫存量
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_PUR_CHECK_INVLA(cts1.Token);
+
+            MessageBox.Show("完成");
+        }
 
         #endregion
 

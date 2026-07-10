@@ -109,6 +109,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
+            this.button65 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -219,6 +220,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button60, 0, 11);
             this.tableLayoutPanel1.Controls.Add(this.button63, 3, 12);
             this.tableLayoutPanel1.Controls.Add(this.button64, 3, 13);
+            this.tableLayoutPanel1.Controls.Add(this.button65, 4, 9);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -1033,7 +1035,7 @@
             // 
             this.previewControl1.BackColor = System.Drawing.SystemColors.AppWorkspace;
             this.previewControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.previewControl1.Font = new System.Drawing.Font("宋体", 9F);
+            this.previewControl1.Font = new System.Drawing.Font("SimSun", 9F);
             this.previewControl1.Location = new System.Drawing.Point(0, 0);
             this.previewControl1.Margin = new System.Windows.Forms.Padding(4);
             this.previewControl1.Name = "previewControl1";
@@ -1112,13 +1114,23 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
+            // button65
+            // 
+            this.button65.Location = new System.Drawing.Point(540, 363);
+            this.button65.Name = "button65";
+            this.button65.Size = new System.Drawing.Size(145, 34);
+            this.button65.TabIndex = 115;
+            this.button65.Text = "採購單的庫存量";
+            this.button65.UseVisualStyleBackColor = true;
+            this.button65.Click += new System.EventHandler(this.button65_Click);
+            // 
             // FrmMQMAIL
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 625);
             this.Controls.Add(this.tabControl1);
-            this.Font = new System.Drawing.Font("新細明體", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.Font = new System.Drawing.Font("PMingLiU", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "FrmMQMAIL";
             this.Text = "FrmMQMAIL";
@@ -1223,5 +1235,6 @@
         private System.Windows.Forms.Button button62;
         private System.Windows.Forms.Button button63;
         private System.Windows.Forms.Button button64;
+        private System.Windows.Forms.Button button65;
     }
 }
