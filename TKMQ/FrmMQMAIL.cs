@@ -1085,7 +1085,7 @@ namespace TKMQ
 
         }
         /// <summary>
-        /// //每星期一寄送
+        /// //每星期
         /// 08:50
         /// </summary>
         public void HRAUTORUN_targetTime2()
