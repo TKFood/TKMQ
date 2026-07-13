@@ -26786,6 +26786,7 @@ namespace TKMQ
 
                     BODY.AppendFormat(@"<table> ");
                     BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">供應商</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">項目</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
@@ -26801,6 +26802,7 @@ namespace TKMQ
                     foreach (DataRow DR in DT_DATAS.Rows)
                     {
                         BODY.Append("<tr>");
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["供應商"]);
                         BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["項目"]);
                         BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品號"]);
                         BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品名"]);
@@ -26915,6 +26917,7 @@ namespace TKMQ
                 sbSql.AppendFormat(@"                                      
                                    SELECT 
                                     [ID]
+                                    ,[SUPPLYS] AS '供應商'
                                     ,[NAMES] AS '項目'
                                     ,[MB001] AS '品號'
                                     ,[MB002] AS '品名'
