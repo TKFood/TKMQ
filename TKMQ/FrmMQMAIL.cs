@@ -44,6 +44,19 @@ namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
     {
+        // 📌 1. 請將這些「記錄最後執行日期」的變數放到類別（Form）的最上方，作為全域欄位
+        // 初始值設為 -1，確保程式啟動當天第一次比對一定會過
+        private int lastDayRun1 = -1;
+        private int lastDayRun9 = -1;  // 【已修改】08:40 每日 LINE 通知
+        private int lastDayRun2 = -1;
+        private int lastDayRun10 = -1; // 【已修改】08:59 星期一到五
+        private int lastDayRun8 = -1;
+        private int lastDayRun6 = -1;
+        private int lastDayRun7 = -1;
+        private int lastDayRun3 = -1;
+        private int lastDayRun4 = -1;
+        private int lastDayRun5 = -1;
+
         private DateTime timer4_lastRun = DateTime.MinValue;
         private int timer4_runCountToday = 0;
         private DateTime timer4_lastResetDate = DateTime.MinValue;
@@ -177,6 +190,7 @@ namespace TKMQ
         string[] tempFile;
         string tFileName = "";
 
+
         public FrmMQMAIL()
         {
             InitializeComponent();
@@ -283,151 +297,109 @@ namespace TKMQ
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // 取得目前日期和時間
+            // 取得目前時間物件
             DateTime now = DateTime.Now;
 
+            // 更新畫面時間顯示
+            label2.Text = now.ToString();
 
-            string targetTime1 = "08:31";
-            string currentTime1 = DateTime.Now.ToString("HH:mm");
+            // 統一取得當前時間字串與星期 (省去重複擷取的消耗)
+            string currentTime = now.ToString("HH:mm");
+            DayOfWeek today = now.DayOfWeek;
+            int currentDayOfYear = now.DayOfYear; // 用「今年第幾天」來精準控管一天只跑一次
 
-            string targetTime9 = "08:40";
-            string currentTime9 = DateTime.Now.ToString("HH:mm");
+            // 是否為星期一到星期五的快速判斷
+            bool isWeekday = (today >= DayOfWeek.Monday && today <= DayOfWeek.Friday);
 
-            string targetTime2 = "08:50";
-            string currentTime2 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime8 = "09:31";
-            string currentTime8 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime6 = "11:00";
-            string currentTime6 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime7 = "14:00";
-            string currentTime7 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime3 = "15:00";
-            string currentTime3 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime4 = "17:00";
-            string currentTime4 = DateTime.Now.ToString("HH:mm");
-
-            string targetTime5 = "18:00";
-            string currentTime5 = DateTime.Now.ToString("HH:mm");
-
-            label2.Text = DateTime.Now.ToString();
-
-            //// DayOfWeek 0 開始 (表示星期日) 到 6 (表示星期六)
-            //string RUNDATE = DateTime.Now.DayOfWeek.ToString("d");//tmp2 = 4 
-            //string date = "1";
-
-            //targetTime1
-            //一般用08:31
-            // 檢查是否到達目標時間，並且是星期一到星期五
-            if (currentTime1 == targetTime1 &&
-                now.DayOfWeek >= DayOfWeek.Monday &&
-                now.DayOfWeek <= DayOfWeek.Friday)
+            // ==========================================
+            // 1. targetTime1 = 08:31 (一~五)
+            // ==========================================
+            if (currentTime == "08:31" && isWeekday && lastDayRun1 != currentDayOfYear)
             {
+                lastDayRun1 = currentDayOfYear; // 馬上標記今天已執行，消除重複執行與 Sleep 的需求
                 HRAUTORUN_currentTime1();
-                // 執行完，暫停 1 分，避免太快重覆執行
-                System.Threading.Thread.Sleep(1000*60*1);
             }
 
-            //targetTime9
-            //targetTime9 = "08:40";
-            if (currentTime9 == targetTime9)
+            // ==========================================
+            // 2. targetTime9 = 08:40 (每天) 【已修改變數】
+            // ==========================================
+            if (currentTime == "08:40" && lastDayRun9 != currentDayOfYear)
             {
-                //每日LINE通知
-                ASYNC_HRAUTORUN5();
-                // 執行完，暫停 1 分，避免太快重覆執行
-                System.Threading.Thread.Sleep(1000 * 60 * 1);
+                lastDayRun9 = currentDayOfYear;
+                ASYNC_HRAUTORUN5(); // 每日 LINE 通知
             }
 
-            //targetTime2
-            //一般用08:50
-            //並且是星期一到星期五
-            if (currentTime2 == targetTime2 &&
-                now.DayOfWeek >= DayOfWeek.Monday &&
-                now.DayOfWeek <= DayOfWeek.Friday)
+            // ==========================================
+            // 3. targetTime2 = 08:50 (只週一)
+            // ==========================================
+            if (currentTime == "08:50" && today == DayOfWeek.Monday && lastDayRun2 != currentDayOfYear)
             {
-                //每星期一寄送
-                if (now.DayOfWeek == DayOfWeek.Monday)
-                {
-                    HRAUTORUN_targetTime2();
-                }
+                lastDayRun2 = currentDayOfYear;
+                HRAUTORUN_targetTime2();
+            }
 
+            // ==========================================
+            // 4. targetTime10 = 08:59 (一~五) 【已修改變數】
+            // ==========================================
+            if (currentTime == "08:59" && isWeekday && lastDayRun10 != currentDayOfYear)
+            {
+                lastDayRun10 = currentDayOfYear;
                 HRAUTORUN();
-
             }
 
-            //currentTime8
-            //09:29 通知
-            if (currentTime8 == targetTime8)
+            // ==========================================
+            // 5. targetTime8 = 09:31 (一~五)
+            // ==========================================
+            if (currentTime == "09:31" && isWeekday && lastDayRun8 != currentDayOfYear)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    //HRAUTORUN_currentTime8();
-                }
-
-
+                lastDayRun8 = currentDayOfYear;
+                // HRAUTORUN_currentTime8();
             }
 
-            //採購用-11:00
-            //targetTime6 = "11:00";
-            if (currentTime6 == targetTime6)
+            // ==========================================
+            // 6. 採購用 - 11:00 (一~五)
+            // ==========================================
+            if (currentTime == "11:00" && isWeekday && lastDayRun6 != currentDayOfYear)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_targetTime6();
-                }
+                lastDayRun6 = currentDayOfYear;
+                HRAUTORUN_targetTime6();
             }
 
-            //採購用-14:00
-            //targetTime7 = "14:00";
-            if (currentTime7 == targetTime7)
+            // ==========================================
+            // 7. 採購用 - 14:00 (一~五)
+            // ==========================================
+            if (currentTime == "14:00" && isWeekday && lastDayRun7 != currentDayOfYear)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime7();
-                }
+                lastDayRun7 = currentDayOfYear;
+                HRAUTORUN_currentTime7();
             }
 
-            //採購用-15:00
-            //currentTime3=15:00
-            //品保驗收
-            if (currentTime3 == targetTime3)
+            // ==========================================
+            // 8. 品保驗收 - 15:00 (一~五)
+            // ==========================================
+            if (currentTime == "15:00" && isWeekday && lastDayRun3 != currentDayOfYear)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime3();
-                }
+                lastDayRun3 = currentDayOfYear;
+                HRAUTORUN_currentTime3();
             }
 
-            //採購用-17:00
-            //currentTime4=17:00
-            if (currentTime4 == targetTime4)
+            // ==========================================
+            // 9. 採購用 - 17:00 (一~五)
+            // ==========================================
+            if (currentTime == "17:00" && isWeekday && lastDayRun4 != currentDayOfYear)
             {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime4();
-                }
-            }            
-
-            //採購用-18:00
-            //targetTime5 = "18:00";
-            if (currentTime5 == targetTime5)
-            {
-                //每星期一~星期五寄送
-                if (now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday)
-                {
-                    HRAUTORUN_currentTime5();
-                }
+                lastDayRun4 = currentDayOfYear;
+                HRAUTORUN_currentTime4();
             }
 
+            // ==========================================
+            // 10. 採購用 - 18:00 (一~五)
+            // ==========================================
+            if (currentTime == "18:00" && isWeekday && lastDayRun5 != currentDayOfYear)
+            {
+                lastDayRun5 = currentDayOfYear;
+                HRAUTORUN_currentTime5();
+            }
 
         }
 
@@ -482,6 +454,21 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 { }
+                try
+                {
+                    //版費提醒退費
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        UDPATE_PURVERSIONSNUMS_TOTALNUMS();
+                        SENDEMAIL_PURVERSIONS_NUMS(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"版費提醒退費");
+                }
                 try
                 {
                     //外購品物料庫存
@@ -1099,21 +1086,7 @@ namespace TKMQ
             try
             {
                
-                try
-                {
-                    //版費提醒退費
-                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
-                    {
-                        cts1.CancelAfter(timeoutMilliseconds);
-                        UDPATE_PURVERSIONSNUMS_TOTALNUMS();
-                        SENDEMAIL_PURVERSIONS_NUMS(cts1.Token);
-                        Thread.Sleep(1000);
-                    }
-                }
-                catch (Exception EX)
-                {
-                    errorMessages.AppendLine($"版費提醒退費");
-                }
+                
                 //採購用
                 try
                 {
