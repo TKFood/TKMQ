@@ -1510,6 +1510,21 @@ namespace TKMQ
             {
                 try
                 {
+                    //進貨單還未核準+品保驗收
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_TK_PUR_QC_CHECK(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"進貨單還未核準+品保驗收  失敗");
+                }
+
+                try
+                {
                     //每日通知，當日UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」
                     using (CancellationTokenSource cts1 = new CancellationTokenSource())
                     {
@@ -17234,7 +17249,7 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">廠商</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單號碼</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF停留時間(未核小時)</th>");
-
+                        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人</th>");
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -17248,7 +17263,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["廠商"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF表單號碼"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF停留時間(未核小時)"].ToString() + "</td>");
-
+                            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核人"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
 
@@ -17357,85 +17372,96 @@ namespace TKMQ
                 sbSql.AppendFormat(@"                                      
                                   --20241120  查進貨+未驗收單
 
-                                    WITH TEMP AS (
-                                    SELECT 
-                                        [FORM_NAME],
-                                        [DOC_NBR],
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
-                                        [BEGIN_TIME],
-                                        TASK_ID,
-                                        TASK_STATUS,
-                                        TASK_RESULT
-                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM] WITH(NOLOCK)   ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
-                                        WHERE[FORM_NAME] = 'PURA0.進貨-進貨品質驗收單'
-                                        AND TASK_STATUS = '1'
+                                  WITH TEMP AS (
+    -- 1. 統一撈出 UOF 待簽核 (TASK_RESULT IS NULL) 的表單資料
+    SELECT 
+        F.FORM_NAME,
+        T.DOC_NBR,
+        T.BEGIN_TIME,
+        T.TASK_ID,
+        -- 利用 CASE 在一次掃描中依據表單名稱解析相對應的 XML 欄位
+        CASE 
+            WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+            WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+            WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+        END AS TH001_FieldValue,
+        
+        CASE 
+            WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+            WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+            WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+        END AS TH002_FieldValue,
 
+        -- 提取「目前簽核人」名稱
+        (
+            SELECT TOP 1 U.NAME 
+            FROM [UOF].dbo.TB_WKF_TASK_NODE N WITH(NOLOCK)
+            INNER JOIN [UOF].dbo.TB_EB_USER U WITH(NOLOCK) ON N.ORIGINAL_SIGNER = U.USER_GUID 
+            WHERE N.TASK_ID = T.TASK_ID AND N.SIGN_STATUS IS NULL 
+            ORDER BY N.NODE_SEQ
+        ) AS 'NAMES'
+    FROM [UOF].[dbo].TB_WKF_TASK T WITH(NOLOCK) 
+    INNER JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION] V WITH(NOLOCK) ON V.FORM_VERSION_ID = T.FORM_VERSION_ID
+    INNER JOIN [UOF].[dbo].[TB_WKF_FORM] F WITH(NOLOCK) ON F.FORM_ID = V.FORM_ID
+    WHERE F.FORM_NAME IN ('PURA0.進貨-進貨品質驗收單', 'PURMOCA2.進貨-託外進貨品質驗收單', 'PURA1.客供進貨-進貨品質驗收單')
+      AND T.TASK_RESULT IS NULL
+)
 
-                                    UNION ALL
-                                    SELECT
-                                        [FORM_NAME],
-                                        [DOC_NBR],
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
-                                        [BEGIN_TIME],
-                                        TASK_ID,
-                                        TASK_STATUS,
-                                        TASK_RESULT
+-- 2. 組合多個單據來源
+SELECT 
+    N'進貨單' AS 類別, 
+    TG.TG001 AS 單別,
+    TG.TG002 AS 單號, 
+    MA.MA002 AS 廠商,
+    T.TH001_FieldValue,
+    T.TH002_FieldValue,
+    T.DOC_NBR AS UOF表單號碼, 
+    T.BEGIN_TIME,
+    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+    T.NAMES AS 目前簽核人
+FROM TEMP T
+INNER JOIN [192.168.1.105].[TK].dbo.PURTG TG WITH(NOLOCK) ON T.TH001_FieldValue = TG.TG001 AND T.TH002_FieldValue = TG.TG002
+LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TG.TG005 = MA.MA001
+WHERE T.FORM_NAME = 'PURA0.進貨-進貨品質驗收單'
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
-                                        WHERE[FORM_NAME] = 'PURMOCA2.進貨-託外進貨品質驗收單'
-                                        AND TASK_STATUS = '1'
+UNION ALL
 
-                                    UNION ALL
-                                    SELECT
-                                        [FORM_NAME],
-                                        [DOC_NBR],
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH001_FieldValue,
-                                        [CURRENT_DOC].value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)') AS TH002_FieldValue,
-                                        [BEGIN_TIME],
-                                        TASK_ID,
-                                        TASK_STATUS,
-                                        TASK_RESULT
+SELECT 
+    N'託外進貨單' AS 類別, 
+    TH.TH001 AS 單別, 
+    TH.TH002 AS 單號, 
+    MA.MA002 AS 廠商, 
+    T.TH001_FieldValue, 
+    T.TH002_FieldValue, 
+    T.DOC_NBR AS UOF表單號碼, 
+    T.BEGIN_TIME, 
+    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+    T.NAMES AS 目前簽核人
+FROM TEMP T
+INNER JOIN [192.168.1.105].[TK].dbo.MOCTH TH WITH(NOLOCK) ON T.TH001_FieldValue = TH.TH001 AND T.TH002_FieldValue = TH.TH002
+LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TH.TH005 = MA.MA001
+WHERE T.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單'
+  AND TH.TH023 = 'N'
 
-                                        FROM[UOF].[dbo].TB_WKF_TASK WITH(NOLOCK) 
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM_VERSION]  WITH(NOLOCK) ON [TB_WKF_FORM_VERSION].FORM_VERSION_ID = TB_WKF_TASK.FORM_VERSION_ID
-                                        LEFT JOIN[UOF].[dbo].[TB_WKF_FORM]  WITH(NOLOCK) ON [TB_WKF_FORM].FORM_ID = [TB_WKF_FORM_VERSION].FORM_ID
-                                        WHERE[FORM_NAME] = 'PURA1.客供進貨-進貨品質驗收單'
-                                        AND TASK_STATUS = '1')
+UNION ALL
 
+SELECT 
+    N'客供入料單' AS 類別, 
+    TA.TA001 AS 單別, 
+    TA.TA002 AS 單號, 
+    '' AS 廠商, 
+    T.TH001_FieldValue, 
+    T.TH002_FieldValue, 
+    T.DOC_NBR AS UOF表單號碼, 
+    T.BEGIN_TIME, 
+    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+    T.NAMES AS 目前簽核人
+FROM TEMP T
+INNER JOIN [192.168.1.105].[TK].dbo.INVTA TA WITH(NOLOCK) ON T.TH001_FieldValue = TA.TA001 AND T.TH002_FieldValue = TA.TA002
+WHERE T.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單'
 
-
-
-                                    SELECT '進貨單' AS 類別, TG001 AS '單別' ,TG002 AS '單號', MA002 AS '廠商',TH001_FieldValue,TH002_FieldValue,DOC_NBR AS 'UOF表單號碼', BEGIN_TIME,(DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'UOF停留時間(未核小時)'
-                                      FROM[192.168.1.105].[TK].dbo.PURMA WITH(NOLOCK) ,[192.168.1.105].[TK].dbo.PURTG WITH(NOLOCK) 
-                                      LEFT JOIN TEMP ON TH001_FieldValue = TG001 AND TH002_FieldValue = TG002
-                                      WHERE TG005 = MA001
-                                      AND TG013 IN('N')
-                                      AND TG001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
-  
-
-                                      UNION ALL
-                                      SELECT '託外進貨單' AS KINDS, TH001, TH002, MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
-                                      FROM[192.168.1.105].[TK].dbo.PURMA WITH(NOLOCK) ,[192.168.1.105].[TK].dbo.MOCTH WITH(NOLOCK) 
-                                      LEFT JOIN TEMP ON TH001_FieldValue = TH001 AND TH002_FieldValue = TH002
-                                      WHERE TH005 = MA001
-                                      AND TH023 IN('N')
-                                      AND TH001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
-  
-
-                                      UNION ALL
-                                      SELECT '客供入料單' AS KINDS, TA001, TA002, ''MA002, TH001_FieldValue, TH002_FieldValue, DOC_NBR, BEGIN_TIME, (DATEDIFF(HOUR, BEGIN_TIME, GETDATE()) - 8) AS 'HOURS'
-                                      FROM[192.168.1.105].[TK].dbo.INVTA WITH(NOLOCK) 
-                                      LEFT JOIN TEMP ON TH001_FieldValue = TA001 AND TH002_FieldValue = TA002
-                                      WHERE TA006 IN('N')
-                                      AND TA001 IN(SELECT[TG001]  FROM[192.168.1.105].[TKPUR].[dbo].[TKPURMUSTCHECKS] WITH(NOLOCK) )
-  
-
+-- 3. 統一在最末端進行整體排序（優先依照類別，再依照單號）
+ORDER BY 類別,單別, 單號;
                                       ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
