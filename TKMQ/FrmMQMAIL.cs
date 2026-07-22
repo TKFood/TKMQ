@@ -17373,95 +17373,96 @@ namespace TKMQ
                                   --20241120  查進貨+未驗收單
 
                                   WITH TEMP AS (
-    -- 1. 統一撈出 UOF 待簽核 (TASK_RESULT IS NULL) 的表單資料
-    SELECT 
-        F.FORM_NAME,
-        T.DOC_NBR,
-        T.BEGIN_TIME,
-        T.TASK_ID,
-        -- 利用 CASE 在一次掃描中依據表單名稱解析相對應的 XML 欄位
-        CASE 
-            WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG001""]/@fieldValue)[1]', 'NVARCHAR(100)')
-            WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)')
-            WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)')
-        END AS TH001_FieldValue,
+                                        -- 1. 統一撈出 UOF 待簽核 (TASK_RESULT IS NULL) 的表單資料
+                                        SELECT 
+                                            F.FORM_NAME,
+                                            T.DOC_NBR,
+                                            T.BEGIN_TIME,
+                                            T.TASK_ID,
+                                            -- 利用 CASE 在一次掃描中依據表單名稱解析相對應的 XML 欄位
+                                            CASE 
+                                                WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                                WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                                WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA001""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                            END AS TH001_FieldValue,
         
-        CASE 
-            WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG002""]/@fieldValue)[1]', 'NVARCHAR(100)')
-            WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH002""]/@fieldValue)[1]', 'NVARCHAR(100)')
-            WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)')
-        END AS TH002_FieldValue,
+                                            CASE 
+                                                WHEN F.FORM_NAME = 'PURA0.進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TG002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                                WHEN F.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TH002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                                WHEN F.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單' THEN T.CURRENT_DOC.value('(/Form/FormFieldValue/FieldItem[@fieldId=""TA002""]/@fieldValue)[1]', 'NVARCHAR(100)')
+                                            END AS TH002_FieldValue,
 
-        -- 提取「目前簽核人」名稱
-        (
-            SELECT TOP 1 U.NAME 
-            FROM [UOF].dbo.TB_WKF_TASK_NODE N WITH(NOLOCK)
-            INNER JOIN [UOF].dbo.TB_EB_USER U WITH(NOLOCK) ON N.ORIGINAL_SIGNER = U.USER_GUID 
-            WHERE N.TASK_ID = T.TASK_ID AND N.SIGN_STATUS IS NULL 
-            ORDER BY N.NODE_SEQ
-        ) AS 'NAMES'
-    FROM [UOF].[dbo].TB_WKF_TASK T WITH(NOLOCK) 
-    INNER JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION] V WITH(NOLOCK) ON V.FORM_VERSION_ID = T.FORM_VERSION_ID
-    INNER JOIN [UOF].[dbo].[TB_WKF_FORM] F WITH(NOLOCK) ON F.FORM_ID = V.FORM_ID
-    WHERE F.FORM_NAME IN ('PURA0.進貨-進貨品質驗收單', 'PURMOCA2.進貨-託外進貨品質驗收單', 'PURA1.客供進貨-進貨品質驗收單')
-      AND T.TASK_RESULT IS NULL
-)
+                                            -- 提取「目前簽核人」名稱
+                                            (
+                                                SELECT TOP 1 U.NAME 
+                                                FROM [UOF].dbo.TB_WKF_TASK_NODE N WITH(NOLOCK)
+                                                INNER JOIN [UOF].dbo.TB_EB_USER U WITH(NOLOCK) ON N.ORIGINAL_SIGNER = U.USER_GUID 
+                                                WHERE N.TASK_ID = T.TASK_ID AND N.SIGN_STATUS IS NULL 
+                                                ORDER BY N.NODE_SEQ
+                                            ) AS 'NAMES'
+                                        FROM [UOF].[dbo].TB_WKF_TASK T WITH(NOLOCK) 
+                                        INNER JOIN [UOF].[dbo].[TB_WKF_FORM_VERSION] V WITH(NOLOCK) ON V.FORM_VERSION_ID = T.FORM_VERSION_ID
+                                        INNER JOIN [UOF].[dbo].[TB_WKF_FORM] F WITH(NOLOCK) ON F.FORM_ID = V.FORM_ID
+                                        WHERE F.FORM_NAME IN ('PURA0.進貨-進貨品質驗收單', 'PURMOCA2.進貨-託外進貨品質驗收單', 'PURA1.客供進貨-進貨品質驗收單')
+                                          AND T.TASK_RESULT IS NULL
+                                    )
 
--- 2. 組合多個單據來源
-SELECT 
-    N'進貨單' AS 類別, 
-    TG.TG001 AS 單別,
-    TG.TG002 AS 單號, 
-    MA.MA002 AS 廠商,
-    T.TH001_FieldValue,
-    T.TH002_FieldValue,
-    T.DOC_NBR AS UOF表單號碼, 
-    T.BEGIN_TIME,
-    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
-    T.NAMES AS 目前簽核人
-FROM TEMP T
-INNER JOIN [192.168.1.105].[TK].dbo.PURTG TG WITH(NOLOCK) ON T.TH001_FieldValue = TG.TG001 AND T.TH002_FieldValue = TG.TG002
-LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TG.TG005 = MA.MA001
-WHERE T.FORM_NAME = 'PURA0.進貨-進貨品質驗收單'
+                                    -- 2. 組合多個單據來源
+                                    SELECT 
+                                        N'進貨單' AS 類別, 
+                                        TG.TG001 AS 單別,
+                                        TG.TG002 AS 單號, 
+                                        MA.MA002 AS 廠商,
+                                        T.TH001_FieldValue,
+                                        T.TH002_FieldValue,
+                                        T.DOC_NBR AS UOF表單號碼, 
+                                        T.BEGIN_TIME,
+                                        (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+                                        T.NAMES AS 目前簽核人
+                                    FROM TEMP T
+                                    INNER JOIN [192.168.1.105].[TK].dbo.PURTG TG WITH(NOLOCK) ON T.TH001_FieldValue = TG.TG001 AND T.TH002_FieldValue = TG.TG002
+                                    LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TG.TG005 = MA.MA001
+                                    WHERE T.FORM_NAME = 'PURA0.進貨-進貨品質驗收單'
+                                    AND TG013 IN ('N')
 
-UNION ALL
+                                    UNION ALL
 
-SELECT 
-    N'託外進貨單' AS 類別, 
-    TH.TH001 AS 單別, 
-    TH.TH002 AS 單號, 
-    MA.MA002 AS 廠商, 
-    T.TH001_FieldValue, 
-    T.TH002_FieldValue, 
-    T.DOC_NBR AS UOF表單號碼, 
-    T.BEGIN_TIME, 
-    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
-    T.NAMES AS 目前簽核人
-FROM TEMP T
-INNER JOIN [192.168.1.105].[TK].dbo.MOCTH TH WITH(NOLOCK) ON T.TH001_FieldValue = TH.TH001 AND T.TH002_FieldValue = TH.TH002
-LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TH.TH005 = MA.MA001
-WHERE T.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單'
-  AND TH.TH023 = 'N'
+                                    SELECT 
+                                        N'託外進貨單' AS 類別, 
+                                        TH.TH001 AS 單別, 
+                                        TH.TH002 AS 單號, 
+                                        MA.MA002 AS 廠商, 
+                                        T.TH001_FieldValue, 
+                                        T.TH002_FieldValue, 
+                                        T.DOC_NBR AS UOF表單號碼, 
+                                        T.BEGIN_TIME, 
+                                        (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+                                        T.NAMES AS 目前簽核人
+                                    FROM TEMP T
+                                    INNER JOIN [192.168.1.105].[TK].dbo.MOCTH TH WITH(NOLOCK) ON T.TH001_FieldValue = TH.TH001 AND T.TH002_FieldValue = TH.TH002
+                                    LEFT JOIN [192.168.1.105].[TK].dbo.PURMA MA WITH(NOLOCK) ON TH.TH005 = MA.MA001
+                                    WHERE T.FORM_NAME = 'PURMOCA2.進貨-託外進貨品質驗收單'
+                                      AND TH.TH023 = 'N'
 
-UNION ALL
+                                    UNION ALL
 
-SELECT 
-    N'客供入料單' AS 類別, 
-    TA.TA001 AS 單別, 
-    TA.TA002 AS 單號, 
-    '' AS 廠商, 
-    T.TH001_FieldValue, 
-    T.TH002_FieldValue, 
-    T.DOC_NBR AS UOF表單號碼, 
-    T.BEGIN_TIME, 
-    (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
-    T.NAMES AS 目前簽核人
-FROM TEMP T
-INNER JOIN [192.168.1.105].[TK].dbo.INVTA TA WITH(NOLOCK) ON T.TH001_FieldValue = TA.TA001 AND T.TH002_FieldValue = TA.TA002
-WHERE T.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單'
-
--- 3. 統一在最末端進行整體排序（優先依照類別，再依照單號）
-ORDER BY 類別,單別, 單號;
+                                    SELECT 
+                                        N'客供入料單' AS 類別, 
+                                        TA.TA001 AS 單別, 
+                                        TA.TA002 AS 單號, 
+                                        '' AS 廠商, 
+                                        T.TH001_FieldValue, 
+                                        T.TH002_FieldValue, 
+                                        T.DOC_NBR AS UOF表單號碼, 
+                                        T.BEGIN_TIME, 
+                                        (DATEDIFF(HOUR, T.BEGIN_TIME, GETDATE()) - 8) AS [UOF停留時間(未核小時)],
+                                        T.NAMES AS 目前簽核人
+                                    FROM TEMP T
+                                    INNER JOIN [192.168.1.105].[TK].dbo.INVTA TA WITH(NOLOCK) ON T.TH001_FieldValue = TA.TA001 AND T.TH002_FieldValue = TA.TA002
+                                    WHERE T.FORM_NAME = 'PURA1.客供進貨-進貨品質驗收單'
+                                    AND TA006 IN ('N')
+                                    -- 3. 統一在最末端進行整體排序（優先依照類別，再依照單號）
+                                    ORDER BY 類別,單別, 單號;
                                       ");
 
                 adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
