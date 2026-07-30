@@ -403,7 +403,7 @@ namespace TKMQ
 
         }
 
-        //每30分鐘執行1次
+        //每60分鐘執行1次
         private void timer4_Tick(object sender, EventArgs e)
         {
             DateTime now = DateTime.Now;
@@ -416,7 +416,7 @@ namespace TKMQ
             }
 
             // 避免重複觸發：必須距離上次執行超過 1 分鐘
-            if ((now - timer4_lastRun).TotalMinutes >= 1 && timer4_runCountToday < 5)
+            if ((now - timer4_lastRun).TotalMinutes >= 1 && timer4_runCountToday < 12)
             {
                 timer4_lastRun = now;                
                 try
