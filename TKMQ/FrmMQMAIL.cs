@@ -10449,69 +10449,149 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"                                   
                                    
-                                    SELECT  
-                                    MB001 AS '品號'
-                                    ,MB002 AS '品名'
-                                    ,MB003 AS '規格'
-                                    ,MB004 AS '單位'
-                                    ,CREATE_DATE AS '新品建立日期'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,員購金額)), 1), '.00', '') AS '員購金額'
-                                    ,TOPTG003 AS '第1天業務銷貨日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '業務銷貨數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '業務銷貨金額'
-                                    ,TOPTI003 AS '第1天業務銷退日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ007)), 1), '.00', '') AS '業務銷退數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ033)), 1), '.00', '') AS '業務銷退金額'
-                                    ,TOPTB001 AS '第1天POS銷售日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB019)), 1), '.00', '') AS 'POS銷售數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB031)), 1), '.00', '') AS 'POS銷售金額'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(DECIMAL(16,4),PERCOSTS)), 1), '.00', '') AS '平均單位成本'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH008-SUMTJ007+SUMTB019))), 1), '.00', '')  AS '總銷售數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031))), 1), '.00', '')  AS '總銷售未稅金額'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '總成本'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '總毛利'
-                                    ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '毛利率'
-                                    ,CONVERT(INT,MB047) AS '標準售價'
-                                    ,CONVERT(INT,MB050) AS '最近進價'
+                                   -- 1. 指定查詢日期區間變數
+                                    DECLARE @SDATE NVARCHAR(8) = '{0}';
+                                    DECLARE @EDATE NVARCHAR(8) = '{1}';
 
-                                    FROM 
-                                    (
-                                        SELECT *
-                                        ,ISNULL(
-                                        (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                        FROM [TK].dbo.SASLA WITH(NOLOCK) 
-                                        WHERE LA005=MB001
-                                        AND CONVERT(NVARCHAR,LA015,112)>='{0}'
-                                        AND CONVERT(NVARCHAR,LA015,112)<='{1}')
-                                        ,0) AS PERCOSTS
+                                    -- 2. 預先彙總：銷貨資料 (COPTG + COPTH)
+                                    WITH CTE_TH AS (
+                                        SELECT 
+                                            TH.TH004 AS MB001,
+                                            MIN(TG.TG003) AS TOPTG003,
+                                            SUM(CASE WHEN TH.TH009 = MD.MD002 THEN ((TH.TH008 + TH.TH024) * MD.MD004 / MD.MD003) 
+                                                     ELSE (TH.TH008 + TH.TH024) END) AS SUMTH008,
+                                            SUM(TH.TH037) AS SUMTH037
+                                        FROM [TK].dbo.COPTH TH WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.COPTG TG WITH(NOLOCK) ON TG.TG001 = TH.TH001 AND TG.TG002 = TH.TH002
+                                        LEFT JOIN [TK].dbo.INVMD MD WITH(NOLOCK) ON MD.MD001 = TH.TH004
+                                        WHERE TG.TG023 = 'Y' 
+                                          AND TG.TG003 >= @SDATE 
+                                          AND TG.TG003 <= @EDATE
+                                        GROUP BY TH.TH004
+                                    ),
+                                    -- 3. 預先彙總：銷退資料 (COPTI + COPTJ)
+                                    CTE_TJ AS (
+                                        SELECT 
+                                            TJ.TJ004 AS MB001,
+                                            MIN(TI.TI003) AS TOPTI003,
+                                            SUM(CASE WHEN TJ.TJ008 = MD.MD002 THEN (TJ.TJ007 * MD.MD004 / MD.MD003) 
+                                                     ELSE TJ.TJ007 END) AS SUMTJ007,
+                                            SUM(TJ.TJ033) AS SUMTJ033
+                                        FROM [TK].dbo.COPTJ TJ WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.COPTI TI WITH(NOLOCK) ON TI.TI001 = TJ.TJ001 AND TI.TI002 = TJ.TJ002
+                                        LEFT JOIN [TK].dbo.INVMD MD WITH(NOLOCK) ON MD.MD001 = TJ.TJ004
+                                        WHERE TI.TI019 = 'Y' 
+                                          AND TI.TI003 >= @SDATE 
+                                          AND TI.TI003 <= @EDATE
+                                        GROUP BY TJ.TJ004
+                                    ),
+                                    -- 4. 預先彙總：POS 銷售資料 (POSTB)
+                                    CTE_TB AS (
+                                        SELECT 
+                                            TB.TB010 AS MB001,
+                                            MIN(TB.TB001) AS TOPTB001,
+                                            SUM(TB.TB019) AS SUMTB019,
+                                            SUM(TB.TB031) AS SUMTB031,
+                                            SUM(CASE WHEN TB.TB002 = '100000' THEN TB.TB031 ELSE 0 END) AS 員購金額
+                                        FROM [TK].dbo.POSTB TB WITH(NOLOCK)
+                                        WHERE TB.TB001 >= @SDATE 
+                                          AND TB.TB001 <= @EDATE
+                                        GROUP BY TB.TB010
+                                    ),
+                                    -- 5. 預先彙總：異動平均成本 (SASLA)
+                                    CTE_SASLA AS (
+                                        SELECT 
+                                            LA005 AS MB001,
+                                            CASE WHEN SUM(LA016) <> 0 THEN SUM(LA024) / SUM(LA016) ELSE 0 END AS SASLAPERCOSTS
+                                        FROM [TK].dbo.SASLA WITH(NOLOCK)
+                                        WHERE LA015 >= @SDATE AND LA015 <= @EDATE
+                                        GROUP BY LA005
+                                    ),
+                                    -- 6. 預先彙總：最新月成本 (CSTME)
+                                    CTE_CSTME AS (
+                                        SELECT ME001 AS MB001, CSTMEPERCOSTS
                                         FROM (
-                                            SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
-
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
-
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
-                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}' AND TB002 IN ('100000')),0) AS 員購金額
-                                            ,MB047
-                                            ,MB050
-
-                                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                            WHERE 1=1
-                                            AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
-                                            AND MB002 NOT LIKE '%試吃%'
-                                            AND ISNULL(MB002,'')<>''
-                                            AND CREATE_DATE>='{0}'
-                                        ) AS TEMP
-                                    ) AS TEMP2
-                                    WHERE 1=1
-                                    ORDER BY 品號 DESC
-
+                                            SELECT ME001,
+                                                   CASE WHEN (ME003+ME004+ME005+ME006) > 0 AND (ME007+ME008+ME009+ME010) > 0 
+                                                        THEN CONVERT(DECIMAL(16,2), (ME007+ME008+ME009+ME010) / (ME003+ME004+ME005+ME006)) 
+                                                        ELSE 0 END AS CSTMEPERCOSTS,
+                                                   ROW_NUMBER() OVER (PARTITION BY ME001 ORDER BY ME002 DESC) AS RN
+                                            FROM [TK].dbo.CSTME WITH(NOLOCK)
+                                        ) T WHERE RN = 1
+                                    ),
+                                    -- 7. 整合主要數據與成本邏輯
+                                    CTE_MAIN AS (
+                                        SELECT 
+                                            MB.MB001, MB.MB002, MB.MB003, MB.MB004, MB.CREATE_DATE, MB.MB047, MB.MB050,
+                                            ISNULL(TH.TOPTG003, '') AS TOPTG003,
+                                            ISNULL(TH.SUMTH008, 0) AS SUMTH008,
+                                            ISNULL(TH.SUMTH037, 0) AS SUMTH037,
+                                            ISNULL(TJ.TOPTI003, '') AS TOPTI003,
+                                            ISNULL(TJ.SUMTJ007, 0) AS SUMTJ007,
+                                            ISNULL(TJ.SUMTJ033, 0) AS SUMTJ033,
+                                            ISNULL(TB.TOPTB001, '') AS TOPTB001,
+                                            ISNULL(TB.SUMTB019, 0) AS SUMTB019,
+                                            ISNULL(TB.SUMTB031, 0) AS SUMTB031,
+                                            ISNULL(TB.員購金額, 0) AS 員購金額,
+                                            -- 數量與金額計算
+                                            (ISNULL(TH.SUMTH008, 0) - ISNULL(TJ.SUMTJ007, 0) + ISNULL(TB.SUMTB019, 0)) AS 總銷售數量,
+                                            (ISNULL(TH.SUMTH037, 0) - ISNULL(TJ.SUMTJ033, 0) + ISNULL(TB.SUMTB031, 0)) AS 總銷售未稅金額,
+                                            -- 成本階梯套用邏輯 (優先 SASLA -> CSTME -> INVMB.MB050)
+                                            COALESCE(
+                                                NULLIF(S.SASLAPERCOSTS, 0),
+                                                NULLIF(C.CSTMEPERCOSTS, 0),
+                                                NULLIF(MB.MB050, 0),
+                                                0
+                                            ) AS PERCOSTS
+                                        FROM [TK].dbo.INVMB MB WITH(NOLOCK)
+                                        LEFT JOIN CTE_TH TH ON TH.MB001 = MB.MB001
+                                        LEFT JOIN CTE_TJ TJ ON TJ.MB001 = MB.MB001
+                                        LEFT JOIN CTE_TB TB ON TB.MB001 = MB.MB001
+                                        LEFT JOIN CTE_SASLA S ON S.MB001 = MB.MB001
+                                        LEFT JOIN CTE_CSTME C ON C.MB001 = MB.MB001
+                                        WHERE (MB.MB001 LIKE '4%' OR MB.MB001 LIKE '5%')
+                                          AND MB.MB002 NOT LIKE '%試吃%'
+                                          AND ISNULL(MB.MB002, '') <> ''
+                                          AND MB.CREATE_DATE >= @SDATE
+                                    ),
+                                    -- 8. 衍生毛利與總成本計算
+                                    CTE_CALC AS (
+                                        SELECT *,
+                                            (PERCOSTS * 總銷售數量) AS 總成本,
+                                            (總銷售未稅金額 - (PERCOSTS * 總銷售數量)) AS 總毛利
+                                        FROM CTE_MAIN
+                                    )
+                                    -- 9. 最終輸出與千分位格式化 (相容 SQL 2008)
+                                    SELECT 
+                                        MB001 AS '品號',
+                                        MB002 AS '品名',
+                                        MB003 AS '規格',
+                                        MB004 AS '單位',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售數量)), 1), '.00', '') AS '總銷售數量',
+                                        CONVERT(INT, MB047) AS '標準售價',
+                                        CONVERT(INT, MB050) AS '最近進價',
+                                        CREATE_DATE AS '新品建立日期',
+                                        員購金額,
+                                        TOPTG003 AS '第1天業務銷貨日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTH008)), 1), '.00', '') AS '業務銷貨數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTH037)), 1), '.00', '') AS '業務銷貨金額',
+                                        TOPTI003 AS '第1天業務銷退日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTJ007)), 1), '.00', '') AS '業務銷退數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTJ033)), 1), '.00', '') AS '業務銷退金額',
+                                        TOPTB001 AS '第1天POS銷售日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTB019)), 1), '.00', '') AS 'POS銷售數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTB031)), 1), '.00', '') AS 'POS銷售金額',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(DECIMAL(16,4), PERCOSTS)), 1), '.00', '') AS '平均單位成本',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售未稅金額)), 1), '.00', '') AS '總銷售未稅金額',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總成本)), 1), '.00', '') AS '總成本',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總毛利)), 1), '.00', '') AS '總毛利',
+                                        CASE 
+                                            WHEN 總毛利 <> 0 AND (SUMTH037 - SUMTJ007 + SUMTB031) <> 0 
+                                            THEN CONVERT(NVARCHAR, CONVERT(DECIMAL(16,2), (總毛利 / NULLIF(SUMTH037 + SUMTB031, 0)) * 100)) + '%'
+                                            ELSE '0.00%' 
+                                        END AS '毛利率'
+                                    FROM CTE_CALC
+                                    ORDER BY MB001 DESC;
 
 
     
@@ -10651,70 +10731,149 @@ namespace TKMQ
 
                 sbSql.AppendFormat(@"  
                                     
-                                    SELECT  
-                                    MB001 AS '品號'
-                                    ,MB002 AS '品名'
-                                    ,MB003 AS '規格'
-                                    ,MB004 AS '單位'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH008-SUMTJ007+SUMTB019))), 1), '.00', '')  AS '總銷售數量'
-                                    ,CONVERT(INT,MB047) AS '標準售價'
-                                    ,CONVERT(INT,MB050) AS '最近進價'
-                                    ,CREATE_DATE AS '新品建立日期'
-                                    ,員購金額
-                                    ,TOPTG003 AS '第1天業務銷貨日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '業務銷貨數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '業務銷貨金額'
-                                    ,TOPTI003 AS '第1天業務銷退日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ007)), 1), '.00', '') AS '業務銷退數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ033)), 1), '.00', '') AS '業務銷退金額'
-                                    ,TOPTB001 AS '第1天POS銷售日'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB019)), 1), '.00', '') AS 'POS銷售數量'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB031)), 1), '.00', '') AS 'POS銷售金額'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(DECIMAL(16,4),PERCOSTS)), 1), '.00', '') AS '平均單位成本'
+                                   -- 1. 指定查詢日期區間變數
+                                    DECLARE @SDATE NVARCHAR(8) = '{0}';
+                                    DECLARE @EDATE NVARCHAR(8) = '{1}';
 
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031))), 1), '.00', '')  AS '總銷售未稅金額'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '總成本'
-                                    ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '總毛利'
-                                    ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(PERCOSTS*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '毛利率'
-                         
-
-                                    FROM 
-                                    (
-                                        SELECT *
-                                        ,ISNULL(
-                                        (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                                        FROM [TK].dbo.SASLA WITH(NOLOCK) 
-                                        WHERE LA005=MB001
-                                        AND CONVERT(NVARCHAR,LA015,112)>='{0}'
-                                        AND CONVERT(NVARCHAR,LA015,112)<='{1}')
-                                        ,0) AS PERCOSTS
+                                    -- 2. 預先彙總：銷貨資料 (COPTG + COPTH)
+                                    WITH CTE_TH AS (
+                                        SELECT 
+                                            TH.TH004 AS MB001,
+                                            MIN(TG.TG003) AS TOPTG003,
+                                            SUM(CASE WHEN TH.TH009 = MD.MD002 THEN ((TH.TH008 + TH.TH024) * MD.MD004 / MD.MD003) 
+                                                     ELSE (TH.TH008 + TH.TH024) END) AS SUMTH008,
+                                            SUM(TH.TH037) AS SUMTH037
+                                        FROM [TK].dbo.COPTH TH WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.COPTG TG WITH(NOLOCK) ON TG.TG001 = TH.TH001 AND TG.TG002 = TH.TH002
+                                        LEFT JOIN [TK].dbo.INVMD MD WITH(NOLOCK) ON MD.MD001 = TH.TH004
+                                        WHERE TG.TG023 = 'Y' 
+                                          AND TG.TG003 >= @SDATE 
+                                          AND TG.TG003 <= @EDATE
+                                        GROUP BY TH.TH004
+                                    ),
+                                    -- 3. 預先彙總：銷退資料 (COPTI + COPTJ)
+                                    CTE_TJ AS (
+                                        SELECT 
+                                            TJ.TJ004 AS MB001,
+                                            MIN(TI.TI003) AS TOPTI003,
+                                            SUM(CASE WHEN TJ.TJ008 = MD.MD002 THEN (TJ.TJ007 * MD.MD004 / MD.MD003) 
+                                                     ELSE TJ.TJ007 END) AS SUMTJ007,
+                                            SUM(TJ.TJ033) AS SUMTJ033
+                                        FROM [TK].dbo.COPTJ TJ WITH(NOLOCK)
+                                        INNER JOIN [TK].dbo.COPTI TI WITH(NOLOCK) ON TI.TI001 = TJ.TJ001 AND TI.TI002 = TJ.TJ002
+                                        LEFT JOIN [TK].dbo.INVMD MD WITH(NOLOCK) ON MD.MD001 = TJ.TJ004
+                                        WHERE TI.TI019 = 'Y' 
+                                          AND TI.TI003 >= @SDATE 
+                                          AND TI.TI003 <= @EDATE
+                                        GROUP BY TJ.TJ004
+                                    ),
+                                    -- 4. 預先彙總：POS 銷售資料 (POSTB)
+                                    CTE_TB AS (
+                                        SELECT 
+                                            TB.TB010 AS MB001,
+                                            MIN(TB.TB001) AS TOPTB001,
+                                            SUM(TB.TB019) AS SUMTB019,
+                                            SUM(TB.TB031) AS SUMTB031,
+                                            SUM(CASE WHEN TB.TB002 = '100000' THEN TB.TB031 ELSE 0 END) AS 員購金額
+                                        FROM [TK].dbo.POSTB TB WITH(NOLOCK)
+                                        WHERE TB.TB001 >= @SDATE 
+                                          AND TB.TB001 <= @EDATE
+                                        GROUP BY TB.TB010
+                                    ),
+                                    -- 5. 預先彙總：異動平均成本 (SASLA)
+                                    CTE_SASLA AS (
+                                        SELECT 
+                                            LA005 AS MB001,
+                                            CASE WHEN SUM(LA016) <> 0 THEN SUM(LA024) / SUM(LA016) ELSE 0 END AS SASLAPERCOSTS
+                                        FROM [TK].dbo.SASLA WITH(NOLOCK)
+                                        WHERE LA015 >= @SDATE AND LA015 <= @EDATE
+                                        GROUP BY LA005
+                                    ),
+                                    -- 6. 預先彙總：最新月成本 (CSTME)
+                                    CTE_CSTME AS (
+                                        SELECT ME001 AS MB001, CSTMEPERCOSTS
                                         FROM (
-                                            SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004 WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH008
-                                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001),0) AS SUMTH037
-
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ007
-                                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001),0) AS SUMTJ033
-
-                                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB019
-                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}'),0) AS SUMTB031
-                                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB WITH(NOLOCK)  WHERE TB010=MB001 AND TB001>='{0}' AND TB002 IN ('100000')),0) AS 員購金額
-                                            ,MB047
-                                            ,MB050
-
-                                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                                            WHERE 1=1
-                                            AND (MB001 LIKE '4%' OR MB001 LIKE '5%') 
-                                            AND MB002 NOT LIKE '%試吃%'
-                                            AND ISNULL(MB002,'')<>''
-                                            AND CREATE_DATE>='{0}'
-                                        ) AS TEMP
-                                    ) AS TEMP2
-                                    WHERE 1=1
-                                    ORDER BY 品號 DESC
+                                            SELECT ME001,
+                                                   CASE WHEN (ME003+ME004+ME005+ME006) > 0 AND (ME007+ME008+ME009+ME010) > 0 
+                                                        THEN CONVERT(DECIMAL(16,2), (ME007+ME008+ME009+ME010) / (ME003+ME004+ME005+ME006)) 
+                                                        ELSE 0 END AS CSTMEPERCOSTS,
+                                                   ROW_NUMBER() OVER (PARTITION BY ME001 ORDER BY ME002 DESC) AS RN
+                                            FROM [TK].dbo.CSTME WITH(NOLOCK)
+                                        ) T WHERE RN = 1
+                                    ),
+                                    -- 7. 整合主要數據與成本邏輯
+                                    CTE_MAIN AS (
+                                        SELECT 
+                                            MB.MB001, MB.MB002, MB.MB003, MB.MB004, MB.CREATE_DATE, MB.MB047, MB.MB050,
+                                            ISNULL(TH.TOPTG003, '') AS TOPTG003,
+                                            ISNULL(TH.SUMTH008, 0) AS SUMTH008,
+                                            ISNULL(TH.SUMTH037, 0) AS SUMTH037,
+                                            ISNULL(TJ.TOPTI003, '') AS TOPTI003,
+                                            ISNULL(TJ.SUMTJ007, 0) AS SUMTJ007,
+                                            ISNULL(TJ.SUMTJ033, 0) AS SUMTJ033,
+                                            ISNULL(TB.TOPTB001, '') AS TOPTB001,
+                                            ISNULL(TB.SUMTB019, 0) AS SUMTB019,
+                                            ISNULL(TB.SUMTB031, 0) AS SUMTB031,
+                                            ISNULL(TB.員購金額, 0) AS 員購金額,
+                                            -- 數量與金額計算
+                                            (ISNULL(TH.SUMTH008, 0) - ISNULL(TJ.SUMTJ007, 0) + ISNULL(TB.SUMTB019, 0)) AS 總銷售數量,
+                                            (ISNULL(TH.SUMTH037, 0) - ISNULL(TJ.SUMTJ033, 0) + ISNULL(TB.SUMTB031, 0)) AS 總銷售未稅金額,
+                                            -- 成本階梯套用邏輯 (優先 SASLA -> CSTME -> INVMB.MB050)
+                                            COALESCE(
+                                                NULLIF(S.SASLAPERCOSTS, 0),
+                                                NULLIF(C.CSTMEPERCOSTS, 0),
+                                                NULLIF(MB.MB050, 0),
+                                                0
+                                            ) AS PERCOSTS
+                                        FROM [TK].dbo.INVMB MB WITH(NOLOCK)
+                                        LEFT JOIN CTE_TH TH ON TH.MB001 = MB.MB001
+                                        LEFT JOIN CTE_TJ TJ ON TJ.MB001 = MB.MB001
+                                        LEFT JOIN CTE_TB TB ON TB.MB001 = MB.MB001
+                                        LEFT JOIN CTE_SASLA S ON S.MB001 = MB.MB001
+                                        LEFT JOIN CTE_CSTME C ON C.MB001 = MB.MB001
+                                        WHERE (MB.MB001 LIKE '4%' OR MB.MB001 LIKE '5%')
+                                          AND MB.MB002 NOT LIKE '%試吃%'
+                                          AND ISNULL(MB.MB002, '') <> ''
+                                          AND MB.CREATE_DATE >= @SDATE
+                                    ),
+                                    -- 8. 衍生毛利與總成本計算
+                                    CTE_CALC AS (
+                                        SELECT *,
+                                            (PERCOSTS * 總銷售數量) AS 總成本,
+                                            (總銷售未稅金額 - (PERCOSTS * 總銷售數量)) AS 總毛利
+                                        FROM CTE_MAIN
+                                    )
+                                    -- 9. 最終輸出與千分位格式化 (相容 SQL 2008)
+                                    SELECT 
+                                        MB001 AS '品號',
+                                        MB002 AS '品名',
+                                        MB003 AS '規格',
+                                        MB004 AS '單位',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售數量)), 1), '.00', '') AS '總銷售數量',
+                                        CONVERT(INT, MB047) AS '標準售價',
+                                        CONVERT(INT, MB050) AS '最近進價',
+                                        CREATE_DATE AS '新品建立日期',
+                                        員購金額,
+                                        TOPTG003 AS '第1天業務銷貨日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTH008)), 1), '.00', '') AS '業務銷貨數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTH037)), 1), '.00', '') AS '業務銷貨金額',
+                                        TOPTI003 AS '第1天業務銷退日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTJ007)), 1), '.00', '') AS '業務銷退數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTJ033)), 1), '.00', '') AS '業務銷退金額',
+                                        TOPTB001 AS '第1天POS銷售日',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTB019)), 1), '.00', '') AS 'POS銷售數量',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, SUMTB031)), 1), '.00', '') AS 'POS銷售金額',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(DECIMAL(16,4), PERCOSTS)), 1), '.00', '') AS '平均單位成本',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售未稅金額)), 1), '.00', '') AS '總銷售未稅金額',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總成本)), 1), '.00', '') AS '總成本',
+                                        REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總毛利)), 1), '.00', '') AS '總毛利',
+                                        CASE 
+                                            WHEN 總毛利 <> 0 AND (SUMTH037 - SUMTJ007 + SUMTB031) <> 0 
+                                            THEN CONVERT(NVARCHAR, CONVERT(DECIMAL(16,2), (總毛利 / NULLIF(SUMTH037 + SUMTB031, 0)) * 100)) + '%'
+                                            ELSE '0.00%' 
+                                        END AS '毛利率'
+                                    FROM CTE_CALC
+                                    ORDER BY MB001 DESC;
                                     ", firstDay.ToString("yyyyMMdd"), lastDay.ToString("yyyyMMdd"));
 
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
