@@ -10540,7 +10540,7 @@ namespace TKMQ
                                             COALESCE(
                                                 NULLIF(S.SASLAPERCOSTS, 0),
                                                 NULLIF(C.CSTMEPERCOSTS, 0),
-                                                NULLIF(MB.MB050, 0),
+                                                NULLIF(CONVERT(decimal(16,2),MB.MB050), 0),
                                                 0
                                             ) AS PERCOSTS
                                         FROM [TK].dbo.INVMB MB WITH(NOLOCK)
@@ -10569,7 +10569,7 @@ namespace TKMQ
                                         MB004 AS '單位',
                                         REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售數量)), 1), '.00', '') AS '總銷售數量',
                                         CONVERT(INT, MB047) AS '標準售價',
-                                        CONVERT(INT, MB050) AS '最近進價',
+                                        CONVERT(decimal(16,2), MB050) AS '最近進價',
                                         CREATE_DATE AS '新品建立日期',
                                         員購金額,
                                         TOPTG003 AS '第1天業務銷貨日',
@@ -10822,7 +10822,7 @@ namespace TKMQ
                                             COALESCE(
                                                 NULLIF(S.SASLAPERCOSTS, 0),
                                                 NULLIF(C.CSTMEPERCOSTS, 0),
-                                                NULLIF(MB.MB050, 0),
+                                                NULLIF(CONVERT(decimal(16,2),MB.MB050), 0),
                                                 0
                                             ) AS PERCOSTS
                                         FROM [TK].dbo.INVMB MB WITH(NOLOCK)
@@ -10851,7 +10851,7 @@ namespace TKMQ
                                         MB004 AS '單位',
                                         REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY, CONVERT(INT, 總銷售數量)), 1), '.00', '') AS '總銷售數量',
                                         CONVERT(INT, MB047) AS '標準售價',
-                                        CONVERT(INT, MB050) AS '最近進價',
+                                        CONVERT(decimal(16,2), MB050) AS '最近進價',
                                         CREATE_DATE AS '新品建立日期',
                                         員購金額,
                                         TOPTG003 AS '第1天業務銷貨日',
