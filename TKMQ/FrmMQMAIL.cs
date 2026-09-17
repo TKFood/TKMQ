@@ -27131,7 +27131,7 @@ namespace TKMQ
         public void SENDEMAIL_COP_CHECK_INVLA(CancellationToken cancellationToken)
         {
             DataTable DS_EMAIL_TO_EMAIL = new DataTable();
-            DataTable DT_PUR_CHECK_INVLA = new DataTable();
+            DataTable DT_DATAS = new DataTable();
 
             StringBuilder SUBJEST = new StringBuilder();
             StringBuilder BODY = new StringBuilder();
@@ -27139,7 +27139,7 @@ namespace TKMQ
             try
             {
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_COP_CHECK_INVLA();
-                DT_PUR_CHECK_INVLA = SERACH_COP_CHECK_INVLA();
+                DT_DATAS = SERACH_COP_CHECK_INVLA();
 
 
                 SUBJEST.Clear();
@@ -27158,7 +27158,7 @@ namespace TKMQ
 
 
 
-                if (DT_PUR_CHECK_INVLA != null && DT_PUR_CHECK_INVLA.Rows.Count >= 1)
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
 
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
@@ -27180,7 +27180,7 @@ namespace TKMQ
                     // 先定義好重複使用的樣式，方便後續維護
                     string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
 
-                    foreach (DataRow DR in DT_PUR_CHECK_INVLA.Rows)
+                    foreach (DataRow DR in DT_DATAS.Rows)
                     {
                         BODY.Append("<tr>");
                         BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["狀態"]);
@@ -27327,7 +27327,7 @@ namespace TKMQ
                                         FROM [TK].dbo.INVLA LA WITH (NOLOCK)  
                                         LEFT JOIN [TK].dbo.INVMB MB WITH (NOLOCK) ON MB.MB001 = LA.LA001   
                                         LEFT JOIN [TK].dbo.INVME ME WITH (NOLOCK) ON ME.ME001 = LA.LA001 AND ME.ME002 = LA.LA016
-                                        WHERE LA.LA009 = '20001'   
+                                        WHERE LA.LA009 IN (SELECT  [LA009]  FROM [TKMQ].[dbo].[COP_CHECK_INVLA])  
                                           AND (LA.LA001 LIKE '4%' OR LA.LA001 LIKE '5%')
                                         GROUP BY LA.LA001, LA.LA009, MB.MB002, MB.MB003, LA.LA016, MB.MB023, MB.MB198, MB.MB004, ME.ME032, ME.ME009
                                         HAVING SUM(LA.LA005 * LA.LA011) <> 0 
