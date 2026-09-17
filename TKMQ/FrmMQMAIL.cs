@@ -450,7 +450,18 @@ namespace TKMQ
             {
                 try
                 {
-                    
+                  
+                }
+                catch (Exception EX)
+                { }
+                try
+                {
+                    //成品呆滯     
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_COP_CHECK_INVLA(cts1.Token);
+                    } 
                 }
                 catch (Exception EX)
                 { }
@@ -28294,8 +28305,7 @@ namespace TKMQ
 
         private void button66_Click(object sender, EventArgs e)
         {
-            //成品呆滯
-            //採購單的庫存量
+            //成品呆滯           
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
