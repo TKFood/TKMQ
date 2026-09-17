@@ -27128,6 +27128,387 @@ namespace TKMQ
             }
         }
 
+        public void SENDEMAIL_COP_CHECK_INVLA(CancellationToken cancellationToken)
+        {
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_PUR_CHECK_INVLA = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_COP_CHECK_INVLA();
+                DT_PUR_CHECK_INVLA = SERACH_COP_CHECK_INVLA();
+
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+
+                SUBJEST.AppendFormat(@"系統通知-請查收-呆滯庫存，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
+
+                //ERP 採購相關單別、單號未核準的明細
+                //
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-呆滯庫存，謝謝"
+                    + " <br>"
+                    );
+
+
+
+                if (DT_PUR_CHECK_INVLA != null && DT_PUR_CHECK_INVLA.Rows.Count >= 1)
+                {
+
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    BODY.AppendFormat(@"<table> ");
+                    BODY.AppendFormat(@"<tr >");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">狀態</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫別</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">批號</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫存量</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
+                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務</th>");
+
+
+                    BODY.AppendFormat(@"</tr> ");
+
+                    // 先定義好重複使用的樣式，方便後續維護
+                    string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+
+                    foreach (DataRow DR in DT_PUR_CHECK_INVLA.Rows)
+                    {
+                        BODY.Append("<tr>");
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["狀態"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["庫別"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["品名"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["批號"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["庫存量"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["單位"]);
+                        BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, DR["業務"]);                   
+                        BODY.Append("</tr>");
+                    }
+                    BODY.AppendFormat(@"</table> ");
+
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                try
+                {
+                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
+                    string NAME = ConfigurationManager.AppSettings["NAME"];
+                    string PW = ConfigurationManager.AppSettings["PW"];
+
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+
+                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
+                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
+                    MyMail.Subject = SUBJEST.ToString();
+                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    //加上附圖
+                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
+                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
+
+                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+
+
+                    try
+                    {
+                        foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+
+                        MyMail.Dispose(); //釋放資源
+
+                    }
+                    catch (Exception EX)
+                    {
+                        //MessageBox.Show("有錯誤");
+
+                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
+                        //EX.ToString();
+                    }
+                }
+                catch (Exception EX)
+                {
+
+                }
+                finally
+                {
+
+                }
+
+
+
+
+            }
+            catch (Exception EX)
+            {
+
+            }
+            finally
+            {
+
+            }
+        }
+        public DataTable SERACH_COP_CHECK_INVLA()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            string QueryDate=DateTime.Now.ToString("yyyyMMdd");
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+                //託外採購單比對託外製令+託外入庫
+                //一般採購比對進貨單
+                sbSql.AppendFormat(@"                                      
+                                   -- 1. 宣告日期變數
+                                    DECLARE @QueryDate NVARCHAR(8) = '{0}'; -- 可隨時修改目標查詢日期
+
+                                    -- 2. 基礎庫存 CTE (事先過濾與計算)
+                                    WITH BaseInventory AS (
+                                        SELECT         
+                                            LA.LA001 AS [品號],
+                                            MB.MB002 AS [品名],
+                                            MB.MB003 AS [規格],
+                                            LA.LA016 AS [批號],
+                                            CAST(SUM(LA.LA005 * LA.LA011) AS INT) AS [庫存量],
+                                            MB.MB004 AS [單位],
+                                            LA.LA009 AS [庫別],
+                                            MB.MB023,
+                                            MB.MB198,
+                                            ME.ME032 AS [生產日期_ME],
+                                            ME.ME009 AS [有效日期_ME],
+                                            -- 計算 MB198 對應的天數
+                                            CASE 
+                                                WHEN MB.MB198 = '1' THEN 1 * MB.MB023 
+                                                WHEN MB.MB198 = '2' THEN 30 * MB.MB023 
+                                                ELSE 0 
+                                            END AS [DAYS],
+                                            -- 提前算出效期門檻日期
+                                            CONVERT(nvarchar(8), DATEADD(MONTH, -1 * ROUND(ISNULL(MB.MB023, 0) / 3.0, 0), 
+                                                CASE WHEN ISDATE(LA.LA016) = 1 THEN CAST(LA.LA016 AS datetime) ELSE NULL END), 112) AS [效期門檻日]
+                                        FROM [TK].dbo.INVLA LA WITH (NOLOCK)  
+                                        LEFT JOIN [TK].dbo.INVMB MB WITH (NOLOCK) ON MB.MB001 = LA.LA001   
+                                        LEFT JOIN [TK].dbo.INVME ME WITH (NOLOCK) ON ME.ME001 = LA.LA001 AND ME.ME002 = LA.LA016
+                                        WHERE LA.LA009 = '20001'   
+                                          AND (LA.LA001 LIKE '4%' OR LA.LA001 LIKE '5%')
+                                        GROUP BY LA.LA001, LA.LA009, MB.MB002, MB.MB003, LA.LA016, MB.MB023, MB.MB198, MB.MB004, ME.ME032, ME.ME009
+                                        HAVING SUM(LA.LA005 * LA.LA011) <> 0 
+                                    ),
+
+                                    -- 3. 一次性獲取訂單需求量
+                                    OrderDemand AS (
+                                        SELECT
+                                            I.[品號],
+                                            I.[批號],
+                                            CAST(ISNULL(SUM(CASE WHEN V.TD013 <= I.[效期門檻日] THEN V.NUM ELSE 0 END), 0) AS INT) AS [效期內的訂單需求量],
+                                            CAST(ISNULL(SUM(V.NUM), 0) AS INT) AS [總訂單需求量]
+                                        FROM BaseInventory I
+                                        LEFT JOIN [TK].dbo.VCOPTDINVMD V WITH (NOLOCK) 
+                                            ON V.TD004 = I.[品號] 
+                                           AND V.TD013 >= @QueryDate
+                                        GROUP BY I.[品號], I.[批號]
+                                    )
+
+                                    -- 4. 最終主查詢
+                                    SELECT 
+                                        -- 狀態
+                                        CASE 
+                                            WHEN DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) > 90 THEN '在倉超過90天' 
+                                            WHEN DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) > 30 THEN '在倉超過30天' 
+                                            ELSE '' 
+                                        END AS [狀態],  
+                                        I.[庫別],
+                                        I.[品號],
+                                        I.[品名],
+                                        I.[規格],
+                                        I.[批號],
+                                        I.[庫存量],
+                                        I.[單位],
+                                        D.[效期內的訂單需求量],
+                                        (I.[庫存量] - D.[效期內的訂單需求量]) AS [效期內的訂單差異量],
+                                        D.[總訂單需求量],
+    
+                                        -- 業務資訊
+                                        (
+                                            SELECT TOP 1 TC006 + ' ' + MV002 
+                                            FROM [TK].dbo.COPTC WITH (NOLOCK)
+                                            INNER JOIN [TK].dbo.CMSMV WITH (NOLOCK) ON TC006 = MV001 
+                                            WHERE TC001 + TC002 IN (
+                                                SELECT TOP 1 TA026 + TA027 
+                                                FROM [TK].dbo.MOCTA WITH (NOLOCK) 
+                                                WHERE TA001 + TA002 IN (
+                                                    SELECT TOP 1 TG014 + TG015 
+                                                    FROM [TK].dbo.MOCTG WITH (NOLOCK) 
+                                                    WHERE TG004 = I.[品號] AND TG017 = I.[批號]
+                                                )
+                                            )
+                                        ) AS [業務],
+
+                                        -- 生產日期運算
+                                        ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]) AS [生產日期],
+    
+                                        -- 在倉日期
+                                        DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) AS [在倉日期],
+    
+                                        -- 有效天數
+                                        DATEDIFF(DAY, @QueryDate, I.[有效日期_ME]) AS [有效天數],
+    
+                                        I.[DAYS],
+                                        CalcDate.[外購品的生產日]
+                                        
+  
+                                    FROM BaseInventory I
+                                    INNER JOIN OrderDemand D 
+                                        ON D.[品號] = I.[品號] AND D.[批號] = I.[批號]
+                                    CROSS APPLY (
+                                        SELECT CONVERT(nvarchar(8), DATEADD(DAY, -1 * I.[DAYS], 
+                                            CASE WHEN ISDATE(I.[批號]) = 1 THEN CAST(I.[批號] AS datetime) ELSE NULL END), 112) AS [外購品的生產日]
+                                    ) AS CalcDate
+                                    WHERE DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) > 30
+                                    ORDER BY DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) DESC, I.[品號], I.[批號];
+                                    ", QueryDate);
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+        public DataTable SERACH_MAIL_COP_CHECK_INVLA()
+        {
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                //20210902密
+                Class1 TKID = new Class1();//用new 建立類別實體
+                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
+
+                //資料庫使用者密碼解密
+                sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+
+                String connectionString;
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
+
+                sbSql.AppendFormat(@"  
+                                    SELECT 
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='COP_INVLA_CHECK'
+                                                                       
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            catch (Exception EX)
+            {
+                return null;
+            }
+            finally
+            {
+
+            }
+        }
+
+
         #endregion
 
         #region BUTTON
@@ -27911,6 +28292,17 @@ namespace TKMQ
             MessageBox.Show("完成");
         }
 
+        private void button66_Click(object sender, EventArgs e)
+        {
+            //成品呆滯
+            //採購單的庫存量
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_COP_CHECK_INVLA(cts1.Token);
+            MessageBox.Show("完成");
+        }
         #endregion
 
 
