@@ -454,17 +454,7 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 { }
-                try
-                {
-                    //成品呆滯     
-                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
-                    {
-                        cts1.CancelAfter(timeoutMilliseconds);
-                        SENDEMAIL_COP_CHECK_INVLA(cts1.Token);
-                    } 
-                }
-                catch (Exception EX)
-                { }
+               
                 try
                 {
                     //版費提醒退費
@@ -1096,8 +1086,18 @@ namespace TKMQ
 
             try
             {
-               
-                
+
+                try
+                {
+                    //成品呆滯     
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_COP_CHECK_INVLA(cts1.Token);
+                    }
+                }
+                catch (Exception EX)
+                { }
                 //採購用
                 try
                 {
