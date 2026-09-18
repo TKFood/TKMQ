@@ -27413,7 +27413,7 @@ namespace TKMQ
                                         SELECT CONVERT(nvarchar(8), DATEADD(DAY, -1 * I.[DAYS], 
                                             CASE WHEN ISDATE(I.[批號]) = 1 THEN CAST(I.[批號] AS datetime) ELSE NULL END), 112) AS [外購品的生產日]
                                     ) AS CalcDate
-                                    WHERE DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) > 30
+                                    WHERE DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) > 90
                                     ORDER BY DATEDIFF(DAY, ISNULL(I.[生產日期_ME], CalcDate.[外購品的生產日]), @QueryDate) DESC, I.[品號], I.[批號];
                                     ", QueryDate);
 
