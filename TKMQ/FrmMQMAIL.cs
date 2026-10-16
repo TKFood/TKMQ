@@ -1249,6 +1249,15 @@ namespace TKMQ
             {
                 try
                 {
+                    CleanMqTempFolder();
+                }
+                catch (Exception EX)
+                {
+                    errorMessages.AppendLine($"CleanMqTempFolder 失敗");
+                }
+
+                try
+                {
                     // 國內、外業務部業績
                     using (CancellationTokenSource cts1 = new CancellationTokenSource())
                     {
@@ -27520,6 +27529,66 @@ namespace TKMQ
         }
 
 
+        //會檢查 C:\MQTEMP 目錄，並將超過 7 天的檔案與子資料夾進行遞迴刪除
+        public void CleanMqTempFolder()
+        {
+            string targetPath = @"C:\MQTEMP";
+
+            try
+            {
+                // 如果目錄根本不存在，直接結束
+                if (!Directory.Exists(targetPath))
+                {
+                    return;
+                }
+
+                // 計算 7 天前的時間點
+                DateTime thresholdDate = DateTime.Now.AddDays(-7);
+
+                // 1. 清理超過 7 天的檔案
+                string[] files = Directory.GetFiles(targetPath);
+                foreach (string filePath in files)
+                {
+                    try
+                    {
+                        FileInfo fileInfo = new FileInfo(filePath);
+                        // 根據「最後修改時間」判斷（若需改為建立時間可換成 CreationTime）
+                        if (fileInfo.LastWriteTime < thresholdDate)
+                        {
+                            fileInfo.Delete();
+                        }
+                    }
+                    catch
+                    {
+                        // 略過正被佔用或無權限刪除的檔案，避免中斷整體流程
+                    }
+                }
+
+                // 2. 清理超過 7 天的子資料夾
+                string[] directories = Directory.GetDirectories(targetPath);
+                foreach (string dirPath in directories)
+                {
+                    try
+                    {
+                        DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
+                        if (dirInfo.LastWriteTime < thresholdDate)
+                        {
+                            // true 代表遞迴刪除該資料夾內的所有內容
+                            dirInfo.Delete(true);
+                        }
+                    }
+                    catch
+                    {
+                        // 略過正被佔用的資料夾
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"清理暫存資料夾時發生未預期的錯誤：{ex.Message}", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         #endregion
 
         #region BUTTON
@@ -28311,6 +28380,11 @@ namespace TKMQ
             cts1.CancelAfter(timeoutMilliseconds);
 
             SENDEMAIL_COP_CHECK_INVLA(cts1.Token);
+            MessageBox.Show("完成");
+        }
+        private void button67_Click(object sender, EventArgs e)
+        {
+            CleanMqTempFolder();
             MessageBox.Show("完成");
         }
         #endregion

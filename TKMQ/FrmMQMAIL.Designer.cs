@@ -90,6 +90,7 @@
             this.button63 = new System.Windows.Forms.Button();
             this.button64 = new System.Windows.Forms.Button();
             this.button65 = new System.Windows.Forms.Button();
+            this.button66 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -110,7 +111,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
-            this.button66 = new System.Windows.Forms.Button();
+            this.button67 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -223,6 +224,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button64, 3, 13);
             this.tableLayoutPanel1.Controls.Add(this.button65, 4, 9);
             this.tableLayoutPanel1.Controls.Add(this.button66, 2, 3);
+            this.tableLayoutPanel1.Controls.Add(this.button67, 0, 4);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -863,6 +865,17 @@
             this.button65.UseVisualStyleBackColor = true;
             this.button65.Click += new System.EventHandler(this.button65_Click);
             // 
+            // button66
+            // 
+            this.button66.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button66.Location = new System.Drawing.Point(219, 123);
+            this.button66.Name = "button66";
+            this.button66.Size = new System.Drawing.Size(161, 34);
+            this.button66.TabIndex = 116;
+            this.button66.Text = "成品呆滯";
+            this.button66.UseVisualStyleBackColor = true;
+            this.button66.Click += new System.EventHandler(this.button66_Click);
+            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel2);
@@ -1126,16 +1139,15 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
-            // button66
+            // button67
             // 
-            this.button66.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button66.Location = new System.Drawing.Point(219, 123);
-            this.button66.Name = "button66";
-            this.button66.Size = new System.Drawing.Size(161, 34);
-            this.button66.TabIndex = 116;
-            this.button66.Text = "成品呆滯";
-            this.button66.UseVisualStyleBackColor = true;
-            this.button66.Click += new System.EventHandler(this.button66_Click);
+            this.button67.Location = new System.Drawing.Point(3, 163);
+            this.button67.Name = "button67";
+            this.button67.Size = new System.Drawing.Size(168, 34);
+            this.button67.TabIndex = 117;
+            this.button67.Text = "刪MQTEMP";
+            this.button67.UseVisualStyleBackColor = true;
+            this.button67.Click += new System.EventHandler(this.button67_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1250,5 +1262,6 @@
         private System.Windows.Forms.Button button64;
         private System.Windows.Forms.Button button65;
         private System.Windows.Forms.Button button66;
+        private System.Windows.Forms.Button button67;
     }
 }
