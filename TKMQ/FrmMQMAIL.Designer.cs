@@ -70,11 +70,7 @@
             this.button33 = new System.Windows.Forms.Button();
             this.button35 = new System.Windows.Forms.Button();
             this.button52 = new System.Windows.Forms.Button();
-            this.button19 = new System.Windows.Forms.Button();
-            this.button18 = new System.Windows.Forms.Button();
-            this.button25 = new System.Windows.Forms.Button();
             this.button20 = new System.Windows.Forms.Button();
-            this.button26 = new System.Windows.Forms.Button();
             this.button45 = new System.Windows.Forms.Button();
             this.button43 = new System.Windows.Forms.Button();
             this.button51 = new System.Windows.Forms.Button();
@@ -92,6 +88,11 @@
             this.button65 = new System.Windows.Forms.Button();
             this.button66 = new System.Windows.Forms.Button();
             this.button67 = new System.Windows.Forms.Button();
+            this.button68 = new System.Windows.Forms.Button();
+            this.button26 = new System.Windows.Forms.Button();
+            this.button25 = new System.Windows.Forms.Button();
+            this.button18 = new System.Windows.Forms.Button();
+            this.button19 = new System.Windows.Forms.Button();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.button23 = new System.Windows.Forms.Button();
@@ -112,7 +113,7 @@
             this.timer2 = new System.Windows.Forms.Timer(this.components);
             this.timer3 = new System.Windows.Forms.Timer(this.components);
             this.timer4 = new System.Windows.Forms.Timer(this.components);
-            this.button68 = new System.Windows.Forms.Button();
+            this.button69 = new System.Windows.Forms.Button();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -227,6 +228,7 @@
             this.tableLayoutPanel1.Controls.Add(this.button25, 2, 12);
             this.tableLayoutPanel1.Controls.Add(this.button18, 2, 11);
             this.tableLayoutPanel1.Controls.Add(this.button19, 2, 10);
+            this.tableLayoutPanel1.Controls.Add(this.button69, 3, 8);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
@@ -658,36 +660,6 @@
             this.button52.UseVisualStyleBackColor = true;
             this.button52.Click += new System.EventHandler(this.button52_Click);
             // 
-            // button19
-            // 
-            this.button19.Location = new System.Drawing.Point(219, 403);
-            this.button19.Name = "button19";
-            this.button19.Size = new System.Drawing.Size(161, 34);
-            this.button19.TabIndex = 21;
-            this.button19.Text = "測試UOF交辨訊息";
-            this.button19.UseVisualStyleBackColor = true;
-            this.button19.Click += new System.EventHandler(this.button19_Click);
-            // 
-            // button18
-            // 
-            this.button18.Location = new System.Drawing.Point(219, 443);
-            this.button18.Name = "button18";
-            this.button18.Size = new System.Drawing.Size(161, 34);
-            this.button18.TabIndex = 20;
-            this.button18.Text = "測試UOF交辨+設計未完成";
-            this.button18.UseVisualStyleBackColor = true;
-            this.button18.Click += new System.EventHandler(this.button18_Click);
-            // 
-            // button25
-            // 
-            this.button25.Location = new System.Drawing.Point(219, 483);
-            this.button25.Name = "button25";
-            this.button25.Size = new System.Drawing.Size(161, 34);
-            this.button25.TabIndex = 26;
-            this.button25.Text = "測試UOF交辨未完成";
-            this.button25.UseVisualStyleBackColor = true;
-            this.button25.Click += new System.EventHandler(this.button25_Click);
-            // 
             // button20
             // 
             this.button20.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
@@ -698,16 +670,6 @@
             this.button20.Text = "資訊-UOF表單未核";
             this.button20.UseVisualStyleBackColor = true;
             this.button20.Click += new System.EventHandler(this.button20_Click);
-            // 
-            // button26
-            // 
-            this.button26.Location = new System.Drawing.Point(219, 523);
-            this.button26.Name = "button26";
-            this.button26.Size = new System.Drawing.Size(161, 34);
-            this.button26.TabIndex = 27;
-            this.button26.Text = "測試主管UOF交辨未完成";
-            this.button26.UseVisualStyleBackColor = true;
-            this.button26.Click += new System.EventHandler(this.button26_Click);
             // 
             // button45
             // 
@@ -887,6 +849,57 @@
             this.button67.Text = "刪MQTEMP";
             this.button67.UseVisualStyleBackColor = true;
             this.button67.Click += new System.EventHandler(this.button67_Click);
+            // 
+            // button68
+            // 
+            this.button68.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button68.Location = new System.Drawing.Point(219, 323);
+            this.button68.Name = "button68";
+            this.button68.Size = new System.Drawing.Size(161, 34);
+            this.button68.TabIndex = 118;
+            this.button68.Text = "大潁訂單結案通知";
+            this.button68.UseVisualStyleBackColor = true;
+            this.button68.Click += new System.EventHandler(this.button68_Click);
+            // 
+            // button26
+            // 
+            this.button26.Location = new System.Drawing.Point(219, 523);
+            this.button26.Name = "button26";
+            this.button26.Size = new System.Drawing.Size(161, 34);
+            this.button26.TabIndex = 27;
+            this.button26.Text = "測試主管UOF交辨未完成";
+            this.button26.UseVisualStyleBackColor = true;
+            this.button26.Click += new System.EventHandler(this.button26_Click);
+            // 
+            // button25
+            // 
+            this.button25.Location = new System.Drawing.Point(219, 483);
+            this.button25.Name = "button25";
+            this.button25.Size = new System.Drawing.Size(161, 34);
+            this.button25.TabIndex = 26;
+            this.button25.Text = "測試UOF交辨未完成";
+            this.button25.UseVisualStyleBackColor = true;
+            this.button25.Click += new System.EventHandler(this.button25_Click);
+            // 
+            // button18
+            // 
+            this.button18.Location = new System.Drawing.Point(219, 443);
+            this.button18.Name = "button18";
+            this.button18.Size = new System.Drawing.Size(161, 34);
+            this.button18.TabIndex = 20;
+            this.button18.Text = "測試UOF交辨+設計未完成";
+            this.button18.UseVisualStyleBackColor = true;
+            this.button18.Click += new System.EventHandler(this.button18_Click);
+            // 
+            // button19
+            // 
+            this.button19.Location = new System.Drawing.Point(219, 403);
+            this.button19.Name = "button19";
+            this.button19.Size = new System.Drawing.Size(161, 34);
+            this.button19.TabIndex = 21;
+            this.button19.Text = "測試UOF交辨訊息";
+            this.button19.UseVisualStyleBackColor = true;
+            this.button19.Click += new System.EventHandler(this.button19_Click);
             // 
             // tabPage2
             // 
@@ -1151,16 +1164,16 @@
             // 
             this.timer4.Tick += new System.EventHandler(this.timer4_Tick);
             // 
-            // button68
+            // button69
             // 
-            this.button68.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.button68.Location = new System.Drawing.Point(219, 323);
-            this.button68.Name = "button68";
-            this.button68.Size = new System.Drawing.Size(161, 34);
-            this.button68.TabIndex = 118;
-            this.button68.Text = "大潁訂單結案通知";
-            this.button68.UseVisualStyleBackColor = true;
-            this.button68.Click += new System.EventHandler(this.button68_Click);
+            this.button69.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+            this.button69.Location = new System.Drawing.Point(386, 323);
+            this.button69.Name = "button69";
+            this.button69.Size = new System.Drawing.Size(148, 34);
+            this.button69.TabIndex = 119;
+            this.button69.Text = "庫存未核單明細";
+            this.button69.UseVisualStyleBackColor = true;
+            this.button69.Click += new System.EventHandler(this.button69_Click);
             // 
             // FrmMQMAIL
             // 
@@ -1277,5 +1290,6 @@
         private System.Windows.Forms.Button button66;
         private System.Windows.Forms.Button button67;
         private System.Windows.Forms.Button button68;
+        private System.Windows.Forms.Button button69;
     }
 }

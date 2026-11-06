@@ -39,7 +39,6 @@ using System.Xml.Linq;
 using TKITDLL;
 using Excel = Microsoft.Office.Interop.Excel; // 為 Interop 設定別名
 
-
 namespace TKMQ
 {
     public partial class FrmMQMAIL : Form
@@ -70,6 +69,24 @@ namespace TKMQ
         private int lastRunMonth = 0;
         private int lastRunMonth_Task15 = 0;
         private int lastRunMonth_TaskQuarter = 0;
+        // 20261023 SMTP 連線設定改由 App.config 讀取(未設定時維持原本的 port 25、不加密)
+        private static readonly int SMTP_PORT = GETAPPSETTING_INT("SMTP_PORT", 25);
+        private static readonly bool SMTP_ENABLE_SSL = GETAPPSETTING("SMTP_ENABLE_SSL", "false").Equals("true", StringComparison.OrdinalIgnoreCase);
+        // 20261023 每日定時工作的容許執行時間窗(分鐘)
+        private const int DAILY_RUN_WINDOW_MINUTES = 30;
+        // 20261023 各排程工作最後執行日期(存在 LOG\RUNSTATE.txt，重新啟動後仍保留)
+        private readonly Dictionary<string, string> RUNSTATE = new Dictionary<string, string>();
+        private static readonly object LOG_LOCK = new object();
+        // 20261023 解密後的連線字串快取
+        private static readonly Dictionary<string, string> CONNSTR_CACHE = new Dictionary<string, string>();
+        private static readonly object CONNSTR_LOCK = new object();
+        // 20261023 寄件人、副本收件人、暫存路徑改由 App.config 設定(未設定時使用原本的值)
+        private static readonly string MAIL_FROM = GETAPPSETTING("MAIL_FROM", "tk290@tkfood.com.tw");
+        private static readonly string MAIL_FROM_SALES = GETAPPSETTING("MAIL_FROM_SALES", "tk660@tkfood.com.tw");
+        private static readonly string MAIL_IT_COPY = GETAPPSETTING("MAIL_IT_COPY", "tk290@tkfood.com.tw");
+        private static readonly string MQTEMP_ROOT = GETAPPSETTING("MQTEMP_PATH", @"C:\MQTEMP").TrimEnd('\\');
+        // 20261023 寄送失敗紀錄在 Log 中的來源標記(供「寄送失敗的通知」查詢)
+        private const string MAIL_FAIL_TAG = "寄送失敗:";
 
         private System.Timers.Timer timer;
 
@@ -163,7 +180,6 @@ namespace TKMQ
         DataSet dsMOCMANULINE = new DataSet();
         DataSet dsMAILMOCMANULINE = new DataSet();
 
-
         string DATES = null;
         string DirectoryNAME = null;
         string pathFile = null;
@@ -190,7 +206,6 @@ namespace TKMQ
         string[] tempFile;
         string tFileName = "";
 
-
         public FrmMQMAIL()
         {
             InitializeComponent();
@@ -201,48 +216,214 @@ namespace TKMQ
         { 
             timer1.Enabled = true;
             timer1.Interval = 1000 * 60;
-            //timer1.Interval = 1000 ;
-            timer1.Tick += new EventHandler(timer1_Tick);
+            // 20261023 移除重複綁定：Designer 已綁定 timer1_Tick，這裡再綁會讓每次觸發執行兩次
             timer1.Start();
 
             timer2.Enabled = true;
             timer2.Interval = 1000 * 60;
-            //timer1.Interval = 1000 ;
-            timer2.Tick += new EventHandler(timer2_Tick);
+            // 20261023 移除重複綁定(同上)
             timer2.Start();
 
             // 在適當的地方設置 timer3 的屬性
             timer3.Enabled = true;
             timer3.Interval = 30000; //30 秒
-            timer3.Tick += new EventHandler(timer3_Tick);
+            // 20261023 移除重複綁定(同上)
             timer3.Start();
 
             /// 設定 60 分鐘
             timer4.Interval = 60 *1000*60; // 60 分鐘 
-            timer4.Tick += timer4_Tick;
+            // 20261023 移除重複綁定(同上)
             timer4.Start();
+
+            LOAD_RUNSTATE();
+            WRITELOG("FrmMQMAIL_Load", "排程程式啟動");
 
             CLEAREXCEL();
 
             SETPATH();
         }
+        #region 20261023 排程共用工具
+
+        /// <summary>
+        /// 20261023 建立寄信用的 SmtpClient：主機、port、SSL、帳密統一從 App.config 讀取
+        /// (原本 49 個寄信方法各自建立，要改設定得改 49 個地方)
+        /// </summary>
+        private System.Net.Mail.SmtpClient CREATE_SMTP()
+        {
+            System.Net.Mail.SmtpClient smtp = new System.Net.Mail.SmtpClient(ConfigurationManager.AppSettings["MySMTP"], SMTP_PORT);
+            smtp.EnableSsl = SMTP_ENABLE_SSL;
+            smtp.Credentials = new System.Net.NetworkCredential(ConfigurationManager.AppSettings["NAME"], ConfigurationManager.AppSettings["PW"]);
+            return smtp;
+        }
+
+        /// <summary>
+        /// 20261023 取得解密後的資料庫連線(App.config 的 connectionStrings 名稱，例如 dberp、dbUOF、dbconn)
+        /// 第一次使用時解密並快取，之後直接取用；每次回傳新的物件，呼叫端可自行修改屬性
+        /// </summary>
+        private SqlConnectionStringBuilder GETCONNSTRBUILDER(string name)
+        {
+            string cs;
+            lock (CONNSTR_LOCK)
+            {
+                if (!CONNSTR_CACHE.TryGetValue(name, out cs))
+                {
+                    Class1 TKID = new Class1();
+                    SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings[name].ConnectionString);
+                    sqlsb.Password = TKID.Decryption(sqlsb.Password);
+                    sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                    cs = sqlsb.ConnectionString;
+                    CONNSTR_CACHE[name] = cs;
+                }
+            }
+            return new SqlConnectionStringBuilder(cs);
+        }
+
+        private static string GETAPPSETTING(string key, string defaultValue)
+        {
+            try
+            {
+                string value = ConfigurationManager.AppSettings[key];
+                return string.IsNullOrWhiteSpace(value) ? defaultValue : value.Trim();
+            }
+            catch
+            {
+                return defaultValue;
+            }
+        }
+
+        private static int GETAPPSETTING_INT(string key, int defaultValue)
+        {
+            int value;
+            return int.TryParse(GETAPPSETTING(key, defaultValue.ToString()), out value) ? value : defaultValue;
+        }
+
+        private string RUNSTATE_FILE
+        {
+            get { return Path.Combine(Application.StartupPath, "LOG", "RUNSTATE.txt"); }
+        }
+
+        /// <summary>
+        /// 讀取各工作最後執行日期
+        /// </summary>
+        private void LOAD_RUNSTATE()
+        {
+            try
+            {
+                RUNSTATE.Clear();
+                if (!File.Exists(RUNSTATE_FILE))
+                {
+                    return;
+                }
+                foreach (string line in File.ReadAllLines(RUNSTATE_FILE, Encoding.UTF8))
+                {
+                    string[] parts = line.Split('=');
+                    if (parts.Length == 2)
+                    {
+                        RUNSTATE[parts[0].Trim()] = parts[1].Trim();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WRITELOG("LOAD_RUNSTATE", ex);
+            }
+        }
+
+        private void SAVE_RUNSTATE()
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(RUNSTATE_FILE));
+                List<string> lines = new List<string>();
+                foreach (KeyValuePair<string, string> kv in RUNSTATE)
+                {
+                    lines.Add(kv.Key + "=" + kv.Value);
+                }
+                File.WriteAllLines(RUNSTATE_FILE, lines.ToArray(), Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                WRITELOG("SAVE_RUNSTATE", ex);
+            }
+        }
+
+        /// <summary>
+        /// 每日定時工作判斷：現在已過 hhmm、仍在容許時間窗內、且今天尚未執行 → 回傳 true 並記錄今天已執行
+        /// </summary>
+        private bool SHOULD_RUN(string jobKey, string hhmm)
+        {
+            DateTime now = DateTime.Now;
+            string today = now.ToString("yyyyMMdd");
+            string last;
+            if (RUNSTATE.TryGetValue(jobKey, out last) && last == today)
+            {
+                return false;
+            }
+            DateTime target = DateTime.ParseExact(today + hhmm.Replace(":", ""), "yyyyMMddHHmm", System.Globalization.CultureInfo.InvariantCulture);
+            if (now >= target && now < target.AddMinutes(DAILY_RUN_WINDOW_MINUTES))
+            {
+                RUNSTATE[jobKey] = today;
+                SAVE_RUNSTATE();
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 寫 Log：程式目錄\LOG\FrmMQMAIL_yyyyMMdd.log
+        /// </summary>
+        public void WRITELOG(string source, Exception ex)
+        {
+            WRITELOG(source, "錯誤：" + (ex == null ? "" : ex.ToString()));
+        }
+
+        public void WRITELOG(string source, string message)
+        {
+            try
+            {
+                string dir = Path.Combine(Application.StartupPath, "LOG");
+                Directory.CreateDirectory(dir);
+                string file = Path.Combine(dir, "FrmMQMAIL_" + DateTime.Now.ToString("yyyyMMdd") + ".log");
+                string line = DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss") + " [" + source + "] " + message + Environment.NewLine;
+                lock (LOG_LOCK)
+                {
+                    File.AppendAllText(file, line, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // 寫 Log 失敗不可影響排程
+            }
+        }
+
+        #endregion
+
         #region FUNCTION      
+        // 20261023 防重入：前一次還沒跑完就略過這次
+        private bool timer1Running = false;
+        private bool timer2Running = false;
+        private bool timer3Running = false;
+        private bool timer4Running = false;
+
+        /// <summary>
+        /// 每月第 3 個星期一 09:40 執行 1 次（30 秒檢查 1 次）
+        /// </summary>
         private void timer3_Tick(object sender, EventArgs e)
         {
-            // 指定日期執行
-            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-            DateTime now = DateTime.Now;
-
-            // 每個月的第3周的星期一，早上 9:40 執行1次
-            if (now.DayOfWeek == DayOfWeek.Monday && now.Hour == 9 && now.Minute == 40 && lastRunMonth_Task15 != now.Month)
+            if (timer3Running) return;
+            timer3Running = true;
+            try
             {
-                // 計算當前月份內是第幾周
-                int weekOfMonth = (now.Day - (int)now.DayOfWeek + 6) / 7 + 1;
+                int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+                DateTime now = DateTime.Now;
 
-                if (weekOfMonth == 3)
+                // 20261023 修正：原公式 (Day - DayOfWeek + 6) / 7 + 1 會算錯週次(例如 14 號被當成第 3 週、20/21 號被當成第 4 週)
+                // 第 N 個星期一 = 該月第 (Day-1)/7+1 個星期一
+                int weekOfMonth = (now.Day - 1) / 7 + 1;
+
+                // 20261023 改為「已過 09:40 且在容許時間窗內、今天尚未執行」，並記錄在 RUNSTATE 檔，重新啟動也不會重寄
+                if (now.DayOfWeek == DayOfWeek.Monday && weekOfMonth == 3 && SHOULD_RUN("T3_0940_INVLA_PUR_NO_USED", "09:40"))
                 {
-                    lastRunMonth_Task15 = now.Month; // 執行後立即鎖定本月，剩餘的 30 秒內就不會再跑第二次
-
                     //採購用
                     try
                     {
@@ -257,154 +438,171 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        errorMessages.AppendLine($"原物料待處理倉  失敗");
+                        WRITELOG("SENDMAIL_INVLA_PUR_NO_USED", "原物料待處理倉 失敗：" + EX.ToString());
                     }
                 }
             }
-
-
+            finally
+            {
+                timer3Running = false;
+            }
         }
+
+        /// <summary>
+        /// 每月 1 號、15 號 09:30 執行 1 次
+        /// </summary>
         private void timer2_Tick(object sender, EventArgs e)
         {
-            // 取得目前日期和時間
-            DateTime now = DateTime.Now;
-            string targetTime1 = "09:30";
-            string currentTime1 = DateTime.Now.ToString("HH:mm");
-
-
-            // 檢查是否為每季度的1號、15號
-
-            if (DateTime.Now.Day == 1 || DateTime.Now.Day == 15)
+            if (timer2Running) return;
+            timer2Running = true;
+            try
             {
-                if (currentTime1 == targetTime1)
+                DateTime now = DateTime.Now;
+
+                // 20261023 原本沒有「今天已執行」的判斷，加上 Tick 被綁定兩次，會寄出兩封；改用 SHOULD_RUN 控管一天只跑一次
+                if ((now.Day == 1 || now.Day == 15) && SHOULD_RUN("T2_0930_PUR_MONTHS_NO_IN", "09:30"))
                 {
                     try
                     {
                         //採購每月1號、15號未到貨通知
                         SENDMAIL_TK_PUR_MONTHS_NO_IN();
-
                     }
                     catch (Exception EX)
                     {
-
+                        WRITELOG("SENDMAIL_TK_PUR_MONTHS_NO_IN", EX.ToString());
                     }
-                    finally { }
-
                 }
-
+            }
+            finally
+            {
+                timer2Running = false;
             }
         }
 
+        /// <summary>
+        /// 每日定時工作（1 分鐘檢查 1 次）
+        /// 20261023 改為「已過指定時間且在容許時間窗內、今天尚未執行」：
+        /// 前一個工作跑太久而錯過那一分鐘時仍會補跑；執行紀錄存在 RUNSTATE 檔，程式重新啟動也不會重寄
+        /// </summary>
         private void timer1_Tick(object sender, EventArgs e)
         {
-            // 取得目前時間物件
-            DateTime now = DateTime.Now;
-
-            // 更新畫面時間顯示
-            label2.Text = now.ToString();
-
-            // 統一取得當前時間字串與星期 (省去重複擷取的消耗)
-            string currentTime = now.ToString("HH:mm");
-            DayOfWeek today = now.DayOfWeek;
-            int currentDayOfYear = now.DayOfYear; // 用「今年第幾天」來精準控管一天只跑一次
-
-            // 是否為星期一到星期五的快速判斷
-            bool isWeekday = (today >= DayOfWeek.Monday && today <= DayOfWeek.Friday);
-
-            // ==========================================
-            // 1. targetTime1 = 08:31 (一~五)
-            // ==========================================
-            if (currentTime == "08:31" && isWeekday && lastDayRun1 != currentDayOfYear)
+            if (timer1Running) return;
+            timer1Running = true;
+            try
             {
-                lastDayRun1 = currentDayOfYear; // 馬上標記今天已執行，消除重複執行與 Sleep 的需求
-                HRAUTORUN_currentTime1();
-            }
+                DateTime now = DateTime.Now;
 
-            // ==========================================
-            // 2. targetTime9 = 08:40 (每天) 【已修改變數】
-            // ==========================================
-            if (currentTime == "08:40" && lastDayRun9 != currentDayOfYear)
-            {
-                lastDayRun9 = currentDayOfYear;
-                ASYNC_HRAUTORUN5(); // 每日 LINE 通知
-            }
+                // 更新畫面時間顯示
+                label2.Text = now.ToString();
 
-            // ==========================================
-            // 3. targetTime2 = 08:50 (只週一)
-            // ==========================================
-            if (currentTime == "08:50" && today == DayOfWeek.Monday && lastDayRun2 != currentDayOfYear)
-            {
-                lastDayRun2 = currentDayOfYear;
-                HRAUTORUN_targetTime2();
-            }
+                DayOfWeek today = now.DayOfWeek;
+                // 是否為星期一到星期五的快速判斷
+                bool isWeekday = (today >= DayOfWeek.Monday && today <= DayOfWeek.Friday);
 
-            // ==========================================
-            // 4. targetTime10 = 08:59 (一~五) 【已修改變數】
-            // ==========================================
-            if (currentTime == "08:59" && isWeekday && lastDayRun10 != currentDayOfYear)
-            {
-                lastDayRun10 = currentDayOfYear;
-                HRAUTORUN();
-            }
+                // 1. 08:31 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_0831", "08:31"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_currentTime1", HRAUTORUN_currentTime1);
+                }
 
-            // ==========================================
-            // 5. targetTime8 = 09:31 (一~五)
-            // ==========================================
-            if (currentTime == "09:31" && isWeekday && lastDayRun8 != currentDayOfYear)
-            {
-                lastDayRun8 = currentDayOfYear;
+                // 2. 08:40 (每天) 每日 LINE 通知
+                if (SHOULD_RUN("T1_0840_LINE", "08:40"))
+                {
+                    RUN_DAILY_JOB("ASYNC_HRAUTORUN5", ASYNC_HRAUTORUN5);
+                }
+
+                // 3. 08:50 (只週一)
+                if (today == DayOfWeek.Monday && SHOULD_RUN("T1_0850_MON", "08:50"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_targetTime2", HRAUTORUN_targetTime2);
+                }
+
+                // 4. 08:59 (一~五) 每日寄送
+                if (isWeekday && SHOULD_RUN("T1_0859", "08:59"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN", HRAUTORUN);
+                }
+
+                // 5. 09:31 (一~五) 目前停用
                 // HRAUTORUN_currentTime8();
-            }
 
-            // ==========================================
-            // 6. 採購用 - 11:00 (一~五)
-            // ==========================================
-            if (currentTime == "11:00" && isWeekday && lastDayRun6 != currentDayOfYear)
+                // 6. 採購用 - 11:00 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_1100", "11:00"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_targetTime6", HRAUTORUN_targetTime6);
+                }
+
+                // 7. 採購用 - 14:00 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_1400", "14:00"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_currentTime7", HRAUTORUN_currentTime7);
+                }
+
+                // 8. 品保驗收 - 15:00 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_1500", "15:00"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_currentTime3", HRAUTORUN_currentTime3);
+                }
+
+                // 9. 採購用 - 17:00 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_1700", "17:00"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_currentTime4", HRAUTORUN_currentTime4);
+                }
+
+                // 10. 採購用 - 18:00 (一~五)
+                if (isWeekday && SHOULD_RUN("T1_1800", "18:00"))
+                {
+                    RUN_DAILY_JOB("HRAUTORUN_currentTime5", HRAUTORUN_currentTime5);
+                }
+            }
+            finally
             {
-                lastDayRun6 = currentDayOfYear;
-                HRAUTORUN_targetTime6();
+                timer1Running = false;
             }
+        }
 
-            // ==========================================
-            // 7. 採購用 - 14:00 (一~五)
-            // ==========================================
-            if (currentTime == "14:00" && isWeekday && lastDayRun7 != currentDayOfYear)
+        /// <summary>
+        /// 20261023 執行每日工作：記錄開始/完成/耗時，錯誤寫 Log，不影響後面的工作
+        /// </summary>
+        private void RUN_DAILY_JOB(string jobName, Action action)
+        {
+            Stopwatch sw = Stopwatch.StartNew();
+            WRITELOG(jobName, "開始");
+            try
             {
-                lastDayRun7 = currentDayOfYear;
-                HRAUTORUN_currentTime7();
+                action();
+                sw.Stop();
+                WRITELOG(jobName, "完成，耗時 " + sw.Elapsed.TotalSeconds.ToString("0.0") + " 秒");
             }
-
-            // ==========================================
-            // 8. 品保驗收 - 15:00 (一~五)
-            // ==========================================
-            if (currentTime == "15:00" && isWeekday && lastDayRun3 != currentDayOfYear)
+            catch (Exception ex)
             {
-                lastDayRun3 = currentDayOfYear;
-                HRAUTORUN_currentTime3();
+                sw.Stop();
+                WRITELOG(jobName, "失敗，耗時 " + sw.Elapsed.TotalSeconds.ToString("0.0") + " 秒，錯誤：" + ex.ToString());
             }
-
-            // ==========================================
-            // 9. 採購用 - 17:00 (一~五)
-            // ==========================================
-            if (currentTime == "17:00" && isWeekday && lastDayRun4 != currentDayOfYear)
-            {
-                lastDayRun4 = currentDayOfYear;
-                HRAUTORUN_currentTime4();
-            }
-
-            // ==========================================
-            // 10. 採購用 - 18:00 (一~五)
-            // ==========================================
-            if (currentTime == "18:00" && isWeekday && lastDayRun5 != currentDayOfYear)
-            {
-                lastDayRun5 = currentDayOfYear;
-                HRAUTORUN_currentTime5();
-            }
-
         }
 
         //每60分鐘執行1次
         private void timer4_Tick(object sender, EventArgs e)
+        {
+            // 20261023 防重入
+            if (timer4Running) return;
+            timer4Running = true;
+            try
+            {
+                TIMER4_JOBS();
+            }
+            catch (Exception ex)
+            {
+                WRITELOG("timer4_Tick", ex);
+            }
+            finally
+            {
+                timer4Running = false;
+            }
+        }
+
+        private void TIMER4_JOBS()
         {
             DateTime now = DateTime.Now;
 
@@ -425,7 +623,10 @@ namespace TKMQ
                     CALL_IT_ALARM();
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("TIMER4_JOBS", EX);
+                }
             }
 
         }
@@ -453,7 +654,10 @@ namespace TKMQ
                   
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
+                }
 
                 try
                 {
@@ -466,7 +670,26 @@ namespace TKMQ
                     }
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
+                }
+
+                try
+                {
+                    //庫存未核單明細
+                    using (CancellationTokenSource cts1 = new CancellationTokenSource())
+                    {
+                        cts1.CancelAfter(timeoutMilliseconds);
+                        SENDEMAIL_INVTANOTAPPROVED(cts1.Token);
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception EX)
+                {
+                    WRITELOG("HRAUTORUN", EX);
+                    errorMessages.AppendLine($"庫存未核單明細");
+                }
 
                 try
                 {
@@ -481,6 +704,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"版費提醒退費");
                 }
                 try
@@ -492,7 +717,10 @@ namespace TKMQ
                     SENDMAIL_TBPURGOODS(cts1.Token);
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
+                }
                 try
                 {
                     //副總-品保未核單
@@ -503,7 +731,10 @@ namespace TKMQ
                     PREPARE_UOF_TASK_QC_UOF_FORM(cts1.Token);
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
+                }
                 try
                 {
                     CancellationTokenSource cts1 = new CancellationTokenSource();
@@ -514,6 +745,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"2001.產品開發+包裝設計申請單  失敗");
                 }
                 //資訊用
@@ -537,6 +770,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"總經理簽核意見，轉MAIL給申請者及部門主管  失敗");
                 }
                 try
@@ -551,6 +786,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"查離職人員的未結案表單  失敗");
                 }
                 try
@@ -565,6 +802,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"溫濕度明細  失敗");
                 }
                 try
@@ -579,6 +818,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"溫濕度  失敗");
                 }
                 try
@@ -593,6 +834,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"UOF交辨未完成  失敗");
                 }
                 try
@@ -607,6 +850,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"主管UOF交辨未完成  失敗");
                 }
                 try
@@ -621,6 +866,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"通知各表單申請人  失敗");
                 }
                 try
@@ -635,6 +882,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"通知各別的被交辨人  失敗");
                 }
                 try
@@ -649,6 +898,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"通知交辨人  失敗");
                 }
                 try
@@ -663,6 +914,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"IT檢查網站是否正常  失敗");
                 }
                 //營銷用
@@ -683,6 +936,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"營銷各庫庫存通知  失敗");
                 }
 
@@ -699,6 +954,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"校稿追踨  失敗");
                 }
 
@@ -715,6 +972,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"派車  失敗");
                 }
                 try
@@ -736,7 +995,6 @@ namespace TKMQ
                         BODY.AppendFormat("Dear SIR" + Environment.NewLine +
                                           "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
 
-
                         DataTable DT = SEARCHLOTCHECK_SHOWMAIL(cts29.Token);
                         SENDMAIL_LOTCHECK(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK, DT);
                         Thread.Sleep(1000);
@@ -744,6 +1002,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"批號錯誤  失敗");
                 }
 
@@ -760,6 +1020,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"針對昨天核單的 總務採購單，給申請人發出公告  失敗");
                 }
                 try
@@ -774,6 +1036,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"通知副總，總務未簽核的表單      失敗");
                 }
                 try
@@ -788,6 +1052,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"通知原請購人，總務已完成採購         失敗");
                 }
 
@@ -804,6 +1070,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"到貨是否有建進貨單  失敗");
                 }
                 try
@@ -818,6 +1086,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"到貨數量是否等同進貨數量  失敗");
                 }
                 try
@@ -832,6 +1102,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"託外未到貨通知  失敗");
                 }
                 try
@@ -847,6 +1119,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"PUR10.請購單申請+PUR20.請購單變更單  失敗");
                 }
                 try
@@ -861,6 +1135,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"給採購人員，ERP未核單的單別、單號  失敗");
                 }  
                 try
@@ -883,6 +1159,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"請購  失敗");
                 }
                 try
@@ -905,6 +1183,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"每日採購單未結案表  失敗");
                 }
                 try
@@ -928,6 +1208,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"每日已請購未採購表  失敗");
                 }
 
@@ -944,6 +1226,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"研發每日通知新品售價  失敗");
                 }
                 try
@@ -963,6 +1247,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"本年新品的銷售報表  失敗");
                 }
 
@@ -984,6 +1270,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"每日訂單明細表  失敗");
                 }
                 try
@@ -999,6 +1287,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"每日訂單明細表  失敗");
                 }            
                 try
@@ -1022,6 +1312,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"訂單變更  失敗");
                 }
                 try
@@ -1045,6 +1337,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"訂單  失敗");
                 }
                 try
@@ -1068,21 +1362,24 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN", EX);
                     errorMessages.AppendLine($"每日追踨製令未確認表  失敗");
                 }
                 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN", errorMessages.ToString());
             }
-
 
         }
         /// <summary>
@@ -1093,9 +1390,6 @@ namespace TKMQ
         {
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             errorMessages.Clear();
-
-            
-
 
             try
             {
@@ -1110,7 +1404,10 @@ namespace TKMQ
                     }
                 }
                 catch (Exception EX)
-                { }
+                {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
+                }
                 //採購用
                 try
                 {
@@ -1124,6 +1421,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"原料、物料的呆滯  失敗");
                 }
                 //採購用
@@ -1140,6 +1439,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"進貨有效日檢查  失敗");
                 }
                 try
@@ -1154,6 +1455,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"採購7日前未到貨  失敗");
                 }
 
@@ -1170,6 +1473,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"每週通知，1006.樣品試吃回覆單，還未回覆的明細  失敗");
                 }
                 try
@@ -1184,6 +1489,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"研發每週通知該月樣品  失敗");
                 }
 
@@ -1192,15 +1499,11 @@ namespace TKMQ
                 {
                     //20251201 暫停
                     ////每週通知，1006.樣品試吃回覆單，還未回覆的明細   
-                    //using (CancellationTokenSource cts5 = new CancellationTokenSource())
-                    //{
-                    //    cts5.CancelAfter(timeoutMilliseconds);
-                    //    SENDEMAIL_TB_SALES_PROMOTIONS(cts5.Token);
-                    //    Thread.Sleep(1000);
-                    //}
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"業務活動通知行銷  失敗");
                 }
 
@@ -1230,21 +1533,25 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime2", EX);
                     errorMessages.AppendLine($"每日製令準時完工率數量達交率  失敗");
                 }
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_targetTime2", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_targetTime2", errorMessages.ToString());
             }                      
             
-
         }
         /// <summary>
         /// //每星期一~星期五寄送
@@ -1266,6 +1573,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime1", EX);
                     errorMessages.AppendLine($"CleanMqTempFolder 失敗");
                 }
 
@@ -1280,6 +1589,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime1", EX);
                     errorMessages.AppendLine($"國內、外業務部業績 失敗");
                 }
                 try
@@ -1293,15 +1604,17 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime1", EX);
                     errorMessages.AppendLine($"硯微墨商品銷進 失敗");
                 }
-                
                 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_currentTime1", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
-                //Console.WriteLine($"HRAUTORUN_currentTime1 失敗: {ex.Message}");
             }
             finally
             { 
@@ -1309,7 +1622,8 @@ namespace TKMQ
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_currentTime1", errorMessages.ToString());
             }
         }
 
@@ -1339,6 +1653,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime3", EX);
                     errorMessages.AppendLine($"採購單的庫存量 失敗");
                 }
                 //採購用 
@@ -1354,6 +1670,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime3", EX);
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
                 try
@@ -1368,6 +1686,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime3", EX);
                     errorMessages.AppendLine($"進貨單，還未核準 + 品保驗收  失敗");
                 }
                 try
@@ -1382,6 +1702,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime3", EX);
                     errorMessages.AppendLine($"採購今日未傳真  失敗");
                 }
                 try
@@ -1396,22 +1718,25 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime3", EX);
                     errorMessages.AppendLine($"預計採購未到貨  失敗");
                 }
-
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_currentTime3", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_currentTime3", errorMessages.ToString());
             }
             
-
         }
 
         /// <summary>
@@ -1440,6 +1765,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime4", EX);
                     errorMessages.AppendLine($"商品專案通知失敗  失敗");
                 }
 
@@ -1456,6 +1783,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime4", EX);
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
                 try
@@ -1470,19 +1799,23 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime4", EX);
                     errorMessages.AppendLine($"預計採購未到貨  失敗");
                 }
-
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_currentTime4", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_currentTime4", errorMessages.ToString());
             }    
 
         }
@@ -1512,19 +1845,23 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime5", EX);
                     errorMessages.AppendLine($"採購今日未傳真  失敗");
                 }
-
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_currentTime5", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_currentTime5", errorMessages.ToString());
             }
         }
 
@@ -1553,6 +1890,8 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime6", EX);
                     errorMessages.AppendLine($"進貨單還未核準+品保驗收  失敗");
                 }
 
@@ -1568,19 +1907,23 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_targetTime6", EX);
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
-
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_targetTime6", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_targetTime6", errorMessages.ToString());
             }
             
         }
@@ -1596,7 +1939,6 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             errorMessages.Clear();
 
-
             try
             {
                 try
@@ -1611,19 +1953,23 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("HRAUTORUN_currentTime7", EX);
                     errorMessages.AppendLine($"當日UOF簽核的「採購單」、「採購變更單」  失敗");
                 }
-
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("HRAUTORUN_currentTime7", EX);
                 // 捕獲 HRAUTORUN_currentTime1 中的異常
             }
 
             if (!string.IsNullOrEmpty(errorMessages.ToString()))
             {
-                MessageBox.Show(errorMessages.ToString());
+                // 20261023 排程中不可跳出視窗(會卡住排程)，改寫 Log
+                WRITELOG("HRAUTORUN_currentTime7", errorMessages.ToString());
             }
 
         }
@@ -1642,6 +1988,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ASYNC_HRAUTORUN5", EX);
                 MSG.AppendFormat(@"LINE通知  失敗 ||");
             }
             finally
@@ -1650,131 +1998,65 @@ namespace TKMQ
 
             if (!string.IsNullOrEmpty(MSG.ToString()))
             {
-                MessageBox.Show(MSG.ToString());
+                // 20261023 排程中不可跳出視窗，改寫 Log
+                WRITELOG("ASYNC_HRAUTORUN5", MSG.ToString());
             }
         }
 
-        //currentTime8        
-        public void HRAUTORUN_currentTime8()
-        {
-            //StringBuilder MSG = new StringBuilder();
-
-            //int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-            //CancellationTokenSource cts = new CancellationTokenSource();
-            //cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-
-            //try
-            //{
-            //    //資訊-寄送失敗的重寄
-            //    //先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
-
-            //    //檢查當日是否有寄送失敗
-            //    //[TKMQ].[dbo].[LOG]
-            //    DataTable DT = SERACH_IT_FAIL_DOTIFY();
-
-            //    if (DT != null && DT.Rows.Count >= 1)
-            //    {
-            //        foreach (DataRow DR in DT.Rows)
-            //        {
-            //            //找出是那些mail寄送失敗
-            //            string SOURCE = DR["SOURCE"].ToString();
-
-            //            //國內外業務業績日報
-            //            if (SOURCE.Contains("國內外業務業績日報"))
-            //            {
-            //                SENDEMAIL_DAILY_SALES_MONEY();
-            //            }
-
-            //            //每日批號檢查表
-            //            if (SOURCE.Contains("每日批號檢查表"))
-            //            {
-            //                SETPATH();
-            //                SETFILELOTCHECK(cts.Token);
-
-            //                CLEAREXCEL();
-
-            //                StringBuilder SUBJEST = new StringBuilder();
-            //                StringBuilder BODY = new StringBuilder();
-            //                //LOTCHECK
-            //                SERACHMAILLOTCHECK();
-            //                SUBJEST.Clear();
-            //                BODY.Clear();
-            //                SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //                BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-            //                SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-            //            }
-
-
-            //        }
-
-            //        Thread.Sleep(1000 * 60);
-            //    }
-            //}
-            //catch
-            //{
-            //    MSG.AppendFormat(@"寄送失敗的重寄  失敗 ||");
-            //}
-            //finally
-            //{
-            //}
-
-            //try
-            //{
-            //    //寄送失敗的通知
-            //    SENDMAIL_IT_FAIL_DOTIFY();
-
-            //    //Thread.Sleep(1000 * 60); 的作用是在執行緒（Thread）中暫停執行 60 秒（1 分鐘）。
-            //    //因為HRAUTORUN_currentTime1排程在1分鐘內跑完，會重覆執行，所以sleep暫停1分鐘再繼續排程
-            //    Thread.Sleep(1000 * 60);
-            //}
-            //catch
-            //{
-            //    MSG.AppendFormat(@"寄送失敗的通知  失敗 ||");
-            //}
-            //finally
-            //{
-            //}
-
-            //if (!string.IsNullOrEmpty(MSG.ToString()))
-            //{
-            //    MessageBox.Show(MSG.ToString());
-            //}
-        }
         //SETPATH
         public void SETPATH()
         {
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
 
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單-製令追踨表" + DATES.ToString();
-            pathFileCOPTE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單變更表" + DATES.ToString();
-            pathFilePURTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
-            pathFileMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令-訂單表" + DATES.ToString();
-            pathFileINVMOCTA = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日半成品-製令表" + DATES.ToString();
-            pathFilePURTB = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日已請購未採購表" + DATES.ToString();
-            pathFileMOCINVCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位檢查表" + DATES.ToString();
-            pathFileMOCCOP = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令準時完工率數量達交率表" + DATES.ToString();
-            pathFileINVMC = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日物料安全水位表" + DATES.ToString();
-            pathFilePURTD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日採購單未結案表" + DATES.ToString();
-            pathFileMOCTARE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日製令重工表" + DATES.ToString();
-            pathFileLOTCHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
-            pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
-            path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
-            path_File_POSINV = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
-            path_File_COPTCD = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日訂單明細表" + DATES.ToString();
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            pathFile = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日訂單-製令追踨表" + DATES.ToString();
+            pathFileCOPTE = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日訂單變更表" + DATES.ToString();
+            pathFilePURTA = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日製令-請購表" + DATES.ToString();
+            pathFileMOCTA = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日製令-訂單表" + DATES.ToString();
+            pathFileINVMOCTA = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日半成品-製令表" + DATES.ToString();
+            pathFilePURTB = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日已請購未採購表" + DATES.ToString();
+            pathFileMOCINVCHECK = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日物料安全水位檢查表" + DATES.ToString();
+            pathFileMOCCOP = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日製令準時完工率數量達交率表" + DATES.ToString();
+            pathFileINVMC = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日物料安全水位表" + DATES.ToString();
+            pathFilePURTD = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日採購單未結案表" + DATES.ToString();
+            pathFileMOCTARE = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日製令重工表" + DATES.ToString();
+            pathFileLOTCHECK = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日批號檢查表" + DATES.ToString();
+            pathFileMOCMANULINE = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString();
+            path_File_NEWSLAES = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString();
+            path_File_POSINV = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日庫存表" + DATES.ToString();
+            path_File_COPTCD = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日訂單明細表" + DATES.ToString();
 
-            pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
-            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
+            pathFile_SALES_MONEYS = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
+            pathFile_QC_CHECK = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
         }
 
+        /// <summary>
+        /// 清除 Excel Interop 匯出後殘留的背景 Excel 程序
+        /// 20261023 原本會結束這台電腦上「所有」Excel(含使用者正在編輯的檔案)；
+        /// 改為只結束「同一個登入工作階段、而且沒有視窗」的 Excel(Interop 殘留的背景程序沒有視窗)
+        /// </summary>
         public void CLEAREXCEL()
         {
-            System.Diagnostics.Process[] p = System.Diagnostics.Process.GetProcesses();
-            for (int i = 0; i < p.Length; i++)
+            int mySessionId = Process.GetCurrentProcess().SessionId;
+            foreach (Process p in Process.GetProcessesByName("EXCEL"))
             {
-                if (p[i].ToString().IndexOf("EXCEL") > 0)
-                    p[i].Kill();
+                try
+                {
+                    if (p.SessionId == mySessionId && p.MainWindowHandle == IntPtr.Zero)
+                    {
+                        p.Kill();
+                        WRITELOG("CLEAREXCEL", "結束殘留的背景 Excel 程序 PID=" + p.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    WRITELOG("CLEAREXCEL", ex);
+                }
+                finally
+                {
+                    p.Dispose();
+                }
             }
         }
         public void SENDMAIL(StringBuilder Subject, StringBuilder Body, DataSet SEND, string Attachments)
@@ -1784,40 +2066,17 @@ namespace TKMQ
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = Subject.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = Body.ToString() + Environment.NewLine ;
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(Attachments + ".xlsx");
             MyMail.Attachments.Add(attch);
-
-
-
-           
-
-            //if (Directory.Exists(DirectoryNAME))
-            //{
-            //    tempFile = Directory.GetFiles(DirectoryNAME);//取得資料夾下所有檔案
-
-            //    foreach (string item in tempFile)
-            //    {
-            //        info = new FileInfo(item);
-            //        tFileName = info.Name.ToString().Trim();//取得檔名
-            //        Attachment attch = new Attachment(DirectoryNAME+tFileName);
-            //        MyMail.Attachments.Add(attch);
-
-            //    }
-
-            //}
-
 
             try
             {
@@ -1850,12 +2109,16 @@ namespace TKMQ
                 }
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
@@ -1866,26 +2129,20 @@ namespace TKMQ
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
             StringBuilder BODY = new StringBuilder();
 
             try
             {             
-                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                 MyMail.Subject = Subject.ToString();
                 //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                 MyMail.Body = Body.ToString() + Environment.NewLine;
                 //MyMail.IsBodyHtml = true; //是否使用html格式
 
-              
-                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
                 Attachment attch = new Attachment(Attachments + ".xlsx");
                 MyMail.Attachments.Add(attch);
-
 
                 if (DT.Rows.Count > 0)
                 {
@@ -1903,7 +2160,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">序號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">備註</th>");
-
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -1924,18 +2180,16 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
 
             }
-            catch
-            { }
+            catch (Exception exLog)
+            {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_LOTCHECK", exLog);
+            }
 
             MyMail.Body = Body.ToString() + Environment.NewLine+ BODY.ToString();
             MyMail.IsBodyHtml = true; //是否使用html格式
@@ -1971,12 +2225,16 @@ namespace TKMQ
                 }
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
@@ -2021,8 +2279,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -2036,40 +2292,26 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCH(cancellationToken);
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCH(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddMonths(-1);
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT  MD002 AS '線別',TC053 AS '客戶',TD013 AS '預計交貨日',TD004 AS '訂單品號',TD005 AS '訂單品名',TD006 AS '規格',TD008 AS '訂單量',TD009 AS '出貨量',TD024 AS '贈品量',TD025 AS '贈品已交量',(TD008-TD009+TD024-TD025) AS '總未出貨量',TD010 AS '品號單位',TD001 AS '訂單單別',TD002 AS '訂單單號',TD003 AS '訂單序號',TD016 AS '訂單狀態',MOCTA.TA001 AS '批次轉製令單別',MOCTA.TA002 AS '批次轉製令單號',MOCTA.TA009 AS '製令預計開工日',MOCTA.TA012 AS '製令實際開工日',MOCTA.TA010 AS '製令預計完工日' ,MOCTA.TA014 AS '製令實際完工日',MOCTA.TA006 AS '生產品號',MOCTA.TA034 AS '生產品名',MOCTA.TA007 AS '生產單位',MOCTA.TA015 AS '製令預計產量',MOCTA.TA017 AS '實際入庫數量',COMMENT AS '備註'
@@ -2104,7 +2346,6 @@ namespace TKMQ
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
-
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -2129,6 +2370,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCH", EX);
 
             }
             finally
@@ -2291,139 +2534,20 @@ namespace TKMQ
                 GC.WaitForPendingFinalizers();
             }
         }
-        //public void ExportDataSetToExcel(DataSet ds, string TopathFile)
-        //{
-        //    //Creae an Excel application instance
-        //    Excel.Application excelApp = new Excel.Application();
-
-        //    //Create an Excel workbook instance and open it from the predefined location
-        //    Excel.Workbook excelWorkBook = excelApp.Workbooks.Open(TopathFile);
-        //    Excel.Range wRange;
-        //    Excel.Range wRangepathFile;
-        //    Excel.Range wRangepathFilePURTA;
-
-        //    //Add a new worksheet to workbook with the Datatable name
-        //    Excel.Worksheet excelWorkSheet = excelWorkBook.Sheets.Add();
-
-
-        //    foreach (DataTable table in ds.Tables)
-        //    {
-        //        excelWorkSheet.Name = table.TableName;
-
-        //        for (int i = 1; i < table.Columns.Count + 1; i++)
-        //        {
-        //            excelWorkSheet.Cells[1, i] = table.Columns[i - 1].ColumnName;
-        //            //畫框線
-        //            wRange = excelWorkSheet.Cells[1, i];
-        //            wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-        //            wRange.VerticalAlignment = Excel.XlVAlign.xlVAlignCenter;
-        //            wRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
-        //        }
-
-        //        for (int j = 0; j < table.Rows.Count; j++)
-        //        {
-        //            for (int k = 0; k < table.Columns.Count; k++)
-        //            {
-        //                excelWorkSheet.Cells[j + 2, k + 1] = table.Rows[j].ItemArray[k].ToString();
-
-        //                wRange = excelWorkSheet.Cells[j + 2, k + 1];
-
-        //                //畫框線
-        //                wRange.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
-
-        //                //pathFilePURTA檢查需求差異量是否為負，為負就紅字
-        //                //string tt = table.Rows[j].ItemArray[k].ToString();
-
-        //                if (TopathFile.Equals(pathFile.ToString()) && k == 16 && string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()))
-        //                {
-        //                    string STARTCELL = "A" + (j + 2).ToString();
-        //                    string ENDCELL = "AI" + (j + 2).ToString();
-        //                    Excel.Range newRng = excelApp.get_Range(STARTCELL, ENDCELL);
-        //                    newRng.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-
-        //                }
-
-        //                //pathFilePURTA檢查需求差異量是否為負，為負就紅字
-        //                //string tt = table.Rows[j].ItemArray[k].ToString();
-
-        //                if (TopathFile.Equals(pathFilePURTA.ToString()) && k == 9 && !string.IsNullOrEmpty(table.Rows[j].ItemArray[k].ToString()) && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-
-        //                //wRange.Interior.Color = ColorTranslator.ToOle(System.Drawing.Color.DimGray);
-        //                // Set the range to fill. pathFileMOCINVCHECK
-
-        //                if (TopathFile.Equals(pathFileINVMOCTA) && k == 6 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-
-        //                if (TopathFile.Equals(pathFileMOCINVCHECK) && k == 4 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-        //                //pathFileMOCCOP
-        //                if (TopathFile.Equals(pathFileMOCCOP) && k == 16 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-        //                if (TopathFile.Equals(pathFileMOCCOP) && k == 18 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) > 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-        //                //pathFileINVMC
-        //                if (TopathFile.Equals(pathFileINVMC) && k == 7 && Convert.ToDecimal(table.Rows[j].ItemArray[k].ToString()) < 0)
-        //                {
-        //                    wRange.Select();
-        //                    wRange.Font.Color = ColorTranslator.ToOle(System.Drawing.Color.Red);
-        //                }
-
-
-        //            }
-        //        }
-
-        //        //設定為按照內容自動調整欄寬
-        //        excelWorkSheet.Columns.AutoFit();
-        //    }
-
-
-
-        //    excelWorkBook.Save();
-        //    excelWorkBook.Close();
-        //    excelApp.Quit();
-
-        //    // 释放COM对象
-        //    Marshal.ReleaseComObject(excelWorkSheet);
-        //    Marshal.ReleaseComObject(excelWorkBook);
-        //    Marshal.ReleaseComObject(excelApp);
-        //}
 
         public void SERACHMAIL()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -2440,7 +2564,6 @@ namespace TKMQ
                 adapterMAIL.Fill(dsMAIL, "TEMPdsMAIL");
                 sqlConn.Close();
 
-
                 if (dsMAIL.Tables["TEMPdsMAIL"].Rows.Count == 0)
                 {
 
@@ -2456,6 +2579,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAIL", EX);
 
             }
             finally
@@ -2499,13 +2624,10 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-
             if (!File.Exists(pathFileCOPTE + ".xlsx"))
             {
                 wBook.SaveAs(pathFileCOPTE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
-
-
 
             //關閉Excel
             excelApp.Quit();
@@ -2520,32 +2642,20 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHCOPTE(cancellationToken);
-
-            //if (!File.Exists(pathFileCOPTE + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCHCOPTE(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddMonths(-1);
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
@@ -2553,7 +2663,6 @@ namespace TKMQ
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"
                                     SELECT TE006 AS '變更原因',TE001 AS '訂單',TE002 AS '訂單號',TE003 AS '訂單序號',TF005 AS '品號',TF006 AS '品名',TF007 AS '規格',TF009 AS '數量',TF020 AS '新贈品量',TF010 AS '單位',TF015 AS '新預交日',TF109 AS '原訂單數量'
@@ -2575,7 +2684,6 @@ namespace TKMQ
                 adapterCOPTE.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterCOPTE.Fill(dsCOPTE, "TEMPdsCOPTE");
                 sqlConn.Close();
-
 
                 if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count == 0)
                 {
@@ -2603,6 +2711,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHCOPTE", EX);
 
             }
             finally
@@ -2613,21 +2723,18 @@ namespace TKMQ
 
         public void UPDATETRIGGERRECORDMAILYN()
         {
+            // 20261023 改用區域變數(sqlConn, tran, cmd)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
+            SqlTransaction tran = null;
+            SqlCommand cmd = new SqlCommand();
             try
             {
                 if (dsCOPTE.Tables["TEMPdsCOPTE"].Rows.Count >= 1)
                 {
-                    //20210902密
-                    Class1 TKID = new Class1();//用new 建立類別實體
-                    SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                    //資料庫使用者密碼解密
-                    sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                    sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                    SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                     String connectionString;
                     sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                     sqlConn.Close();
                     sqlConn.Open();
@@ -2650,7 +2757,6 @@ namespace TKMQ
 
                     sbSql.AppendFormat(" ");
 
-
                     cmd.Connection = sqlConn;
                     cmd.CommandTimeout = SQL_TIMEOUT_LIMITS;
                     cmd.CommandText = sbSql.ToString();
@@ -2668,10 +2774,11 @@ namespace TKMQ
                     }
                 }
 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UPDATETRIGGERRECORDMAILYN", EX);
 
             }
 
@@ -2683,26 +2790,17 @@ namespace TKMQ
 
         public void SERACHMAILCOPTE()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                      SELECT [SENDTO],[MAIL]
@@ -2720,7 +2818,6 @@ namespace TKMQ
                 adapterMAILCOPTE.Fill(dsMAILCOPTE, "TEMPdsMAILCOPTE");
                 sqlConn.Close();
 
-
                 if (dsMAILCOPTE.Tables["TEMPdsMAILCOPTE"].Rows.Count == 0)
                 {
 
@@ -2736,6 +2833,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILCOPTE", EX);
 
             }
             finally
@@ -2743,8 +2842,6 @@ namespace TKMQ
 
             }
         }
-
-
 
         public void SETFILEPURTA(CancellationToken cancellationToken)
         {
@@ -2781,13 +2878,10 @@ namespace TKMQ
             // 設定活頁簿焦點
             wBook.Activate();
 
-
             if (!File.Exists(pathFilePURTA + ".xlsx"))
             {
                 wBook.SaveAs(pathFilePURTA, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
-
-
 
             //關閉Excel
             excelApp.Quit();
@@ -2803,18 +2897,13 @@ namespace TKMQ
             Console.Read();
 
             SEARCHVPURTDINVMD(cancellationToken);
-            //SEARCHPURTA();
-
-            //if (!File.Exists(pathFileCOPTE + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCHVPURTDINVMD(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATE2 = DateTime.Now;
             DateTime SEARCHDATE3 = DateTime.Now.AddDays(7);
             DateTime SEARCHDATE4 = DateTime.Now.AddDays(14);
@@ -2822,21 +2911,13 @@ namespace TKMQ
             DateTime SEARCHDATE6 = DateTime.Now.AddDays(30);
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT TB003 AS '品號',MB002 AS '品名' 
@@ -2874,7 +2955,6 @@ namespace TKMQ
                 adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
                 sqlConn.Close();
 
-
                 if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count == 0)
                 {
 
@@ -2885,13 +2965,14 @@ namespace TKMQ
                     {
                         ExportDataSetToExcel(dsPURTA, pathFilePURTA);
 
-
                     }
                 }
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHVPURTDINVMD", EX);
 
             }
             finally
@@ -2900,331 +2981,19 @@ namespace TKMQ
             }
         }
 
-
-        public void SETFILEPURTA2()
+public void SERACHMAILPURTA()
         {
-            DateTime SEARCHDATE2 = DateTime.Now;
-
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                sbSql.AppendFormat(@"  
-                                    SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
-                                    FROM (
-                                    SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA  WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
-                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
-                                    ,TB009 AS '庫別'
-                                    FROM [TK].dbo.MOCTB WITH(NOLOCK),[TK].dbo.MOCTA WITH(NOLOCK),[TK].dbo.INVMB WITH(NOLOCK)
-                                    WHERE TA001=TB001 AND TA002=TB002
-                                    AND MB001=TB003
-                                    AND TB018='Y'
-                                    AND (TB003 LIKE '1%' OR TB003 LIKE '2%')
-                                    AND TA003>='{0}'
-                                    AND (TB004-TB005)>0
-                                    AND TB001 NOT  IN ('A513')
-                                    GROUP BY TB003,TB007,TB009,MB002) AS TEMP
-                                    WHERE  需求差異量<0
-                                    UNION ALL
-                                    SELECT 品號,品名,需求量,單位,現有庫存,需求差異量,總採購量,最快採購日
-                                    FROM (
-                                    SELECT TB003 AS '品號',MB002 AS '品名' ,SUM(TB004-TB005) AS '需求量',TB007 AS '單位'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009) AS '現有庫存'
-                                    ,(SELECT SUM(LA005*LA011) FROM [TK].dbo.INVLA WITH(NOLOCK) WHERE LA001=TB003 AND LA009=TB009)-SUM(TB004-TB005) AS '需求差異量'
-                                    ,(SELECT ISNULL(CONVERT(DECIMAL(16,2),SUM(NUM)),0) FROM [TK].dbo.VPURTDINVMD  WITH(NOLOCK) WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '總採購量'
-                                    ,(SELECT TOP 1 ISNULL(TD012,'')+' 預計到貨:'+CONVERT(nvarchar,CONVERT(DECIMAL(16,2),NUM))  FROM [TK].dbo.VPURTDINVMD WHERE  TD004=TB003 AND TD007=TD007 AND TD012>='{0}') AS '最快採購日'
-                                    ,TB009 AS '庫別'
-                                    FROM [TK].dbo.MOCTB WITH(NOLOCK) ,[TK].dbo.MOCTA WITH(NOLOCK) ,[TK].dbo.INVMB WITH(NOLOCK) 
-                                    WHERE TA001=TB001 AND TA002=TB002
-                                    AND MB001=TB003
-                                    AND TB018='Y'
-                                    AND (TB003 LIKE '1%' OR TB003 LIKE '2%')
-                                    AND TA003>='{0}'
-                                    AND (TB004-TB005)>0
-                                    AND TB001 NOT  IN ('A513')
-                                    GROUP BY TB003,TB007,TB009,MB002) AS TEMP
-                                    WHERE  需求差異量>0
-                                    ", SEARCHDATE2.ToString("yyyyMMdd"));
-
-
-                adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilderPURTA = new SqlCommandBuilder(adapterPURTA);
-                sqlConn.Open();
-
-                dsPURTA.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterPURTA.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
-                sqlConn.Close();
-
-
-                if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count == 0)
-                {
-                    //建立一筆新的DataRow，並且等於新的dt row
-                    DataRow row = dsPURTA.Tables["TEMPdsPURTA"].NewRow();
-
-                    //指定每個欄位要儲存的資料                   
-                    row[0] = "本日無資料"; ;
-
-                    //新增資料至DataTable的dt內
-                    dsPURTA.Tables["TEMPdsPURTA"].Rows.Add(row);
-
-                    ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1", pathFilePURTA);
-                }
-                else
-                {
-                    if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count >= 1)
-                    {
-                        ExportToExcel(dsPURTA.Tables["TEMPdsPURTA"], "Sheet1", pathFilePURTA);
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-                INSERTLOG(pathFilePURTA, EX.ToString());
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        public void ExportToExcel(DataTable data, string sheetName, string PATH)
-        {
-            try
-            {
-                if (Directory.Exists(DirectoryNAME))
-                {
-                    //資料夾存在，pathFileCOPTE
-                    if (File.Exists(PATH + ".xlsx"))
-                    {
-                        File.Delete(PATH + ".xlsx");
-                    }
-                }
-                else
-                {
-                    //新增資料夾
-                    Directory.CreateDirectory(DirectoryNAME);
-                }
-
-                XSSFWorkbook workbook = new XSSFWorkbook();
-                XSSFSheet sheet = (XSSFSheet)workbook.CreateSheet(sheetName);
-                XSSFRow rowHeader = (XSSFRow)sheet.CreateRow(0);
-                ICell icell;
-
-                //填寫表頭
-                for (int i = 0; i < data.Columns.Count; i++)
-                {
-                    //string strValue = data.Columns[i].ColumnName.ToString();
-                    XSSFCell cell = (XSSFCell)rowHeader.CreateCell(i);
-                    cell.SetCellValue(data.Columns[i].ColumnName.ToString());
-
-                    //建立新的CellStyle
-                    ICellStyle CellsStyle = workbook.CreateCellStyle();
-                    //建立字型
-                    IFont StyleFont = workbook.CreateFont();
-                    //設定文字字型
-                    StyleFont.FontName = "微軟正黑體";
-                    //設定文字大小
-                    StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
-                                                       //字的顏色
-                                                       //StyleFont.Color = IndexedColors.Red.Index;  
-                    CellsStyle.SetFont(StyleFont);
-                    // 水平置中
-                    CellsStyle.Alignment = NPOI.SS.UserModel.HorizontalAlignment.Center;
-                    // 設定框線 
-                    //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
-                    //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
-                    //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
-                    //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
-
-                    cell.CellStyle = CellsStyle;
-
-
-
-                    //rowHead.CreateCell(i, CellType.String).SetCellValue(data.Columns[i].ColumnName.ToString());
-
-                }
-
-                //填寫內容
-                for (int i = 0; i < data.Rows.Count; i++)
-                {
-                    XSSFRow rowItem = (XSSFRow)sheet.CreateRow(i + 1);
-
-                    for (int j = 0; j < data.Columns.Count; j++)
-                    {
-                        XSSFCell cell = (XSSFCell)rowItem.CreateCell(j);
-                        cell.SetCellValue(data.Rows[i][j].ToString());
-
-                        //建立新的CellStyle
-                        ICellStyle CellsStyle = workbook.CreateCellStyle();
-                        //建立字型
-                        IFont StyleFont = workbook.CreateFont();
-                        //設定文字字型
-                        StyleFont.FontName = "微軟正黑體";
-                        //設定文字大小
-                        StyleFont.FontHeightInPoints = 12; //設定文字大小為10pt
-                                                           //字的顏色
-                        if (PATH.Equals(pathFilePURTA) && j == 5 && Convert.ToDecimal(data.Rows[i][j].ToString()) < 0)
-                        {
-
-                            StyleFont.Color = IndexedColors.Red.Index;
-
-                        }
-
-                        CellsStyle.SetFont(StyleFont);
-
-                        // 設定框線 
-                        //CellsStyle.BorderBottom = NPOI.SS.UserModel.BorderStyle.Thin;
-                        //CellsStyle.BorderLeft = NPOI.SS.UserModel.BorderStyle.Thin;
-                        //CellsStyle.BorderRight = NPOI.SS.UserModel.BorderStyle.Thin;
-                        //CellsStyle.BorderTop = NPOI.SS.UserModel.BorderStyle.Thin;
-
-                        cell.CellStyle = CellsStyle;
-
-                        //row.CreateCell(j).SetCellValue(data.Rows[i][j].ToString());
-
-                    }
-                }
-
-                for (int i = 0; i < data.Columns.Count; i++)
-                {
-                    sheet.AutoSizeColumn(i);
-                }
-
-                using (FileStream stream = File.OpenWrite(PATH + ".xlsx"))
-                {
-                    workbook.Write(stream);
-                    stream.Close();
-                }
-
-                GC.Collect();
-            }
-
-            catch (Exception EX)
-            {
-                INSERTLOG(pathFilePURTA, EX.ToString());
-            }
-
-            finally
-            {
-
-            }
-
-        }
-
-
-
-        public void SEARCHPURTA()
-        {
-            DateTime SEARCHDATE = DateTime.Now;
-
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-                sbSql.AppendFormat(@"  
-                                    SELECT TA001 AS '製令',TA002 AS '製令單號',TA003 AS '開單日',TA006 AS '品號',TA034 AS '品名',TA015 AS '數量',TA007 AS '單位',CASE WHEN ISNULL(PURTA001,'')<>'' THEN '已請購' ELSE (CASE WHEN  ISNULL([COMMENT],'')<>'' THEN ''  ELSE '未請購'END ) END  AS '是否請購',PURTA001 AS '請購單',PURTA002 AS '請購單號' ,[COMMENT] AS '備註'
-                                    FROM [TK].dbo.MOCTA WITH(NOLOCK) 
-                                    LEFT JOIN [TKWAREHOUSE].[dbo].[PURTAB]  WITH(NOLOCK) ON TA001=[PURTAB].[MOCTA001] AND TA002=[PURTAB].[MOCTA002] AND TA006=[PURTAB].[MOCTA006]
-                                    LEFT JOIN [TKWAREHOUSE].[dbo].[MOCINVCHECK]  WITH(NOLOCK) ON TA001=[MOCINVCHECK].[MOCTA001] AND TA002=[MOCINVCHECK].[MOCTA002]
-                                    WHERE TA003>='{0}'
-                                    AND TA006 LIKE '4%'
-                                    AND TA001 NOT IN ('A513') 
-                                    ", SEARCHDATE.ToString("yyyyMMdd"));
-
-                adapterPURTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilderPURTA = new SqlCommandBuilder(adapterPURTA);
-                sqlConn.Open();
-
-                dsPURTA.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterPURTA.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapterPURTA.Fill(dsPURTA, "TEMPdsPURTA");
-                sqlConn.Close();
-
-
-                if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count == 0)
-                {
-
-                }
-                else
-                {
-                    if (dsPURTA.Tables["TEMPdsPURTA"].Rows.Count >= 1)
-                    {
-                        ExportDataSetToExcel(dsPURTA, pathFilePURTA);
-
-
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-        }
-
-        public void SERACHMAILPURTA()
-        {
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL]
@@ -3242,7 +3011,6 @@ namespace TKMQ
                 adapterMAILPURTA.Fill(dsMAILPURTA, "TEMPdsMAILPURTA");
                 sqlConn.Close();
 
-
                 if (dsMAILPURTA.Tables["TEMPdsMAILPURTA"].Rows.Count == 0)
                 {
 
@@ -3258,6 +3026,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILPURTA", EX);
 
             }
             finally
@@ -3307,8 +3077,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileMOCTA, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -3322,35 +3090,21 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHMOCTA(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHMOCTA(CancellationToken cancellationToken)
         {
-            //DateTime SEARCHDATE = DateTime.Now;
-            //SEARCHDATE = SEARCHDATE.AddMonths(-1);
-
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -3374,7 +3128,6 @@ namespace TKMQ
                 adapterMOCTA.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterMOCTA.Fill(dsMOCTA, "dsMOCTA");
                 sqlConn.Close();
-
 
                 if (dsMOCTA.Tables["dsMOCTA"].Rows.Count == 0)
                 {
@@ -3400,6 +3153,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHMOCTA", EX);
 
             }
             finally
@@ -3410,26 +3165,17 @@ namespace TKMQ
 
         public void SERACHMAILMOCTA()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -3447,7 +3193,6 @@ namespace TKMQ
                 adapterMAILMOCTA.Fill(dsMAILMOCTA, "dsMAILMOCTA");
                 sqlConn.Close();
 
-
                 if (dsMAILMOCTA.Tables["dsMAILMOCTA"].Rows.Count == 0)
                 {
 
@@ -3463,6 +3208,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILMOCTA", EX);
 
             }
             finally
@@ -3471,61 +3218,7 @@ namespace TKMQ
             }
         }
 
-        public void INSERTLOG(string SOURCE, string EX)
-        {
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sqlConn.Close();
-                sqlConn.Open();
-                tran = sqlConn.BeginTransaction();
-
-                sbSql.Clear();
-
-
-                sbSql.AppendFormat(" INSERT INTO [TKMQ].[dbo].[LOG] ([SOURCE],[EX]) VALUES ('{0}','{1}')", SOURCE, EX);
-                sbSql.AppendFormat(" ");
-                sbSql.AppendFormat(" ");
-
-
-                cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
-                cmd.CommandText = sbSql.ToString();
-                cmd.Transaction = tran;
-                result = cmd.ExecuteNonQuery();
-
-                if (result == 0)
-                {
-                    tran.Rollback();    //交易取消
-                }
-                else
-                {
-                    tran.Commit();      //執行交易  
-
-
-                }
-            }
-
-            catch (Exception EXCE)
-            {
-
-            }
-            finally
-            { }
-        }
-
-        public void SETFILEINVMOCTA(CancellationToken cancellationToken)
+public void SETFILEINVMOCTA(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3566,8 +3259,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileINVMOCTA, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -3581,40 +3272,24 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHINVMOCTA(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHINVMOCTA(CancellationToken cancellationToken)
         {
-            //DateTime SEARCHDATE = DateTime.Now;
-            //SEARCHDATE = SEARCHDATE.AddMonths(-1);
-
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT  LA001 AS '品號' ,MB002 AS '品名',MB003 AS '規格',LA016 AS '批號'  
@@ -3639,7 +3314,6 @@ namespace TKMQ
                 adapterINVMOCTA.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterINVMOCTA.Fill(dsINVMOCTA, "dsINVMOCTA");
                 sqlConn.Close();
-
 
                 if (dsINVMOCTA.Tables["dsINVMOCTA"].Rows.Count == 0)
                 {
@@ -3673,69 +3347,7 @@ namespace TKMQ
             }
         }
 
-        public void SERACHMAILINVMOCTA()
-        {
-            try
-            {//20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
-                sbSql.AppendFormat(@"  
-                                    SELECT [SENDTO],[MAIL] 
-                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
-                                    WHERE [SENDTO]='INVCHECK'  
-                                    ");
-
-                adapterMAILINVMOCTA = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilderMAILINVMOCTA = new SqlCommandBuilder(adapterMAILINVMOCTA);
-                sqlConn.Open();
-                dsMAILINVMOCTA.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterMAILINVMOCTA.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapterMAILINVMOCTA.Fill(dsMAILINVMOCTA, "dsMAILINVMOCTA");
-                sqlConn.Close();
-
-
-                if (dsMAILINVMOCTA.Tables["dsMAILINVMOCTA"].Rows.Count == 0)
-                {
-
-                }
-                else
-                {
-                    if (dsMAILINVMOCTA.Tables["dsMAILINVMOCTA"].Rows.Count >= 1)
-                    {
-
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-        }
-
-        public void SETFILEPURTB(CancellationToken cancellationToken)
+public void SETFILEPURTB(CancellationToken cancellationToken)
         {
             if (Directory.Exists(DirectoryNAME))
             {
@@ -3776,8 +3388,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFilePURTB, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -3791,41 +3401,26 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHPURTB(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHPURTB(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATE = DateTime.Now;
             SEARCHDATE = SEARCHDATE.AddDays(-2);
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
@@ -3849,7 +3444,6 @@ namespace TKMQ
                 adapterPURTB.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterPURTB.Fill(dsPURTB, "dsPURTB");
                 sqlConn.Close();
-
 
                 if (dsPURTB.Tables["dsPURTB"].Rows.Count == 0)
                 {
@@ -3875,6 +3469,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHPURTB", EX);
 
             }
             finally
@@ -3885,26 +3481,17 @@ namespace TKMQ
 
         public void SERACHMAILPURTB()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL]
@@ -3922,7 +3509,6 @@ namespace TKMQ
                 adapterMAILPURTB.Fill(dsMAILPURTB, "dsMAILPURTB");
                 sqlConn.Close();
 
-
                 if (dsMAILPURTB.Tables["dsMAILPURTB"].Rows.Count == 0)
                 {
 
@@ -3938,6 +3524,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILPURTB", EX);
 
             }
             finally
@@ -3987,8 +3575,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileMOCINVCHECK, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -4002,35 +3588,21 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHMOCINVCHECK();
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHMOCINVCHECK()
         {
-            //DateTime SEARCHDATE = DateTime.Now;
-            //SEARCHDATE = SEARCHDATE.AddDays(-2);
-
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -4053,7 +3625,6 @@ namespace TKMQ
                 adapterMOCINVCHECK.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterMOCINVCHECK.Fill(dsMOCINVCHECK, "dsMOCINVCHECK");
                 sqlConn.Close();
-
 
                 if (dsMOCINVCHECK.Tables["dsMOCINVCHECK"].Rows.Count == 0)
                 {
@@ -4128,8 +3699,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileMOCCOP, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -4143,44 +3712,28 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHMOCCOP(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHMOCCOP(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATES = DateTime.Now;
             SEARCHDATES = SEARCHDATES.AddDays(-8);
             DateTime SEARCHDATEE = DateTime.Now;
             SEARCHDATEE = SEARCHDATEE.AddDays(-1);
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT TC053 AS '客戶',TA001 AS '製令單',TA002 AS '製令編號',TA006 AS '品號',TA034 AS '品名',TA007 AS '生產單位',TA009 AS '預計開工日',TA010 AS '預計完工日',TA014 AS '實際完工日',TA015 AS '預計產量',TA017 AS '已生產量',TA026 AS '訂單別',TA027 AS '訂單號',TA028 AS '訂單序',[OLDNUM] AS '訂單量'
@@ -4212,7 +3765,6 @@ namespace TKMQ
                 adapterMOCCOP.Fill(dsMOCCOP, "dsMOCCOP");
                 sqlConn.Close();
 
-
                 if (dsMOCCOP.Tables["dsMOCCOP"].Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -4237,6 +3789,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHMOCCOP", EX);
 
             }
             finally
@@ -4247,24 +3801,17 @@ namespace TKMQ
 
         public void SERACHMAILMOCCOP()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -4282,7 +3829,6 @@ namespace TKMQ
                 adapterMAILMOCCOP.Fill(dsMAILMOCCOP, "dsMAILMOCCOP");
                 sqlConn.Close();
 
-
                 if (dsMAILMOCCOP.Tables["dsMAILMOCCOP"].Rows.Count == 0)
                 {
 
@@ -4298,6 +3844,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILMOCCOP", EX);
 
             }
             finally
@@ -4347,8 +3895,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileINVMC, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -4362,37 +3908,25 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHINVMC();
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHINVMC()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime SEARCHDATE2 = DateTime.Now;
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT MC001 AS '品號',MB002 AS '品名',MC002 AS '庫別',MB004 AS '單位',MC004 AS '安全批量',MC005 AS '補貨點'
@@ -4411,14 +3945,12 @@ namespace TKMQ
 
                 sqlCmdBuilderINVMC = new SqlCommandBuilder(adapterINVMC);
 
-
                 sqlConn.Open();
                 dsINVMC.Clear();
                 // 設置查詢的超時時間，以秒為單位
                 adapterINVMC.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterINVMC.Fill(dsINVMC, "dsINVMC");
                 sqlConn.Close();
-
 
                 if (dsINVMC.Tables["dsINVMC"].Rows.Count == 0)
                 {
@@ -4438,68 +3970,6 @@ namespace TKMQ
                     if (dsINVMC.Tables["dsINVMC"].Rows.Count >= 1)
                     {
                         ExportDataSetToExcel(dsINVMC, pathFileINVMC);
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-        }
-        public void SERACHMAILINVMC()
-        {
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
-                sbSql.AppendFormat(@"  
-                                    SELECT [SENDTO],[MAIL] 
-                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
-                                    WHERE [SENDTO]='MOC'  
-                                    ");
-
-                adapterMAILINVMC = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilderMAILINVMC = new SqlCommandBuilder(adapterMAILINVMC);
-                sqlConn.Open();
-                dsMAILINVMC.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterMAILINVMC.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapterMAILINVMC.Fill(dsMAILINVMC, "dsMAILINVMC");
-                sqlConn.Close();
-
-
-                if (dsMAILINVMC.Tables["dsMAILINVMC"].Rows.Count == 0)
-                {
-
-                }
-                else
-                {
-                    if (dsMAILINVMC.Tables["dsMAILINVMC"].Rows.Count >= 1)
-                    {
-
                     }
                 }
 
@@ -4555,8 +4025,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFilePURTD, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -4570,37 +4038,24 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHPURTD(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHPURTD(CancellationToken cancellationToken)
         {
-            //DateTime SEARCHDATE2 = DateTime.Now;
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TD004 AS '品號',TD005 AS '品名',TD006 AS '規格',TD008 AS '採購量',TD015 AS '已進貨',TD009 AS '單位',TD012 AS '預交日',TD001 AS '採購單別',TD002 AS '採購單號',TD003 AS '序號'
@@ -4614,10 +4069,8 @@ namespace TKMQ
                                     ");
 
                 adapterPURTD = new SqlDataAdapter(@"" + sbSql, sqlConn);
-                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
 
                 sqlCmdBuilderPURTD = new SqlCommandBuilder(adapterPURTD);
-
 
                 sqlConn.Open();
                 dsPURTD.Clear();
@@ -4625,7 +4078,6 @@ namespace TKMQ
                 adapterPURTD.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterPURTD.Fill(dsPURTD, "dsPURTD");
                 sqlConn.Close();
-
 
                 if (dsPURTD.Tables["dsPURTD"].Rows.Count == 0)
                 {
@@ -4651,6 +4103,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHPURTD", EX);
 
             }
             finally
@@ -4659,89 +4113,19 @@ namespace TKMQ
             }
         }
 
-        public void SERACHMAILMOCTARE()
+public DataTable SERACH_MAIL_MOCMANULINE()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
-                sbSql.AppendFormat(@"  
-                                    SELECT [SENDTO],[MAIL] 
-                                    FROM [TKMQ].[dbo].[MQSENDMAIL] 
-                                    WHERE [SENDTO]='MOCTARE'  
-                                    ");
-
-                adapterMAILMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilderMAILMOCTARE = new SqlCommandBuilder(adapterMAILMOCTARE);
-                sqlConn.Open();
-                dsMAILMOCTARE.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterMAILMOCTARE.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapterMAILMOCTARE.Fill(dsMAILMOCTARE, "dsMAILMOCTARE");
-                sqlConn.Close();
-
-
-                if (dsMAILMOCTARE.Tables["dsMAILMOCTARE"].Rows.Count == 0)
-                {
-
-                }
-                else
-                {
-                    if (dsMAILMOCTARE.Tables["dsMAILMOCTARE"].Rows.Count >= 1)
-                    {
-
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-        }
-
-        public DataTable SERACH_MAIL_MOCMANULINE()
-        {
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -4771,6 +4155,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_MOCMANULINE", EX);
                 return null;
             }
             finally
@@ -4781,24 +4167,17 @@ namespace TKMQ
 
         public void SERACHMAILLOTCHECK()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -4816,7 +4195,6 @@ namespace TKMQ
                 adapterMAILLOTCHECK.Fill(dsMAILLOTCHECK, "dsMAILLOTCHECK");
                 sqlConn.Close();
 
-
                 if (dsMAILLOTCHECK.Tables["dsMAILLOTCHECK"].Rows.Count == 0)
                 {
 
@@ -4832,6 +4210,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILLOTCHECK", EX);
 
             }
             finally
@@ -4842,26 +4222,17 @@ namespace TKMQ
 
         public void SERACHMAILPURTD()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -4879,7 +4250,6 @@ namespace TKMQ
                 adapterMAILPURTD.Fill(dsMAILPURTD, "dsMAILPURTD");
                 sqlConn.Close();
 
-
                 if (dsMAILPURTD.Tables["dsMAILPURTD"].Rows.Count == 0)
                 {
 
@@ -4895,6 +4265,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILPURTD", EX);
 
             }
             finally
@@ -4944,8 +4316,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileMOCTARE, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -4959,37 +4329,24 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCHMOCTARE(cancellationToken);
 
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHMOCTARE(CancellationToken cancellationToken)
         {
-            //DateTime SEARCHDATE2 = DateTime.Now;
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT TA001 AS '製令單別',TA002 AS '製令單號',TA009 AS '開工日',TA006 AS '品號',TA034 AS '品名',TA015 AS '生產量',TA007 AS '單位'
@@ -4998,12 +4355,9 @@ namespace TKMQ
                                     AND TA001 IN ('A521')
                                     ");
 
-
                 adapterMOCTARE = new SqlDataAdapter(@"" + sbSql, sqlConn);
-                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
 
                 sqlCmdBuilderMOCTARE = new SqlCommandBuilder(adapterMOCTARE);
-
 
                 sqlConn.Open();
                 dsMOCTARE.Clear();
@@ -5011,7 +4365,6 @@ namespace TKMQ
                 adapterMOCTARE.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapterMOCTARE.Fill(dsMOCTARE, "dsMOCTARE");
                 sqlConn.Close();
-
 
                 if (dsMOCTARE.Tables["dsMOCTARE"].Rows.Count == 0)
                 {
@@ -5086,8 +4439,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFileLOTCHECK, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -5103,12 +4454,6 @@ namespace TKMQ
 
             SEARCHLOTCHECK(cancellationToken);
          
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
         }
 
         public void SEARCHLOTCHECK(CancellationToken cancellationToken)
@@ -5124,7 +4469,6 @@ namespace TKMQ
                 DataSet DS = new DataSet();
                 DS.Tables.Add(DT.Copy());
 
-
                 if (DT.Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -5137,7 +4481,6 @@ namespace TKMQ
                     DT.Rows.Add(row);
                 }
 
-                
                 if (DT.Rows.Count >= 1)
                 {
                     ExportDataSetToExcel(DS, pathFileLOTCHECK);
@@ -5146,6 +4489,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHLOTCHECK", EX);
 
             }
             finally
@@ -5156,13 +4501,12 @@ namespace TKMQ
 
         public DataTable SEARCHLOTCHECK_SHOWMAIL(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
@@ -5300,8 +4644,10 @@ namespace TKMQ
 
                 return dsLOTCHECK.Tables["dsLOTCHECK"];
             }
-            catch (Exception)
+            catch (Exception exLog)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHLOTCHECK_SHOWMAIL", exLog);
                 return null;
             }
             finally
@@ -5313,193 +4659,14 @@ namespace TKMQ
             }
         }
 
-
-
-
-
-        public void SEARCHMOCMANULINE()
-        {
-            //DateTime SEARCHDATE2 = DateTime.Now;
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-
-                sbSql.AppendFormat(@"  
-                                  SELECT MANU AS '線別' ,TC053 AS '客戶',MV002 AS '業務員',MANUDATE AS '生產日',[MB002] AS '品名',BAR AS '桶數',NUM AS '數量',PACKAGE AS '包裝數',TD001 AS '訂單',TD002 AS '訂單單號',TD003 AS '訂單序號',MOCTA001 AS '製令',MOCTA002 AS '製令號'
-                                    FROM (
-                                    SELECT  [MOCMANULINE].[MANU] ,CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112) MANUDATE,[MOCMANULINE].[MB002]
-                                    ,ISNULL([MOCMANULINE].[BAR],0) BAR,ISNULL([MOCMANULINE].[NUM],0) NUM,ISNULL([MOCMANULINE].[PACKAGE],0) PACKAGE
-                                    ,[MOCMANULINE].[COPTD001] AS TD001
-                                    ,[MOCMANULINE].[COPTD002] AS TD002
-                                    ,[MOCMANULINE].[COPTD003] AS TD003
-                                    ,[COPTC].TC053,[CMSMV].MV002
-                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
-                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG]  WITH(NOLOCK) WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'              
-                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINE] WITH(NOLOCK) 
-                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINE].[COPTD001]=[COPTD].TD001 AND [MOCMANULINE].[COPTD002]=[COPTD].TD002 AND[MOCMANULINE].[COPTD003]=[COPTD].TD003 
-                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002
-                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006
-                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]
-                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
-                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
-                                    WHERE CONVERT(nvarchar,[MOCMANULINE].[MANUDATE],112)>='{0}' 
-                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
-                                    UNION ALL  
-                                    SELECT  [MOCMANULINETEMP].[MANU] ,CONVERT(nvarchar,dateadd(ms,-3,dateadd(yy, datediff(yy,0,getdate())+2, 0)) ,112) MANUDATE,[MOCMANULINETEMP].[MB002]
-                                    ,ISNULL([MOCMANULINETEMP].[BAR],0) BAR,ISNULL([MOCMANULINETEMP].[NUM],0) NUM,ISNULL([MOCMANULINETEMP].[PACKAGE],0) PACKAGE
-                                    ,[MOCMANULINETEMP].[COPTD001] AS TD001
-                                    ,[MOCMANULINETEMP].[COPTD002] AS TD002
-                                    ,[MOCMANULINETEMP].[COPTD003] AS TD003
-                                    ,[COPTC].TC053,[CMSMV].MV002
-                                    ,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS 'MOCTA001' 
-                                    ,ISNULL([MOCMANULINERESULT].[MOCTA002],'') AS 'MOCTA002' 
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK) WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002])+(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK)  WHERE TG014=[MOCMANULINERESULT].[MOCTA001] AND TG015=[MOCMANULINERESULT].[MOCTA002]) AS '入庫量A'  
-                                    ,(SELECT ISNULL(SUM(TG011),0) FROM  [TK].dbo.[MOCTG] WITH(NOLOCK)  WHERE TG014=[MOCTA].TA001 AND TG015=[MOCTA].TA002)  AS '入庫量B'  
-                                    ,[MOCMANULINEMERGE].[NO],[MOCTA].TA033,ISNULL([MOCMANULINERESULT].[MOCTA001],'') AS MOCTA001A,ISNULL([MOCMANULINERESULT].[MOCTA002],'')  AS MOCTA002A,ISNULL([MOCTA].TA001,'')  AS MOCTA001B,ISNULL([MOCTA].TA002,'')  AS MOCTA002B  
-                                    FROM [TKMOC].[dbo].[MOCMANULINETEMP]   WITH(NOLOCK) 
-                                    LEFT JOIN [TK].dbo.[COPTD] ON [MOCMANULINETEMP].[COPTD001]=[COPTD].TD001 AND [MOCMANULINETEMP].[COPTD002]=[COPTD].TD002 AND[MOCMANULINETEMP].[COPTD003]=[COPTD].TD003   
-                                    LEFT JOIN [TK].dbo.[COPTC] ON [COPTD].TD001=[COPTC].TC001 AND [COPTD].TD002=[COPTC].TC002  
-                                    LEFT JOIN [TK].dbo.[CMSMV] ON [CMSMV].MV001=[COPTC].TC006  
-                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINE] ON [MOCMANULINE].ID=[MOCMANULINETEMP].TID  
-                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINERESULT] ON [MOCMANULINERESULT].[SID]=[MOCMANULINE].[ID]  
-                                    LEFT JOIN [TKMOC].[dbo].[MOCMANULINEMERGE] ON [MOCMANULINEMERGE].[SID]=[MOCMANULINE].[ID]  
-                                    LEFT JOIN [TK].dbo.[MOCTA] ON [MOCTA].TA033=[MOCMANULINEMERGE].[NO]  
-                                    WHERE CONVERT(nvarchar,[MOCMANULINETEMP].[MANUDATE],112)>='{0}' 
-                                    AND [MOCMANULINETEMP].TID IS NULL  
-                                    AND [MOCMANULINE].[MB001] NOT IN (SELECT MB001 FROM  [TKMOC].[dbo].[MOCMANULINELIMITBARCOUNT])
-                                    ) AS TEMP
-                                    ORDER BY  TEMP.[MANU],CONVERT(nvarchar, TEMP.[MANUDATE],112)    
-                                    ", DateTime.Now.ToString("yyyyMMdd"));
-
-
-                adapterMOCMANULINE = new SqlDataAdapter(@"" + sbSql, sqlConn);
-                //adapterPURTD.SelectCommand.Parameters.AddWithValue("@MC002", "20004");
-
-                sqlCmdBuilderMOCMANULINE = new SqlCommandBuilder(adapterMOCMANULINE);
-
-
-                sqlConn.Open();
-                dsMOCMANULINE.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapterMOCMANULINE.SelectCommand.CommandTimeout = 600;
-                adapterMOCMANULINE.Fill(dsMOCMANULINE, "dsMOCMANULINE");
-                sqlConn.Close();
-
-
-                if (dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Count == 0)
-                {
-                    //建立一筆新的DataRow，並且等於新的dt row
-                    DataRow row = dsMOCMANULINE.Tables["dsMOCMANULINE"].NewRow();
-
-                    //指定每個欄位要儲存的資料                   
-                    row[0] = "本日無資料"; ;
-
-                    //新增資料至DataTable的dt內
-                    dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Add(row);
-
-                    ExportDataSetToExcel(dsMOCMANULINE, pathFileMOCMANULINE);
-                }
-                else
-                {
-                    if (dsMOCMANULINE.Tables["dsMOCMANULINE"].Rows.Count >= 1)
-                    {
-                        ExportDataSetToExcel(dsMOCMANULINE, pathFileMOCMANULINE);
-                    }
-                }
-
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-        }
-
-
+/// <summary>
+        /// 寄送失敗紀錄
+        /// 20261023 改為寫入 Log 檔(原本寫入 [TKMQ].[dbo].[LOG] 資料表)。
+        /// 來源加上 MAIL_FAIL_TAG 標記，「寄送失敗的通知」(SERACH_IT_FAIL_DOTIFY) 會從 Log 檔找出這些紀錄
+        /// </summary>
         public void ADDLOG(DateTime DATES, string SOURCE, string EX)
         {
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sqlConn.Close();
-                sqlConn.Open();
-                tran = sqlConn.BeginTransaction();
-
-                sbSql.Clear();
-
-
-                sbSql.AppendFormat(@" 
-                                    INSERT INTO [TKMQ].[dbo].[LOG]
-                                    ([DATES],[SOURCE],[EX])
-                                    VALUES 
-                                    ('{0}','{1}','{2}')
-                                   ", DATES.ToString("yyyy/MM/dd HH:mm:ss"), SOURCE, EX);
-
-
-
-                cmd.Connection = sqlConn;
-                cmd.CommandTimeout = 60;
-                cmd.CommandText = sbSql.ToString();
-                cmd.Transaction = tran;
-                result = cmd.ExecuteNonQuery();
-
-                if (result == 0)
-                {
-                    tran.Rollback();    //交易取消
-                }
-                else
-                {
-                    tran.Commit();      //執行交易  
-
-
-                }
-
-            }
-            catch (Exception EXCE)
-            {
-
-            }
-
-            finally
-            {
-                sqlConn.Close();
-            }
+            WRITELOG(MAIL_FAIL_TAG + SOURCE, EX);
         }
 
         /// <summary>
@@ -5513,20 +4680,15 @@ namespace TKMQ
             DataSet DSTKPUR_PURTATBCHAGE_DCHECK = TKPUR_PURTATBCHAGE_DCHECK(cancellationToken);
             DataSet DS_PURTB_NOTIN_PURTD = FRIN_DS_PURTB_NOTIN_PURTD(cancellationToken);
 
-
             try
             {
                 StringBuilder SUBJEST = new StringBuilder();
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-ERP 採購相關單別、單號未核準的明細 及 本月該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量 及 請購變更單不在採購變更單 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -5537,7 +4699,6 @@ namespace TKMQ
                     + "<br>" + "ERP 採購相關單別、單號未核準的明細如下"
 
                     );
-
 
                 if (DSPURCHECK != null && DSPURCHECK.Tables[0].Rows.Count > 0)
                 {
@@ -5571,11 +4732,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["NAME"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -5584,15 +4740,12 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
                 }
 
-
-
                 //請購變更單不在採購變更單
                 //
                 BODY.AppendFormat(" "
                     + "<br>" + "請購變更單不在採購變更單的明細如下"
 
                     );
-
 
                 if (DSTKPUR_PURTATBCHAGE_DCHECK != null && DSTKPUR_PURTATBCHAGE_DCHECK.Tables[0].Rows.Count > 0)
                 {
@@ -5630,11 +4783,6 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -5642,7 +4790,6 @@ namespace TKMQ
                 {
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
                 }
-
 
                 //昨天該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量                
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -5652,7 +4799,6 @@ namespace TKMQ
                     + "<br>" + "本月 該到貨的採購單，但沒有進貨明細數量或進貨數量少於採購數量"
 
                     );
-
 
                 if (DSPURTDCHECK != null && DSPURTDCHECK.Tables[0].Rows.Count > 0)
                 {
@@ -5690,11 +4836,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["SUMTH007"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -5709,7 +4850,6 @@ namespace TKMQ
                     + "<br>" + "已存在的請購單，需求日>=今日，但未有採購單"
 
                     );
-
 
                 if (DS_PURTB_NOTIN_PURTD != null && DS_PURTB_NOTIN_PURTD.Tables[0].Rows.Count > 0)
                 {
@@ -5747,11 +4887,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -5765,13 +4900,13 @@ namespace TKMQ
 
                              + "</span><br>");
 
-
-
                 SENDEMAILERPPURCHECK(SUBJEST, BODY);
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPARESENDEMAILERPPURCHECK", EX);
 
             }
             finally
@@ -5785,29 +4920,22 @@ namespace TKMQ
         /// </summary>
         public DataSet ERPPURCHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSPURCHECK = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT 部門,單別,TC001,TC002,SERNO,UDF01,UDF02,DOC_NBR
@@ -5873,8 +5001,6 @@ namespace TKMQ
                 adapter.Fill(DSPURCHECK, "DSPURCHECK");
                 sqlConn.Close();
 
-
-
                 if (DSPURCHECK.Tables["DSPURCHECK"].Rows.Count > 0)
                 {
                     return DSPURCHECK;
@@ -5887,13 +5013,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ERPPURCHECK", EX);
                 return null;
             }
             finally
             {
 
             }
-
 
         }
         /// <summary>
@@ -5902,25 +5029,19 @@ namespace TKMQ
         /// <returns></returns>
         public DataSet ERPPURTDCHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSERPPURTDCHECK = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -5952,8 +5073,6 @@ namespace TKMQ
                 adapter.Fill(DSERPPURTDCHECK, "DSERPPURTDCHECK");
                 sqlConn.Close();
 
-
-
                 if (DSERPPURTDCHECK.Tables["DSERPPURTDCHECK"].Rows.Count > 0)
                 {
                     return DSERPPURTDCHECK;
@@ -5966,6 +5085,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ERPPURTDCHECK", EX);
                 return null;
             }
             finally
@@ -5973,36 +5094,28 @@ namespace TKMQ
 
             }
 
-
         }
 
         public DataSet TKPUR_PURTATBCHAGE_DCHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSTKPUR_PURTATBCHAGE = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
                 DateTime SDAYS = DateTime.Now.AddDays(-14);
-
 
                 sbSql.AppendFormat(@"  
                                  
@@ -6040,8 +5153,6 @@ namespace TKMQ
                 adapter.Fill(DSTKPUR_PURTATBCHAGE, "DSTKPUR_PURTATBCHAGE");
                 sqlConn.Close();
 
-
-
                 if (DSTKPUR_PURTATBCHAGE.Tables["DSTKPUR_PURTATBCHAGE"].Rows.Count > 0)
                 {
                     return DSTKPUR_PURTATBCHAGE;
@@ -6054,6 +5165,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TKPUR_PURTATBCHAGE_DCHECK", EX);
                 return null;
             }
             finally
@@ -6061,36 +5174,28 @@ namespace TKMQ
 
             }
 
-
         }
 
         public DataSet FRIN_DS_PURTB_NOTIN_PURTD(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_PURTB_NOTIN_PURTD = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
                 DateTime SDAYS = DateTime.Now.AddDays(0);
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT MA002 AS '廠商',TB011 AS '需求日',TB001 AS '請購單別',TB002 AS '請購單號',TB003 AS '請購序號',TB004 AS '品號',TB005 AS '品名',TB006 AS '規格',TB008 AS '庫別',TB009 AS '請購數量',TB007  AS '單位' ,TB039 AS '是否採購'
@@ -6117,8 +5222,6 @@ namespace TKMQ
                 adapter.Fill(DS_PURTB_NOTIN_PURTD, "DS_PURTB_NOTIN_PURTD");
                 sqlConn.Close();
 
-
-
                 if (DS_PURTB_NOTIN_PURTD.Tables["DS_PURTB_NOTIN_PURTD"].Rows.Count > 0)
                 {
                     return DS_PURTB_NOTIN_PURTD;
@@ -6131,6 +5234,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FRIN_DS_PURTB_NOTIN_PURTD", EX);
                 return null;
             }
             finally
@@ -6139,14 +5244,13 @@ namespace TKMQ
             }
         }
 
-
-
         /// <summary>
         /// 找出要寄送給誰
         /// </summary>
         public DataSet FINDPURCHECKMAILTO(string SENDTO)
         {
-            //SENDTO = "PURCHECK";
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             DataSet FINDSENDMAILTO = new DataSet();
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -6154,22 +5258,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT  [ID]
@@ -6190,7 +5285,6 @@ namespace TKMQ
                 adapter.Fill(FINDSENDMAILTO, "FINDSENDMAILTO");
                 sqlConn.Close();
 
-
                 if (FINDSENDMAILTO.Tables["FINDSENDMAILTO"].Rows.Count >= 1)
                 {
                     return FINDSENDMAILTO;
@@ -6203,6 +5297,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FINDPURCHECKMAILTO", EX);
                 return null;
             }
             finally
@@ -6227,21 +5323,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = Subject.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = Body.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     foreach (DataRow DR in DSFINDPURCHECKMAILTO.Tables[0].Rows)
                     {
@@ -6253,20 +5342,24 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAILERPPURCHECK", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
                         }
                     }
 
                     MySMTP.Send(MyMail);
+                    // 20261023 寄信後釋放 SmtpClient 資源
+                    MyMail.Dispose();
+                    MySMTP.Dispose();
 
                     MyMail.Dispose(); //釋放資源
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAILERPPURCHECK", EX);
 
             }
             finally
@@ -6274,99 +5367,8 @@ namespace TKMQ
 
             }
 
-
         }
 
-        /// <summary>
-        /// 實際寄出MEAIL，採購人員，ERP未核單的單別、單號
-        /// </summary>
-        public void SENDE_TO_PURTYPES(StringBuilder Subject, StringBuilder Body)
-        {
-            DataSet DSFMAILTO = FINDPURCHECKMAILTO("PURTYPES");
-
-            try
-            {
-                if (DSFMAILTO.Tables[0].Rows.Count > 0)
-                {
-
-                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-                    string NAME = ConfigurationManager.AppSettings["NAME"];
-                    string PW = ConfigurationManager.AppSettings["PW"];
-
-                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-                    MyMail.Subject = Subject.ToString();
-                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-                    MyMail.Body = Body.ToString();
-                    MyMail.IsBodyHtml = true; //是否使用html格式
-
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-
-                    foreach (DataRow DR in DSFMAILTO.Tables[0].Rows)
-                    {
-
-                        try
-                        {
-                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-
-                        }
-                        catch (Exception EX)
-                        {
-                            //MessageBox.Show("有錯誤");
-
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
-                        }
-                    }
-
-                    MySMTP.Send(MyMail);
-
-                    MyMail.Dispose(); //釋放資源
-                }
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-
-
-        }
-        //測試來客記錄的網站是否正常
-        public void WEBTEST()
-        {
-            DataTable DTWEBLINKS = SEARCHLINKS();
-
-            foreach (DataRow DR in DTWEBLINKS.Rows)
-            {
-                if (CheckUrlVisit(DR["WEBLINKS"].ToString()) != true)
-                {
-
-                    //MessageBox.Show(DR["COMMENTS"].ToString() + " " + DR["WEBLINKS"].ToString() + ":" + CheckUrlVisit(DR["WEBLINKS"].ToString()));
-                }
-
-                //MessageBox.Show(DR["COMMENTS"].ToString()+ " "+DR["WEBLINKS"].ToString() + ":" + CheckUrlVisit(DR["WEBLINKS"].ToString()));
-            }
-
-            //string[] links = { "http://192.168.1.101:8900/index.html", "http://192.168.1.101:8900/index1.html" };
-            //foreach (string link in links)
-            //{
-            //    MessageBox.Show(link.ToString()+":"+ CheckUrlVisit(link));
-            //}
-        }
         public bool CheckUrlVisit(string url)
         {
             try
@@ -6381,6 +5383,8 @@ namespace TKMQ
             }
             catch (WebException webex)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("CheckUrlVisit", webex);
                 return false;
             }
             return false;
@@ -6388,28 +5392,21 @@ namespace TKMQ
 
         public DataTable SEARCHLINKS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS = new DataSet();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -6428,7 +5425,6 @@ namespace TKMQ
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
-
                 if (DS.Tables["DS"].Rows.Count >= 1)
                 {
                     return DS.Tables[0];
@@ -6441,6 +5437,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHLINKS", EX);
                 return null;
             }
             finally
@@ -6465,13 +5463,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-資訊每日檢查 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -6507,16 +5501,12 @@ namespace TKMQ
 
                     }
 
-
                 }
-
-
 
                 BODY.AppendFormat(" "
                               + "<br>" + "謝謝"
 
                               + "</span><br>");
-
 
                 if (ISCHECK.Equals("N"))
                 {
@@ -6530,11 +5520,11 @@ namespace TKMQ
 
                 SENDEMAILITCHECK(SUBJEST, BODY);
 
-                //SEND_LINE(LINE_NOTIFY.ToString());
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPAREITCHECK", EX);
 
             }
             finally
@@ -6556,22 +5546,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = Subject.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = Body.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     foreach (DataRow DR in DSFINDITCHECKMAILTO.Tables[0].Rows)
                     {
@@ -6582,27 +5564,30 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            // MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAILITCHECK", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
                         }
                     }
 
                     MySMTP.Send(MyMail);
+                    // 20261023 寄信後釋放 SmtpClient 資源
+                    MyMail.Dispose();
+                    MySMTP.Dispose();
 
                     MyMail.Dispose(); //釋放資源
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAILITCHECK", EX);
 
             }
             finally
             {
 
             }
-
 
         }
 
@@ -6611,30 +5596,23 @@ namespace TKMQ
             DataSet DSPROOFREAD = UOFPROOFREAD(cancellationToken);
             DataSet DSUOFUOFFORM1002 = UOFUOFFORM1002(cancellationToken);
 
-
             try
             {
                 StringBuilder SUBJEST = new StringBuilder();
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-每日-交辨未完成的項目及設計表單簽核未完成的項目 ，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-
 
                 //交辨未完成的項目及交辨人回覆狀況
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
                     + "<br>" + "交辨未完成的項目及交辨人回覆狀況 明細如下"
 
                     );
-
 
                 if (DSPROOFREAD.Tables[0].Rows.Count > 0)
                 {
@@ -6662,14 +5640,8 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["交辨狀態"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["回覆時間"].ToString() + "</td>");
 
-
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -6678,13 +5650,11 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
                 }
 
-
                 //設計表單簽核未完成的項目
                 BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
                     + "<br>" + "設計表單簽核未完成的項目 明細如下"
 
                     );
-
 
                 if (DSUOFUOFFORM1002.Tables[0].Rows.Count > 0)
                 {
@@ -6699,7 +5669,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單申請日期</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' width=10% "">表單逾期天數</th>");
 
-
                     BODY.AppendFormat(@"</tr> ");
 
                     foreach (DataRow DR in DSUOFUOFFORM1002.Tables[0].Rows)
@@ -6713,14 +5682,8 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["START_TIME"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DAYS"].ToString() + "</td>");
 
-
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -6729,20 +5692,18 @@ namespace TKMQ
                     BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "無資料");
                 }
 
-
-
                 BODY.AppendFormat(" "
                              + "<br>" + "謝謝"
 
                              + "</span><br>");
-
-
 
                 SENDEMAILUOFPROOFEAD(SUBJEST, BODY);
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPAREPROOFREAD", EX);
 
             }
             finally
@@ -6751,32 +5712,24 @@ namespace TKMQ
             }
         }
 
-
         public DataSet UOFPROOFREAD(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSPROOFREAD = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始時間'
@@ -6818,8 +5771,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     return DSPROOFREAD;
@@ -6832,6 +5783,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UOFPROOFREAD", EX);
                 return null;
             }
             finally
@@ -6839,35 +5792,26 @@ namespace TKMQ
 
             }
 
-
         }
-
 
         public DataSet UOFUOFFORM1002(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSPROOFREAD = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                    
@@ -6921,8 +5865,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     return DSPROOFREAD;
@@ -6935,13 +5877,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UOFUOFFORM1002", EX);
                 return null;
             }
             finally
             {
 
             }
-
 
         }
 
@@ -6962,22 +5905,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = Subject.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = Body.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     foreach (DataRow DR in UOFPROOFEAD.Tables[0].Rows)
                     {
@@ -6989,23 +5924,26 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAILUOFPROOFEAD", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
                         }
                     }
 
                     //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                     MySMTP.Send(MyMail);
+                    // 20261023 寄信後釋放 SmtpClient 資源
+                    MyMail.Dispose();
+                    MySMTP.Dispose();
 
                     MyMail.Dispose(); //釋放資源
-
 
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAILUOFPROOFEAD", EX);
 
             }
             finally
@@ -7013,14 +5951,12 @@ namespace TKMQ
 
             }
 
-
         }
 
         public void PREPARE_TB_EIP_PRIV_MESS_DIRECTOR(CancellationToken cancellationToken)
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID_DIRECTOR();
             string MESS = null;
-
 
             if (DTFIND_USER_GUID.Rows.Count > 0)
             {
@@ -7032,34 +5968,26 @@ namespace TKMQ
             }
 
             //訊息給交辨人
-            //ADD_TB_EIP_PRIV_MESS_DIRECTOR("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
         }
 
         public DataTable FIND_USER_GUID_DIRECTOR()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSPROOFREAD = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT DIRECTOR
@@ -7106,8 +6034,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     return DSPROOFREAD.Tables["DSPROOFREAD"];
@@ -7120,6 +6046,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_USER_GUID_DIRECTOR", EX);
                 return null;
             }
             finally
@@ -7131,6 +6059,8 @@ namespace TKMQ
 
         public string FIND_SUBJECT_DIRECTOR(string USER_GUID)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder MESS = new StringBuilder();
             DataSet DSPROOFREAD = new DataSet();
 
@@ -7138,21 +6068,13 @@ namespace TKMQ
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"
                                     
@@ -7199,8 +6121,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     MESS.AppendFormat(@"<table> 
@@ -7246,6 +6166,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_SUBJECT_DIRECTOR", EX);
                 return null;
             }
             finally
@@ -7256,9 +6178,10 @@ namespace TKMQ
             return MESS.ToString();
         }
 
-
         public void ADD_TB_EIP_PRIV_MESS_DIRECTOR(string USER_GUID, string MESS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
             string TOPIC = "系統通知-每日校稿的被交辨人未回覆項目" + DateTime.Now.ToString("yyyyMMdd");
@@ -7275,22 +6198,13 @@ namespace TKMQ
             string MASTER_GUID = NEW.ToString();
             string EVENT_ID = null;
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
             connectionString = sqlConn.ConnectionString.ToString();
 
             StringBuilder queryString = new StringBuilder();
-
-
-
 
             queryString.AppendFormat(@"                     
                                         INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
@@ -7337,7 +6251,6 @@ namespace TKMQ
 
                                         );
 
-
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
@@ -7356,6 +6269,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TB_EIP_PRIV_MESS_DIRECTOR", EX);
 
             }
             finally
@@ -7363,14 +6278,12 @@ namespace TKMQ
 
             }
 
-
         }
 
         public void PREPARE_TB_EIP_PRIV_MESS(CancellationToken cancellationToken)
         {
             DataTable DTFIND_USER_GUID = FIND_USER_GUID();
             string MESS = null;
-
 
             if (DTFIND_USER_GUID.Rows.Count > 0)
             {
@@ -7382,34 +6295,26 @@ namespace TKMQ
             }
 
             //訊息給被交辨人
-            //ADD_TB_EIP_PRIV_MESS("b6f50a95-17ec-47f2-b842-4ad12512b431", MESS);
         }
 
         public DataTable FIND_USER_GUID()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DSPROOFREAD = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     SELECT USER_GUID
@@ -7456,8 +6361,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     return DSPROOFREAD.Tables["DSPROOFREAD"];
@@ -7470,6 +6373,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_USER_GUID", EX);
                 return null;
             }
             finally
@@ -7481,6 +6386,8 @@ namespace TKMQ
 
         public string FIND_SUBJECT(string USER_GUID)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder MESS = new StringBuilder();
             DataSet DSPROOFREAD = new DataSet();
 
@@ -7488,21 +6395,13 @@ namespace TKMQ
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"
                                     
@@ -7549,8 +6448,6 @@ namespace TKMQ
                 adapter.Fill(DSPROOFREAD, "DSPROOFREAD");
                 sqlConn.Close();
 
-
-
                 if (DSPROOFREAD.Tables["DSPROOFREAD"].Rows.Count > 0)
                 {
                     MESS.AppendFormat(@"<table> 
@@ -7596,6 +6493,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_SUBJECT", EX);
                 return null;
             }
             finally
@@ -7606,9 +6505,10 @@ namespace TKMQ
             return MESS.ToString();
         }
 
-
         public void ADD_TB_EIP_PRIV_MESS(string USER_GUID, string MESS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
             string TOPIC = "系統通知-每日校稿的未回覆項目，請至交辨區回覆校稿" + DateTime.Now.ToString("yyyyMMdd");
@@ -7625,22 +6525,13 @@ namespace TKMQ
             string MASTER_GUID = NEW.ToString();
             string EVENT_ID = null;
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
             connectionString = sqlConn.ConnectionString.ToString();
 
             StringBuilder queryString = new StringBuilder();
-
-
-
 
             queryString.AppendFormat(@"                     
                                         INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
@@ -7687,7 +6578,6 @@ namespace TKMQ
 
                                         );
 
-
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
@@ -7706,13 +6596,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TB_EIP_PRIV_MESS", EX);
 
             }
             finally
             {
 
             }
-
 
         }
 
@@ -7736,9 +6627,10 @@ namespace TKMQ
             }
         }
 
-
         public DataTable FIND_UOF_TASK_APPLICATION(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder MESS = new StringBuilder();
             DataSet DS = new DataSet();
 
@@ -7746,22 +6638,14 @@ namespace TKMQ
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
 
-                //AND APPLICANT_NAME='張健洲'
                 sbSql.AppendFormat(@"
                                     SELECT APPLICANT_NAME, APPLICANT_EMAIL
                                     FROM 
@@ -7828,8 +6712,6 @@ namespace TKMQ
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
-
-
                 if (DS.Tables["DS"].Rows.Count > 0)
                 {
 
@@ -7843,6 +6725,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_UOF_TASK_APPLICATION", EX);
                 return null;
             }
             finally
@@ -7854,6 +6738,8 @@ namespace TKMQ
 
         public DataTable FIND_UOF_TASK_APPLICATION_FORM(string APPLICANT_NAME)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             StringBuilder MESS = new StringBuilder();
             DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
@@ -7862,21 +6748,13 @@ namespace TKMQ
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"
                                     
@@ -7947,8 +6825,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"].Rows.Count > 0)
                 {
 
@@ -7962,6 +6838,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_UOF_TASK_APPLICATION_FORM", EX);
                 return null;
             }
             finally
@@ -7978,13 +6856,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-UOF表單中，表單尚未核準的明細及目前表單簽核人員(超過24小時)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -7995,10 +6869,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-UOF表單中，表單尚未核準的明細及目前表單簽核人員(超過24小時)，謝謝"
                     + " <br>"
                     );
-
-
-
-
 
                 if (DT.Rows.Count > 0)
                 {
@@ -8011,7 +6881,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
-
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -8027,15 +6896,9 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
-
 
                 try
                 {
@@ -8044,24 +6907,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -8071,18 +6924,24 @@ namespace TKMQ
 
                         MyMail.Dispose(); //釋放資源
 
-
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_UOF_TASK_APPLICATION_FORM", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SEND_UOF_TASK_APPLICATION_FORM", EX);
 
                 }
                 finally
@@ -8090,10 +6949,11 @@ namespace TKMQ
 
                 }
 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_UOF_TASK_APPLICATION_FORM", EX);
 
             }
             finally
@@ -8119,7 +6979,6 @@ namespace TKMQ
                     XmlDocument xmlDoc = new XmlDocument();
                     xmlDoc.LoadXml(DR["CURRENT_DOC"].ToString());
 
-                    //XmlNode node = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']");
                     string ID = "";
                     string GA002 = "";
                     string GA003 = "";
@@ -8127,48 +6986,62 @@ namespace TKMQ
                     string GA015 = "";
                     string GA999 = "";
 
-
                     try
                     {
                         ID = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='ID']").Attributes["fieldValue"].Value;
 
-
                     }
-                    catch (Exception EX) { }
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
                     try
                     {
                         GA002 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA002']").Attributes["fieldValue"].Value;
 
                     }
-                    catch (Exception EX) { }
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
                     try
                     {
                         GA003 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA003']").Attributes["fieldValue"].Value;
 
                     }
-                    catch (Exception EX) { }
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
                     try
                     {
                         GA005 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA005']").Attributes["fieldValue"].Value;
 
                     }
-                    catch (Exception EX) { }
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
                     try
                     {
                         GA015 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA015']").Attributes["fieldValue"].Value;
 
                     }
-                    catch (Exception EX) { }
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
                     try
                     {
 
                         GA999 = xmlDoc.SelectSingleNode($"/Form/FormFieldValue/FieldItem[@fieldId='GA999']").Attributes["fieldValue"].Value;
                     }
-                    catch (Exception EX) { }
-
+                    catch (Exception EX) {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("FIND_UOF_GRAFFAIRS_1005", EX);
+                    }
 
                     string MESSAGES = GA003 + " 申請的請購單:" + GA002 + "，物品:" + GA005 + "，已由" + GA999 + " 在" + GA015 + "購買完成。";
-
 
                     if (!string.IsNullOrEmpty(USER_GUID))
                     {
@@ -8179,15 +7052,15 @@ namespace TKMQ
                         SEND_EMAIL_UOF_GRAFFAIRS_1005(EMAILTO, MESSAGES, MESSAGES);
                     }
 
-
                 }
             }
-
 
         }
         //找出昨天，已核單完成的採購單-1005.雜項採購單
         public DataTable SEARCHUOF_GRAFFAIRS_1005(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder MESS = new StringBuilder();
             DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
 
@@ -8198,22 +7071,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                    SELECT CURRENT_DOC,* 
@@ -8239,8 +7103,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_UOF_TASK_APPLICATION_FORM, "DS_FIND_UOF_TASK_APPLICATION_FORM");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_UOF_TASK_APPLICATION_FORM.Tables["DS_FIND_UOF_TASK_APPLICATION_FORM"].Rows.Count > 0)
                 {
 
@@ -8254,6 +7116,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHUOF_GRAFFAIRS_1005", EX);
                 return null;
             }
             finally
@@ -8267,6 +7131,8 @@ namespace TKMQ
         /// </summary>
         public void SEND_MESSAGE_UOF_GRAFFAIRS_1005(string USER_GUID, string MESS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             Guid NEW = Guid.NewGuid();
             string MESSAGE_GUID = NEW.ToString();
             string TOPIC = "系統通知 " + MESS;
@@ -8283,22 +7149,13 @@ namespace TKMQ
             string MASTER_GUID = NEW.ToString();
             string EVENT_ID = null;
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
             connectionString = sqlConn.ConnectionString.ToString();
 
             StringBuilder queryString = new StringBuilder();
-
-
-
 
             queryString.AppendFormat(@"                     
                                         INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
@@ -8345,7 +7202,6 @@ namespace TKMQ
 
                                         );
 
-
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
@@ -8364,6 +7220,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_MESSAGE_UOF_GRAFFAIRS_1005", EX);
 
             }
             finally
@@ -8383,24 +7241,14 @@ namespace TKMQ
                 string PW = ConfigurationManager.AppSettings["PW"];
 
                 System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                 MyMail.Subject = Subject.ToString();
                 //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                 MyMail.Body = Body.ToString();
                 MyMail.IsBodyHtml = true; //是否使用html格式
 
-                //加上附圖
-                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
+                System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                 try
                 {
@@ -8410,18 +7258,24 @@ namespace TKMQ
 
                     MyMail.Dispose(); //釋放資源
 
-
                 }
                 catch (Exception EX)
                 {
-                    //MessageBox.Show("有錯誤");
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SEND_EMAIL_UOF_GRAFFAIRS_1005", EX);
 
-                    //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                    //EX.ToString();
+                }
+                finally
+                {
+                    // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                    MyMail.Dispose();
+                    MySMTP.Dispose();
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_EMAIL_UOF_GRAFFAIRS_1005", EX);
 
             }
             finally
@@ -8437,8 +7291,6 @@ namespace TKMQ
             DT_OF_TASK_TASK_GRAFFIR = FIND_OF_TASK_TASK_GRAFFIR();
             GRAFFIR_TO_EMAIL = FIND_GRAFFIR_TO_EMAIL();
 
-
-
             try
             {
                 if (DT_OF_TASK_TASK_GRAFFIR != null && DT_OF_TASK_TASK_GRAFFIR.Rows.Count > 0 && GRAFFIR_TO_EMAIL != null && GRAFFIR_TO_EMAIL.Rows.Count > 0)
@@ -8448,41 +7300,32 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPARE_UOF_TASK_TASK_GRAFFIR", EX);
 
             }
-
-
 
         }
 
         public DataTable FIND_OF_TASK_TASK_GRAFFIR()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             DataSet DS_FIND_OF_TASK_TASK_GRAFFIR = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                    SELECT
@@ -8550,8 +7393,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_OF_TASK_TASK_GRAFFIR, "DS_FIND_OF_TASK_TASK_GRAFFIR");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_OF_TASK_TASK_GRAFFIR.Tables["DS_FIND_OF_TASK_TASK_GRAFFIR"].Rows.Count > 0)
                 {
 
@@ -8565,6 +7406,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_OF_TASK_TASK_GRAFFIR", EX);
                 return null;
             }
             finally
@@ -8575,31 +7418,22 @@ namespace TKMQ
 
         public DataTable FIND_GRAFFIR_TO_EMAIL()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_FIND_GRAFFIR_TO_EMAIL = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                   SELECT [ID]
@@ -8622,8 +7456,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_GRAFFIR_TO_EMAIL, "DS_FIND_GRAFFIR_TO_EMAIL");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_GRAFFIR_TO_EMAIL.Tables["DS_FIND_GRAFFIR_TO_EMAIL"].Rows.Count > 0)
                 {
 
@@ -8637,6 +7469,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_GRAFFIR_TO_EMAIL", EX);
                 return null;
             }
             finally
@@ -8653,13 +7487,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-UOF表單中，總務未核單的簽核人及表單單號，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -8670,10 +7500,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-UOF表單中，總務未核單的簽核人及表單單號，謝謝"
                     + " <br>"
                     );
-
-
-
-
 
                 if (DT.Rows.Count > 0)
                 {
@@ -8686,7 +7512,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
-
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -8702,15 +7527,9 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
-
 
                 try
                 {
@@ -8719,24 +7538,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -8753,14 +7562,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_UOF_TASK_FORM_GRAFFIR", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SEND_UOF_TASK_FORM_GRAFFIR", EX);
 
                 }
                 finally
@@ -8768,10 +7584,11 @@ namespace TKMQ
 
                 }
 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_UOF_TASK_FORM_GRAFFIR", EX);
 
             }
             finally
@@ -8780,48 +7597,7 @@ namespace TKMQ
             }
         }
 
-        public void SEND_LINE(string message)
-        {
-            //2025年3月31日結束本服務
-            //LINE向用戶傳送通知的商品服務，建議可改用功能更豐富的Messaging API。
-            //string token = "iJgYn1ZKgcTcCPKioCM4ispXQFu1gD7uegpufl7mkVV";
-            //string message = "Hello, world! "+DateTime.Now.ToString("yyyyMMddHHmmss");
-
-            DataTable dt = GetDataFromMSSQL("SELECT  [TOKEN] ,[KINDS] ,[COMMENTS] FROM [TKIT].[dbo].[TB_LINE_TOKEN] WHERE [KINDS]='NOTIFY'");
-
-            string token = dt.Rows[0]["TOKEN"].ToString();
-
-            string url = "https://notify-api.line.me/api/notify";
-            try
-            {
-                ServicePointManager.Expect100Continue = true;
-                ServicePointManager.DefaultConnectionLimit = 9999;
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12; // Use TLS 1.2, TLS 1.1, and TLS 1.0
-
-                var request = (HttpWebRequest)WebRequest.Create(url);
-                var postData = string.Format("message={0}", message);
-                var data = Encoding.UTF8.GetBytes(postData);
-
-                request.Method = "POST";
-                request.ContentType = "application/x-www-form-urlencoded";
-                request.ContentLength = data.Length;
-                request.Headers.Add("Authorization", "Bearer " + token);
-
-                ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072; // Use TLS 1.2
-                ServicePointManager.ServerCertificateValidationCallback += (sender, certificate, chain, sslPolicyErrors) => true; // Bypass certificate validation
-
-                using (var stream = request.GetRequestStream()) stream.Write(data, 0, data.Length);
-                var response = (HttpWebResponse)request.GetResponse();
-                var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
-            }
-            catch (Exception EX)
-            {
-                Console.WriteLine(EX.ToString());
-            }
-        }
-
-
-        public async Task SEND_LINE_CALL_MESSAGE_API(string message)
+public async Task SEND_LINE_CALL_MESSAGE_API(string message)
         {
             //2025年3月31日結束本服務
             //LINE向用戶傳送通知的商品服務，建議可改用功能更豐富的Messaging API。          
@@ -8900,28 +7676,17 @@ namespace TKMQ
 
                 if (response.IsSuccessStatusCode)
                 {
-                    //Console.WriteLine("Message sent successfully!");
-                    //MessageBox.Show("successfully");
                 }
                 else
                 {
                     string result = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine($"Error: {response.StatusCode}, Details: {result}");
-                    //MessageBox.Show(result.ToString());
                 }
             }
         }
 
         public DataTable GetDataFromMSSQL(string sql)
         {
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
             try
             {
@@ -8948,6 +7713,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("GetDataFromMSSQL", EX);
                 return null;
             }
 
@@ -8960,22 +7727,14 @@ namespace TKMQ
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = "Subject";
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = "Body";
             MyMail.IsBodyHtml = true; //是否使用html格式
 
-            //加上附圖
-            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             try
             {
@@ -8987,46 +7746,20 @@ namespace TKMQ
 
                 MessageBox.Show("寄送成功 ");
 
-
             }
             catch (Exception EX)
             {
-                //MessageBox.Show("有錯誤 ");
 
-                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
-        public void SEND_TEST_MAIL_2()
-        {
-            string recipientEmail = "tk290@tkfood.com.tw";
-            string senderEmail = "tk290@tkfood.com.tw";
-            string subject = "Email Subject";
-            string body = "Email Body";
-
-            MailMessage message = new MailMessage(senderEmail, recipientEmail, subject, body);
-            SmtpClient smtpClient = new SmtpClient("officemail.cloudmax.com.tw", 587);
-
-            // 設定 smtpClient 的帳號密碼，如果需要的話
-            smtpClient.Credentials = new System.Net.NetworkCredential("tkpublic@tkfood.com.tw", "@@tkmail629");
-
-            smtpClient.EnableSsl = true; // 如果需要使用 SSL 連線，需要設定為 true
-
-            try
-            {
-                smtpClient.Send(message); // 發送郵件
-
-                MessageBox.Show("寄送成功 ");
-            }
-            catch (Exception EX)
-            {
-                //MessageBox.Show("有錯誤 ");
-            }
-
-        }
-
-        //交辨未完成meail
+//交辨未完成meail
         public void CHECK_TB_EIP_SCH_DEVOLVE(CancellationToken cancellationToken)
         {
             //找出所有被交辨人  
@@ -9041,31 +7774,22 @@ namespace TKMQ
         //找出交辨的所有 被交辨人
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                          
                                 
@@ -9099,8 +7823,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES, "DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES"].Rows.Count > 0)
                 {
 
@@ -9114,13 +7836,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TB_EIP_SCH_DEVOLVE_NAMES", EX);
                 return null;
             }
             finally
             {
 
             }
-
 
         }
         //寄送mail給被交辨人
@@ -9130,8 +7853,6 @@ namespace TKMQ
             DataTable DTDETAILSALL = new DataTable();
 
             DTDETAILSALL = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_ALL();
-
-
 
             foreach (DataRow DR in DT.Rows)
             {
@@ -9151,13 +7872,9 @@ namespace TKMQ
                         StringBuilder BODY = new StringBuilder();
 
                         ////加上附圖
-                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                        //LinkedResource res = new LinkedResource(path);
-                        //res.ContentId = Guid.NewGuid().ToString();
 
                         SUBJEST.Clear();
                         BODY.Clear();
-
 
                         SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                         //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -9168,10 +7885,6 @@ namespace TKMQ
                             + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細，謝謝"
                             + " <br>"
                             );
-
-
-
-
 
                         if (result.Length > 0)
                         {
@@ -9187,13 +7900,10 @@ namespace TKMQ
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
 
-
                             BODY.AppendFormat(@"</tr> ");
 
                             foreach (DataRow row in result)
                             {
-                                //Console.WriteLine($"ID: {row["ID"]}, Name: {row["Name"]}");
-
 
                                 BODY.AppendFormat(@"<tr >");
                                 BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + row["逾時天數"].ToString() + "</td>");
@@ -9211,7 +7921,6 @@ namespace TKMQ
 
                         }
 
-
                         try
                         {
                             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
@@ -9219,22 +7928,14 @@ namespace TKMQ
                             string PW = ConfigurationManager.AppSettings["PW"];
 
                             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                             MyMail.Subject = SUBJEST.ToString();
                             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                             MyMail.Body = BODY.ToString();
                             MyMail.IsBodyHtml = true; //是否使用html格式
 
-                            //加上附圖
-                            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                             try
                             {
@@ -9245,18 +7946,24 @@ namespace TKMQ
 
                                 MyMail.Dispose(); //釋放資源
 
-
                             }
                             catch (Exception EX)
                             {
-                                //MessageBox.Show("有錯誤");
+                                // 20261023 錯誤寫入 Log
+                                WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE", EX);
 
-                                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                                //EX.ToString();
+                            }
+                            finally
+                            {
+                                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                                MyMail.Dispose();
+                                MySMTP.Dispose();
                             }
                         }
                         catch (Exception EX)
                         {
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE", EX);
 
                         }
                         finally
@@ -9264,10 +7971,11 @@ namespace TKMQ
 
                         }
 
-
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE", EX);
 
                     }
                     finally
@@ -9275,251 +7983,7 @@ namespace TKMQ
 
                     }
 
-
                 }
-
-            }
-
-
-
-
-            //foreach (DataRow DR in DT.Rows)
-            //{
-            //    DTDETAILS.Clear();
-            //    DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS(DR["被交辨人"].ToString());
-
-            //    if(DTDETAILS!=null && DTDETAILS.Rows.Count>=1)
-            //    {
-            //        try
-            //        {
-            //            StringBuilder SUBJEST = new StringBuilder();
-            //            StringBuilder BODY = new StringBuilder();
-
-            //            ////加上附圖
-            //            //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-            //            //LinkedResource res = new LinkedResource(path);
-            //            //res.ContentId = Guid.NewGuid().ToString();
-
-            //            SUBJEST.Clear();
-            //            BODY.Clear();
-
-
-            //            SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-            //            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-            //            //ERP 採購相關單別、單號未核準的明細
-            //            //
-            //            BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-            //                + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細，謝謝"
-            //                + " <br>"
-            //                );
-
-
-
-
-
-            //            if (DTDETAILS.Rows.Count > 0)
-            //            {
-            //                BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-            //                BODY.AppendFormat(@"<table> ");
-            //                BODY.AppendFormat(@"<tr >");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨預計要求完成日期</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
-            //                BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
-
-
-            //                BODY.AppendFormat(@"</tr> ");
-
-            //                foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
-            //                {
-
-            //                    BODY.AppendFormat(@"<tr >");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
-            //                    BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
-
-            //                    BODY.AppendFormat(@"</tr> ");
-
-            //                    //BODY.AppendFormat("<span></span>");
-            //                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-            //                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-            //                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-            //                    //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-            //                }
-            //                BODY.AppendFormat(@"</table> ");
-            //            }
-
-
-            //            try
-            //            {
-            //                string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-            //                string NAME = ConfigurationManager.AppSettings["NAME"];
-            //                string PW = ConfigurationManager.AppSettings["PW"];
-
-            //                System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            //                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-            //                MyMail.Subject = SUBJEST.ToString();
-            //                //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-            //                MyMail.Body = BODY.ToString();
-            //                MyMail.IsBodyHtml = true; //是否使用html格式
-
-            //                //加上附圖
-            //                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-            //                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-            //                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            //                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-            //                try
-            //                {
-
-            //                    MyMail.To.Add(DR["EMAIL"].ToString()); //設定收件者Email，多筆mail
-            //                    //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-            //                    MySMTP.Send(MyMail);
-
-            //                    MyMail.Dispose(); //釋放資源
-
-
-            //                }
-            //                catch (Exception EX)
-            //                {
-            //                    //MessageBox.Show("有錯誤");
-
-            //                    //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-            //                    //EX.ToString();
-            //                }
-            //            }
-            //            catch
-            //            {
-
-            //            }
-            //            finally
-            //            {
-
-            //            }
-
-
-            //        }
-            //        catch
-            //        {
-
-            //        }
-            //        finally
-            //        {
-
-            //        }
-            //    }
-            //}
-        }
-        //找出被交辨的所有未完成的交辨事項
-        public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS(string NAME)
-        {
-
-            DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
-
-            SqlDataAdapter adapter = new SqlDataAdapter();
-            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
-
-
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
-
-                sbSql.AppendFormat(@"                          
-                                
-                                    SELECT 
-                                    (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END) AS '逾時天數'
-                                    ,USER2.NAME AS '交辨人'
-                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) AS '交辨預計要求完成日期'
-                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始日期'
-                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
-                                    ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
-                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '被交辨人ID'
-                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
-                                    ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
-                                    ,TB_EB_USER.NAME AS '被交辨人'
-                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
-                                    ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
-                                    ,TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.*
-                                    ,TB_EB_USER.ACCOUNT
-                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
-                                    ,TB_EB_USER.EMAIL
-                                    ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
-
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
-
-                                    WHERE 1=1
-
-                                    AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES])
-                                    AND TB_EB_USER.NAME='{0}'
-                                    ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
-
-
-                                   ", NAME);
-
-                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
-
-                sqlCmdBuilder = new SqlCommandBuilder(adapter);
-                sqlConn.Open();
-                DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
-                sqlConn.Close();
-
-
-
-                if (DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"].Rows.Count > 0)
-                {
-
-                    return DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"];
-                }
-                else
-                {
-                    return null;
-                }
-
-            }
-            catch (Exception EX)
-            {
-                return null;
-            }
-            finally
-            {
 
             }
 
@@ -9528,32 +7992,23 @@ namespace TKMQ
         //找出被交辨的所有未完成的交辨事項
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_ALL()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                          
                                 
@@ -9601,8 +8056,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"].Rows.Count > 0)
                 {
 
@@ -9616,6 +8069,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TB_EIP_SCH_DEVOLVE_DETAILS_ALL", EX);
                 return null;
             }
             finally
@@ -9640,30 +8095,22 @@ namespace TKMQ
         //找出交辨的所有 被交辨人
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"                                     
                                     SELECT 
@@ -9698,8 +8145,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES, "DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_NAMES"].Rows.Count > 0)
                 {
 
@@ -9713,13 +8158,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TB_EIP_SCH_DEVOLVE_NAMES_MANAGER", EX);
                 return null;
             }
             finally
             {
 
             }
-
 
         }
         //寄送mail給被交辨人
@@ -9739,7 +8185,6 @@ namespace TKMQ
                 // 使用 Select 方法查詢
                 DataRow[] result = DTDETAILS_ALL.Select(filterExpression);
 
-
                 if (result.Length > 0)
                 {
                     try
@@ -9748,13 +8193,9 @@ namespace TKMQ
                         StringBuilder BODY = new StringBuilder();
 
                         ////加上附圖
-                        //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                        //LinkedResource res = new LinkedResource(path);
-                        //res.ContentId = Guid.NewGuid().ToString();
 
                         SUBJEST.Clear();
                         BODY.Clear();
-
 
                         SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                         //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -9765,10 +8206,6 @@ namespace TKMQ
                             + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
                             + "<br>"
                             );
-
-
-
-
 
                         if (result.Length > 0)
                         {
@@ -9783,7 +8220,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
                             BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
-
 
                             BODY.AppendFormat(@"</tr> ");
 
@@ -9801,15 +8237,9 @@ namespace TKMQ
 
                                 BODY.AppendFormat(@"</tr> ");
 
-                                //BODY.AppendFormat("<span></span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                                //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                             }
                             BODY.AppendFormat(@"</table> ");
                         }
-
 
                         try
                         {
@@ -9818,22 +8248,14 @@ namespace TKMQ
                             string PW = ConfigurationManager.AppSettings["PW"];
 
                             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                             MyMail.Subject = SUBJEST.ToString();
                             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                             MyMail.Body = BODY.ToString();
                             MyMail.IsBodyHtml = true; //是否使用html格式
 
-                            //加上附圖
-                            //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                            //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                             try
                             {
@@ -9844,18 +8266,24 @@ namespace TKMQ
 
                                 MyMail.Dispose(); //釋放資源
 
-
                             }
                             catch (Exception EX)
                             {
-                                //MessageBox.Show("有錯誤");
+                                // 20261023 錯誤寫入 Log
+                                WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE_MANAGER", EX);
 
-                                //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                                //EX.ToString();
+                            }
+                            finally
+                            {
+                                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                                MyMail.Dispose();
+                                MySMTP.Dispose();
                             }
                         }
                         catch (Exception EX)
                         {
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE_MANAGER", EX);
 
                         }
                         finally
@@ -9863,10 +8291,11 @@ namespace TKMQ
 
                         }
 
-
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_EMAIL_TB_EIP_SCH_DEVOLVE_MANAGER", EX);
 
                     }
                     finally
@@ -9875,252 +8304,6 @@ namespace TKMQ
                     }
                 }
 
-
-
-            }
-            //foreach (DataRow DR in DT.Rows)
-            //{             
-
-            //    if(!string.IsNullOrEmpty(DR["被交辨人主管"].ToString()))
-            //    {
-            //        DTDETAILS.Clear();
-            //        DTDETAILS = FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(DR["被交辨人主管"].ToString());
-
-            //        if (DTDETAILS != null && DTDETAILS.Rows.Count >= 1)
-            //        {
-            //            try
-            //            {
-            //                StringBuilder SUBJEST = new StringBuilder();
-            //                StringBuilder BODY = new StringBuilder();
-
-            //                ////加上附圖
-            //                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-            //                //LinkedResource res = new LinkedResource(path);
-            //                //res.ContentId = Guid.NewGuid().ToString();
-
-            //                SUBJEST.Clear();
-            //                BODY.Clear();
-
-
-            //                SUBJEST.AppendFormat(@"系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-            //                //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-            //                //ERP 採購相關單別、單號未核準的明細
-            //                //
-            //                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-            //                    + "<br>" + "系統通知-請查收-每日-交辨事項未完成明細(主管追踨)，謝謝"
-            //                    + " <br>"
-            //                    );
-
-
-
-
-
-            //                if (DTDETAILS.Rows.Count > 0)
-            //                {
-            //                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-            //                    BODY.AppendFormat(@"<table> ");
-            //                    BODY.AppendFormat(@"<tr >");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">逾時天數</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">被交辨人</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨項目</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨回覆狀況</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨開始日期</th>");
-            //                    BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">交辨人</th>");
-
-
-            //                    BODY.AppendFormat(@"</tr> ");
-
-            //                    foreach (DataRow DR_DTDETAILS in DTDETAILS.Rows)
-            //                    {
-
-            //                        BODY.AppendFormat(@"<tr >");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["逾時天數"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["被交辨人"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨項目"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨回覆狀況"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨預計要求完成日期"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨開始日期"].ToString() + "</td>");
-            //                        BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR_DTDETAILS["交辨人"].ToString() + "</td>");
-
-            //                        BODY.AppendFormat(@"</tr> ");
-
-            //                        //BODY.AppendFormat("<span></span>");
-            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-            //                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-            //                    }
-            //                    BODY.AppendFormat(@"</table> ");
-            //                }
-
-
-            //                try
-            //                {
-            //                    string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
-            //                    string NAME = ConfigurationManager.AppSettings["NAME"];
-            //                    string PW = ConfigurationManager.AppSettings["PW"];
-
-            //                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            //                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
-            //                    MyMail.Subject = SUBJEST.ToString();
-            //                    //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
-            //                    MyMail.Body = BODY.ToString();
-            //                    MyMail.IsBodyHtml = true; //是否使用html格式
-
-            //                    //加上附圖
-            //                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-            //                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-            //                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            //                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-            //                    try
-            //                    {
-
-            //                        MyMail.To.Add(DR["MANAGEREMAILS"].ToString()); //設定收件者Email，多筆mail
-            //                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
-            //                        MySMTP.Send(MyMail);
-
-            //                        MyMail.Dispose(); //釋放資源
-
-
-            //                    }
-            //                    catch (Exception EX)
-            //                    {
-            //                        //MessageBox.Show("有錯誤");
-
-            //                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-            //                        //EX.ToString();
-            //                    }
-            //                }
-            //                catch
-            //                {
-
-            //                }
-            //                finally
-            //                {
-
-            //                }
-
-
-            //            }
-            //            catch
-            //            {
-
-            //            }
-            //            finally
-            //            {
-
-            //            }
-            //        }
-            //    }
-            //}
-        }
-        //找出被交辨的所有未完成的交辨事項-經理
-        public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER(string NAME)
-        {
-
-            DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
-
-            SqlDataAdapter adapter = new SqlDataAdapter();
-            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
-
-
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
-
-                sbSql.AppendFormat(@"                          
-                                    SELECT 
-                                    (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END) AS '逾時天數'
-                                    ,USER2.NAME AS '交辨人'
-                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) AS '交辨預計要求完成日期'
-                                    ,CONVERT(nvarchar,TB_EIP_SCH_WORK.CREATE_TIME,111) AS '交辨開始日期'
-                                    ,TB_EIP_SCH_DEVOLVE.SUBJECT AS '校稿區內容'
-                                    ,TB_EIP_SCH_WORK.SUBJECT AS '交辨項目'
-                                    ,TB_EIP_SCH_WORK.EXECUTE_USER AS '被交辨人ID'
-                                    ,TB_EIP_SCH_WORK.WORK_STATE AS 'WORK_STATE'
-                                    ,(ISNULL(TB_EIP_SCH_WORK.PROCEEDING_DESC,'')+ISNULL(TB_EIP_SCH_WORK.COMPLETE_DESC,''))  AS '交辨回覆'
-                                    ,TB_EB_USER.NAME AS '被交辨人'
-                                    ,(CASE  WHEN TB_EIP_SCH_WORK.WORK_STATE='Completed' THEN '審稿完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Audit' THEN '交辨完成' WHEN TB_EIP_SCH_WORK.WORK_STATE='Proceeding' THEN '處理中' WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未開始' END) AS '交辨狀態'
-                                    ,(CASE WHEN ISNULL(TB_EIP_SCH_WORK.COMPLETE_TIME,'')<>'' THEN CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.COMPLETE_TIME,24),1,8) ELSE CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,111)+' '+ SUBSTRING(CONVERT(NVARCHAR,TB_EIP_SCH_WORK.PROCEEDING_TIME,24),1,8) END)  AS '回覆時間'
-                                    ,TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.*
-                                    ,TB_EB_USER.ACCOUNT
-                                    ,TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID AS 'DEVOLVE_GUID'
-                                    ,TB_EB_USER.EMAIL
-                                    ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER AS '被交辨人主管'
-                                    ,Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGEREMAILS
-                                    ,(CASE WHEN TB_EIP_SCH_WORK.WORK_STATE='NotYetBegin' THEN '未回覆交辨' ELSE '已回覆交辨，但交辨人還未完成' END) AS '交辨回覆狀況'
-
-                                    FROM [UOF].dbo.TB_EIP_SCH_DEVOLVE WITH(NOLOCK) 
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_DEVOLVE_EXAMINE_LOG  WITH(NOLOCK) ON TB_EIP_SCH_DEVOLVE_EXAMINE_LOG.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EIP_SCH_WORK  WITH(NOLOCK) ON TB_EIP_SCH_WORK.DEVOLVE_GUID=TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=TB_EIP_SCH_WORK.EXECUTE_USER
-                                    LEFT JOIN [UOF].dbo.TB_EB_USER USER2  WITH(NOLOCK) ON USER2.USER_GUID=TB_EIP_SCH_DEVOLVE.DIRECTOR
-                                    LEFT JOIN [UOF].dbo.Z_TB_EIP_SCH_DEVOLVE_MANAGER  WITH(NOLOCK) ON TB_EB_USER.USER_GUID=Z_TB_EIP_SCH_DEVOLVE_MANAGER.ID
-                                    WHERE 1=1
-
-                                    AND TB_EIP_SCH_WORK.WORK_STATE  IN ('NotYetBegin','Proceeding')
-                                    AND TB_EIP_SCH_DEVOLVE.DEVOLVE_GUID NOT IN (SELECT [DEVOLVE_GUID]  FROM [UOF].[dbo].[Z_TB_EIP_SCH_DEVOLVE_IGNORES] WITH(NOLOCK) )
-                                    AND (CASE WHEN  DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate())>0 THEN DATEDIFF(DAY, TB_EIP_SCH_WORK.END_TIME, getdate()) ELSE 0 END)>=1
-                                    AND Z_TB_EIP_SCH_DEVOLVE_MANAGER.MANAGER='{0}'
-                                    ORDER BY CONVERT(nvarchar,TB_EIP_SCH_WORK.END_TIME,111) 
-
-                                   ", NAME);
-
-                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
-
-                sqlCmdBuilder = new SqlCommandBuilder(adapter);
-                sqlConn.Open();
-                DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
-                sqlConn.Close();
-
-
-
-                if (DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"].Rows.Count > 0)
-                {
-
-                    return DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"];
-                }
-                else
-                {
-                    return null;
-                }
-
-            }
-            catch (Exception EX)
-            {
-                return null;
-            }
-            finally
-            {
-
             }
 
         }
@@ -10128,32 +8311,23 @@ namespace TKMQ
         //找出被交辨的所有未完成的交辨事項-經理
         public DataTable FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER_ALL()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             DataSet DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                          
                                     SELECT 
@@ -10203,8 +8377,6 @@ namespace TKMQ
                 adapter.Fill(DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS, "DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS");
                 sqlConn.Close();
 
-
-
                 if (DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS.Tables["DS_FIND_TB_EIP_SCH_DEVOLVE_DETAILS"].Rows.Count > 0)
                 {
 
@@ -10218,6 +8390,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TB_EIP_SCH_DEVOLVE_DETAILS_MANAGER_ALL", EX);
                 return null;
             }
             finally
@@ -10234,10 +8408,6 @@ namespace TKMQ
             SETPATH();
 
             path_File = path_File + ".xlsx";
-            //DATES = DateTime.Now.ToString("yyyyMMdd");
-            //DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            //path_File_NEWSLAES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日新品銷售表" + DATES.ToString() + ".pdf";
-            //path_File = path_File_NEWSLAES;
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -10245,9 +8415,6 @@ namespace TKMQ
                 //新增資料夾
                 Directory.CreateDirectory(DirectoryNAME);
             }
-
-
-            // SAVEREPORT_NEWSLAES(path_File_NEWSLAES);
 
             DataSet DS_NEWSLAES = ERP_NEWSLAES(cancellationToken);
 
@@ -10257,13 +8424,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-本季新品的銷售報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -10274,7 +8437,6 @@ namespace TKMQ
                     + "<br>" + "本季新品的銷售報表表的明細如下"
 
                     );
-
 
                 if (DS_NEWSLAES != null && DS_NEWSLAES.Tables[0].Rows.Count > 0)
                 {
@@ -10306,7 +8468,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">總毛利</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">毛利率</th>");
 
-
                     BODY.AppendFormat(@"</tr> ");
 
                     foreach (DataRow DR in DS_NEWSLAES.Tables[0].Rows)
@@ -10337,14 +8498,8 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["總毛利"].ToString() + "</td>");
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["毛利率"].ToString() + "</td>");
 
-
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -10358,13 +8513,13 @@ namespace TKMQ
 
                              + "</span><br>");
 
-
-
                 SENDEMAIL_NEWSALES(SUBJEST, BODY, path_File);
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPARESENDEMAIL_NEWSLAES", EX);
 
             }
             finally
@@ -10390,21 +8545,14 @@ namespace TKMQ
                 string PW = ConfigurationManager.AppSettings["PW"];
 
                 System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                 MyMail.Subject = Subject.ToString();
                 //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                 MyMail.Body = Body.ToString();
                 MyMail.IsBodyHtml = true; //是否使用html格式
 
-                //加上附圖
-                //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+                System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                 Attachment attch = new Attachment(Attachments);
                 MyMail.Attachments.Add(attch);
@@ -10419,24 +8567,30 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAIL_NEWSALES", EX);
 
                         }
                     }
                 }
 
                 MySMTP.Send(MyMail);
+                // 20261023 寄信後釋放 SmtpClient 資源
+                MyMail.Dispose();
+                MySMTP.Dispose();
 
                 MyMail.Dispose(); //釋放資源
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_NEWSALES", EX);
 
             }
             finally
             {
 
             }
-
 
         }
         /// <summary>
@@ -10445,11 +8599,12 @@ namespace TKMQ
         /// <returns></returns>
         public DataSet ERP_NEWSLAES(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_NEWSLAES = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
-
 
             // 取得當前日期和時間
             DateTime currentDate = DateTime.Now;
@@ -10457,28 +8612,16 @@ namespace TKMQ
             DateTime threeMonthsAgo = currentDate.AddMonths(-3);
             DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
             DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1).AddDays(-1);
-            //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
-            //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
-
-
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"                                   
                                    
@@ -10640,8 +8783,6 @@ namespace TKMQ
                 adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
                 sqlConn.Close();
 
-
-
                 if (DS_NEWSLAES.Tables["DS_NEWSLAES"].Rows.Count > 0)
                 {
                     return DS_NEWSLAES;
@@ -10654,6 +8795,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ERP_NEWSLAES", EX);
                 return null;
             }
             finally
@@ -10703,8 +8846,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -10718,19 +8859,14 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCH_NEWSLAES(pathFile, cancellationToken);
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCH_NEWSLAES(string pathFile, CancellationToken cancellationTokens)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
@@ -10741,26 +8877,16 @@ namespace TKMQ
             DateTime threeMonthsAgo = currentDate.AddMonths(-3);
             DateTime firstDay = new DateTime(threeMonthsAgo.Year, threeMonthsAgo.Month, 1);
             DateTime lastDay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(1).AddDays(-1);
-            //DateTime firstDayOfYear = new DateTime(DateTime.Now.Year, 1, 1);
-            //DateTime lastDayOfYear = new DateTime(DateTime.Now.Year, 12, 31);
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"  
                                     
@@ -10919,7 +9045,6 @@ namespace TKMQ
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
-
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -10944,6 +9069,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCH_NEWSLAES", EX);
 
             }
             finally
@@ -10993,8 +9120,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -11008,19 +9133,14 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCH_POSINV(pathFile, cancellationToken);
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCH_POSINV(string pathFile, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
@@ -11030,21 +9150,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@" 
                                    --20230725 查INVLA
@@ -11105,7 +9217,6 @@ namespace TKMQ
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
-
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -11130,6 +9241,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCH_POSINV", EX);
 
             }
             finally
@@ -11150,13 +9263,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-老楊食品-營銷各庫庫存通知報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -11167,7 +9276,6 @@ namespace TKMQ
                     + "<br>" + "營銷各庫庫存通知的明細如下(含附件)"
 
                     );
-
 
                 if (DS_POSINV != null && DS_POSINV.Tables[0].Rows.Count > 0)
                 {
@@ -11205,11 +9313,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["有效天數"].ToString() + "</td>");
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
@@ -11223,13 +9326,13 @@ namespace TKMQ
 
                              + "</span><br>");
 
-
-
                 SENDEMAIL_POSINV(SUBJEST, BODY, path_File);
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPARESENDEMAIL_POSINV", EX);
 
             }
             finally
@@ -11253,28 +9356,19 @@ namespace TKMQ
                 if (DSMAILTO.Tables[0].Rows.Count > 0)
                 {
 
-
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = Subject.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = Body.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -11297,19 +9391,25 @@ namespace TKMQ
 
                         MyMail.Dispose(); //釋放資源
 
-
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_POSINV", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_POSINV", EX);
 
             }
             finally
@@ -11317,11 +9417,12 @@ namespace TKMQ
 
             }
 
-
         }
 
         public DataSet ERP_POSINV()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS_NEWSLAES = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -11333,21 +9434,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@" 
                                   --20230725 查INVLA
@@ -11402,8 +9495,6 @@ namespace TKMQ
                 adapter.Fill(DS_NEWSLAES, "DS_NEWSLAES");
                 sqlConn.Close();
 
-
-
                 if (DS_NEWSLAES.Tables["DS_NEWSLAES"].Rows.Count > 0)
                 {
                     return DS_NEWSLAES;
@@ -11416,6 +9507,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ERP_POSINV", EX);
                 return null;
             }
             finally
@@ -11466,8 +9559,6 @@ namespace TKMQ
                 wBook.SaveAs(pathFile, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Excel.XlSaveAsAccessMode.xlNoChange, Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing);
             }
 
-
-
             //關閉Excel
             excelApp.Quit();
 
@@ -11481,19 +9572,14 @@ namespace TKMQ
 
             Console.Read();
 
-
             SEARCH_COPTCD(pathFile, cancellationToken);
-
-            //if (!File.Exists(pathFile + ".xlsx"))
-            //{
-            //    //SEARCH()
-
-            //}
 
         }
 
         public void SEARCH_COPTCD(string pathFile, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet ds1 = new DataSet();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
@@ -11501,25 +9587,16 @@ namespace TKMQ
             //2個月內
             DateTime LastDay = DateTime.Now.AddMonths(2).AddDays(-DateTime.Now.AddMonths(1).Day);
             //本月
-            //DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@" 
                                     SELECT *
@@ -11700,7 +9777,6 @@ namespace TKMQ
                 adapter1.Fill(ds1, "TEMPds1");
                 sqlConn.Close();
 
-
                 if (ds1.Tables["TEMPds1"].Rows.Count == 0)
                 {
                     //建立一筆新的DataRow，並且等於新的dt row
@@ -11725,6 +9801,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCH_COPTCD", EX);
 
             }
             finally
@@ -11750,116 +9828,8 @@ namespace TKMQ
 
                          + "</span><br>");
 
-
-
             SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
 
-            //DataSet DS = ERP_COPTCD();
-
-            //try
-            //{
-            //    StringBuilder SUBJEST = new StringBuilder();
-            //    StringBuilder BODY = new StringBuilder();
-
-            //    ////加上附圖
-            //    //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-            //    //LinkedResource res = new LinkedResource(path);
-            //    //res.ContentId = Guid.NewGuid().ToString();
-
-            //    SUBJEST.Clear();
-            //    BODY.Clear();
-
-
-            //    SUBJEST.AppendFormat(@"系統通知-老楊食品-訂單明細及金額報表，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
-            //    //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
-
-            //    //ERP 採購相關單別、單號未核準的明細
-            //    //
-            //    BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
-            //        + "<br>" + "訂單明細及金額的明細如下(含附件)"
-
-            //        );
-
-
-            //    if (DS != null && DS.Tables[0].Rows.Count > 0)
-            //    {
-            //        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
-
-            //        BODY.AppendFormat(@"<table> ");
-            //        BODY.AppendFormat(@"<tr >");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">KINDS</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單別</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單單號</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">客戶簡稱</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">課稅別</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">品名</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">訂單數量</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已交數量</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品數量</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">贈品已交量</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出數量</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單價</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">未出貨金額</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">預交日</th>");
-            //        BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已出貨金額</th>");
-            //        BODY.AppendFormat(@"</tr> ");
-
-            //        foreach (DataRow DR in DS.Tables[0].Rows)
-            //        {
-
-            //            BODY.AppendFormat(@"<tr >");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["KINDS"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單別"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單單號"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["客戶簡稱"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["課稅別"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["部門"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["品名"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["訂單數量"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已交數量"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品數量"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["贈品已交量"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出數量"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單價"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未出貨金額"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["預交日"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已出貨金額"].ToString() + "</td>");
-            //            BODY.AppendFormat(@"</tr> ");
-
-            //            //BODY.AppendFormat("<span></span>");
-            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-            //            //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
-            //        }
-            //        BODY.AppendFormat(@"</table> ");
-            //    }
-            //    else
-            //    {
-            //        BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
-            //    }
-
-            //    BODY.AppendFormat(" "
-            //                 + "<br>" + "謝謝"
-
-            //                 + "</span><br>");
-
-
-
-            //    SENDEMAIL_COPTCD(SUBJEST, BODY, path_File);
-
-            //}
-            //catch
-            //{
-
-            //}
-            //finally
-            //{
-
-            //}
         }
 
         /// <summary>
@@ -11876,28 +9846,19 @@ namespace TKMQ
                 if (DSMAILTO.Tables[0].Rows.Count > 0)
                 {
 
-
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
                     string NAME = ConfigurationManager.AppSettings["NAME"];
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = Subject.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = Body.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -11910,25 +9871,30 @@ namespace TKMQ
                             MyMail.To.Add(DR["MAIL"].ToString());
                         }
 
-
                         //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
                         MySMTP.Send(MyMail);
 
                         MyMail.Dispose(); //釋放資源
 
-
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_COPTCD", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_COPTCD", EX);
 
             }
             finally
@@ -11936,282 +9902,9 @@ namespace TKMQ
 
             }
 
-
         }
 
-        public DataSet ERP_COPTCD()
-        {
-            DataSet DS = new DataSet();
-
-            SqlDataAdapter adapter = new SqlDataAdapter();
-            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
-            DateTime FirstDay = DateTime.Now.AddDays(-DateTime.Now.Day + 1);
-            //2個月內
-            DateTime LastDay = DateTime.Now.AddMonths(2).AddDays(-DateTime.Now.AddMonths(1).Day);
-            //本月
-            //DateTime LastDay = DateTime.Now.AddMonths(1).AddDays(-DateTime.Now.AddMonths(1).Day);
-
-
-            try
-            {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-
-                sbSql.AppendFormat(@" 
-                                    SELECT *
-                                    FROM 
-                                    (
-                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
-                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
-                                    ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                             
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001 NOT IN ('A223')
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
-                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
-                                    ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,'A221' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                             
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001 NOT IN ('A223')
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND MA002 IN ('橘平屋')
-                                    GROUP BY MA002
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND MA002 IN ('大林廠計畫訂單客戶-業務')
-                                    GROUP BY MA002
-
-                                    UNION ALL
-                                    SELECT '1國內' KINDS,'A223' AS '訂單單別','特計' AS '訂單單號','其他' AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='1國內')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND MA002 NOT IN ('橘平屋','大林廠計畫訂單客戶-業務')
-
-
-                                    UNION ALL
-                                    SELECT  '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
-                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
-                                    ,(TD009)*TD011 AS '已出貨金額'                                
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                             
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
-                                    AND TC001 NOT IN ('A223')
-
-                                    UNION ALL
-                                    SELECT '2國外' KINDS,TC001 AS '訂單單別',TC002 AS '訂單單號',MA002 AS '客戶簡稱'
-                                    ,CASE WHEN TC016='1' THEN '應稅內含' WHEN TC016='2' THEN '應稅外加' END  AS '課稅別'
-                                    ,ME002 AS '部門',TD005 AS '品名',TD008 AS 	'訂單數量',TD009 AS '已交數量',TD024 AS	'贈品數量',TD025 AS	'贈品已交量',(TD008-TD009) AS  '未出數量',TD010 AS 	'單位',TD011 AS  '單價',(TD008-TD009)*TD011 AS '未出貨金額',TD013 AS'預交日'
-                                    ,(TD009)*TD011 AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                        
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
-                                    AND TC001  IN ('A223')
-                                    AND TC004 NOT IN ('2248500100')
-                                    AND TC004 NOT IN ('2248500100')
-
-                                    UNION ALL
-                                    SELECT '2國外' KINDS,'A222' AS '訂單單別','小計' AS '訂單單號','' AS '客戶簡稱'
-                                    ,'' AS '課稅別'
-                                    ,'' AS '部門','' AS '品名',0 AS 	'訂單數量',0 AS '已交數量',0 AS	'贈品數量',0 AS	'贈品已交量',0 AS  '未出數量','' AS 	'單位',0 AS  '單價',CONVERT(INT,SUM((TD008-TD009)*TD011)) AS '未出貨金額','' AS'預交日'
-                                    ,CONVERT(INT,SUM((TD009)*TD011)) AS '已出貨金額'
-                                    FROM [TK].dbo.COPTC WITH(NOLOCK) ,[TK].dbo.COPTD WITH(NOLOCK) ,[TK].dbo.COPMA WITH(NOLOCK) ,[TK].dbo.CMSME WITH(NOLOCK) 
-                                    WHERE TC001=TD001 AND TC002=TD002
-                                    AND TC004=MA001
-                                    AND TC005=ME001
-                                    AND TC027 IN ('Y','N')                             
-                                    AND TD013>='{0}' AND TD013<='{1}'
-                                    AND TC005 IN (SELECT [DEPNO] FROM [TKBUSINESS].[dbo].[TBREPORTSKINDS] WHERE [KINDS]='2國外')
-                                    AND TC001 NOT IN ('A223')
-
-
-                                    ) AS TEMP 
-                                    ORDER BY KINDS,訂單單別,訂單單號,未出貨金額 DESC
-
-
-
-                                    ", FirstDay.ToString("yyyyMMdd"), LastDay.ToString("yyyyMMdd"));
-
-                adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
-
-                sqlCmdBuilder = new SqlCommandBuilder(adapter);
-                sqlConn.Open();
-                DS.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapter.Fill(DS, "DS");
-                sqlConn.Close();
-
-
-
-                if (DS.Tables["DS"].Rows.Count > 0)
-                {
-                    return DS;
-                }
-                else
-                {
-                    return null;
-                }
-
-            }
-            catch (Exception EX)
-            {
-                return null;
-            }
-            finally
-            {
-
-            }
-
-        }
-
-        public void SETFASTREPORT()
-        {
-            Report report1 = new Report();
-            StringBuilder SQL1 = new StringBuilder();
-            StringBuilder SQL_IN = new StringBuilder();
-            StringBuilder SQL_OUT = new StringBuilder();
-
-            //舊日報用表格各自業務計算
-            //SQL1 = SETSQL();
-            //report1.Load(@"REPORT\國內、外業務部業績日報表V7.frx");
-
-            //新日報用業務+國內外，matrix表
-            SQL1 = SETSQLNEW();
-            SQL_IN = SETSQLNEW_IN();
-            SQL_OUT = SETSQLNEW_OUT();
-            report1.Load(@"REPORT\國內、外業務部業績日報表NEWV2.frxrx");
-
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-            String connectionString;
-            sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
-            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
-            table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
-
-            report1.Preview = previewControl1;
-            report1.Show();
-        }
-
-        /// <summary>
+/// <summary>
         /// 新日報
         /// </summary>
         /// <returns></returns>
@@ -12592,7 +10285,6 @@ namespace TKMQ
                             OPTION (MAXRECURSION 31);
                             ");
 
-
             return SB;
         }
         public StringBuilder SETSQLNEW_IN()
@@ -12789,7 +10481,6 @@ namespace TKMQ
                             OPTION (MAXRECURSION 31);
                             ");
 
-
             return SB;
         }
 
@@ -12877,651 +10568,7 @@ namespace TKMQ
                             OPTION (MAXRECURSION 31);
                             ");
 
-
             return SB;
-        }
-        /// <summary>
-        /// 舊日報
-        /// </summary>
-        /// <returns></returns>
-        public StringBuilder SETSQL()
-        {
-            DateTime now = DateTime.Now;
-            // 取得本月第一天日期
-            DateTime firstDayOfMonth = new DateTime(now.Year, now.Month, 1);
-            // 取得本月最後一天日期
-            int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
-            DateTime lastDayOfMonth = new DateTime(now.Year, now.Month, daysInMonth);
-
-
-            StringBuilder SB = new StringBuilder();
-
-
-            SB.AppendFormat(@"   
-                           --200050 張釋予
-                            --140078 蔡顏鴻
-                            --100005 何姍怡
-                            --160155 洪櫻芬
-                            --170007 林杏育
-                            --120003 葉枋俐
-                            --240036 許湘舷
-                            SELECT DATES
-	                            ,國內張釋予銷貨
-	                            ,國內張釋予銷退
-	                            ,國內蔡顏鴻銷貨
-	                            ,國內蔡顏鴻銷退
-	                            ,國內何姍怡銷貨
-	                            ,國內何姍怡銷退
-	                            ,國內洪櫻芬銷貨
-	                            ,國內洪櫻芬銷退
-	                            ,國內許湘舷銷貨
-	                            ,國內許湘舷銷退
-	                            ,官網及現銷銷貨
-	                            ,官網及現銷銷退
-	                            ,全聯銷貨
-	                            ,國外洪櫻芬銷貨
-	                            ,國外洪櫻芬銷退
-	                            ,國外葉枋俐銷貨
-	                            ,國外葉枋俐銷退
-	                            ,(國內張釋予銷貨 + 國內張釋予銷退 + 國內蔡顏鴻銷貨 + 國內蔡顏鴻銷退 + 國內何姍怡銷貨 + 國內何姍怡銷退 + 國內洪櫻芬銷貨 + 國內洪櫻芬銷退 + 國內許湘舷銷貨 + 國內許湘舷銷退 + 全聯銷貨) AS '國內業務合計'
-	                            ,(國外洪櫻芬銷貨 + 國外洪櫻芬銷退 + 國外葉枋俐銷貨 + 國外葉枋俐銷退) AS '國外業務合計'
-	                            ,(國內張釋予銷貨 + 國內張釋予銷退 + 國內蔡顏鴻銷貨 + 國內蔡顏鴻銷退 + 國內何姍怡銷貨 + 國內何姍怡銷退 + 國內洪櫻芬銷貨 + 國內洪櫻芬銷退 + 國內許湘舷銷貨 + 國內許湘舷銷退 + 全聯銷貨 + + 國外洪櫻芬銷貨 + 國外洪櫻芬銷退 + 國外葉枋俐銷貨 + 國外葉枋俐銷退) AS '總計'
-	                            ,(
-		                            SELECT ISNULL(INTARGETMONEYS, 0)
-		                            FROM [TK].[dbo].[ZTARGETMONEYS]
-		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-		                            ) AS '國內月目標業績'
-	                            ,(
-		                            SELECT ISNULL([OUTTARGETMONEYS], 0)
-		                            FROM [TK].[dbo].[ZTARGETMONEYS]
-		                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-		                            ) AS '國外月目標業績'
-	                            ,(
-		                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-		                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-			                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-		                            WHERE TG001 = TH001
-			                            AND TG002 = TH002
-			                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            AND TG023 = 'Y'
-			                            AND (
-				                            TG004 LIKE '1%'
-				                            OR TG004 LIKE '2%'
-				                            OR TG004 LIKE 'A2%'
-				                            OR TG004 LIKE 'B2%'
-				                            )
-			                            AND (
-				                            TG004 NOT IN (
-					                            SELECT MA001
-					                            FROM [TK].dbo.COPMA WITH(NOLOCK) 
-					                            WHERE MA002 LIKE '%全聯%'
-					                            )
-				                            )
-			                            AND TG006 IN (
-				                            '200050'
-				                            ,'140078'
-				                            ,'100005'
-				                            ,'160155'
-				                            ,'170007'
-				                            ,'240036'
-				                            )
-		                            ) AS '國內月總銷貨'
-	                            ,(
-		                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-		                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-			                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-		                            WHERE TI001 = TJ001
-			                            AND TI002 = TJ002
-			                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            AND TI019 = 'Y'
-			                            AND (
-				                            TI004 LIKE '1%'
-				                            OR TI004 LIKE '2%'
-				                            OR TI004 LIKE 'A2%'
-				                            OR TI004 LIKE 'B2%'
-				                            )
-			                            AND (
-				                            TI004 NOT IN (
-					                            SELECT MA001
-					                            FROM [TK].dbo.COPMA
-					                            WHERE MA002 LIKE '%全聯%'
-					                            )
-				                            )
-			                            AND TI006 IN (
-				                            '200050'
-				                            ,'140078'
-				                            ,'100005'
-				                            ,'160155'
-				                            ,'170007'
-				                            ,'240036'
-				                            )
-		                            ) AS '國內月總銷退'
-	                            ,(
-		                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-		                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-			                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-		                            WHERE TG001 = TH001
-			                            AND TG002 = TH002
-			                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            AND TG023 = 'Y'
-			                            AND (
-				                            TG004 LIKE '3%'
-				                            OR TG004 LIKE 'A3%'
-				                            OR TG004 LIKE 'B3%'
-				                            )
-			                            AND TG006 IN (
-				                            '160155'
-				                            ,'120003'
-				                            )
-		                            ) AS '國外月總銷貨'
-	                            ,(
-		                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-		                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-			                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-		                            WHERE TI001 = TJ001
-			                            AND TI002 = TJ002
-			                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            AND TI019 = 'Y'
-			                            AND (
-				                            TI004 LIKE '3%'
-				                            OR TI004 LIKE 'A3%'
-				                            OR TI004 LIKE 'B3%'
-				                            )
-			                            AND TI006 IN (
-				                            '160155'
-				                            ,'120003'
-				                            )
-		                            ) AS '國外月總銷退'
-	                            ,(
-		                            (
-			                            (
-				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-					                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-				                            WHERE TG001 = TH001
-					                            AND TG002 = TH002
-					                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-					                            AND TG023 = 'Y'
-					                            AND (
-						                            TG004 LIKE '1%'
-						                            OR TG004 LIKE '2%'
-						                            OR TG004 LIKE 'A2%'
-						                            OR TG004 LIKE 'B2%'
-						                            )
-					                            AND (
-						                            TG004 NOT IN (
-							                            SELECT MA001
-							                            FROM [TK].dbo.COPMA
-							                            WHERE MA002 LIKE '%全聯%'
-							                            )
-						                            )
-					                            AND TG006 IN (
-						                            '200050'
-						                            ,'140078'
-						                            ,'100005'
-						                            ,'160155'
-						                            ,'170007'
-						                            )
-				                            ) + (
-				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-				                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-					                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-				                            WHERE TI001 = TJ001
-					                            AND TI002 = TJ002
-					                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-					                            AND TI019 = 'Y'
-					                            AND (
-						                            TI004 LIKE '1%'
-						                            OR TI004 LIKE '2%'
-						                            OR TI004 LIKE 'A2%'
-						                            OR TI004 LIKE 'B2%'
-						                            )
-					                            AND (
-						                            TI004 NOT IN (
-							                            SELECT MA001
-							                            FROM [TK].dbo.COPMA
-							                            WHERE MA002 LIKE '%全聯%'
-							                            )
-						                            )
-					                            AND TI006 IN (
-						                            '200050'
-						                            ,'140078'
-						                            ,'100005'
-						                            ,'160155'
-						                            ,'170007'
-						                            ,'240036'
-						                            )
-				                            )
-			                            ) / (
-			                            SELECT ISNULL(INTARGETMONEYS, 0)
-			                            FROM [TK].[dbo].[ZTARGETMONEYS]
-			                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            )
-		                            ) AS '國內月累績達成率'
-	                            ,(
-		                            (
-			                            (
-				                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-				                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-					                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-				                            WHERE TG001 = TH001
-					                            AND TG002 = TH002
-					                            AND SUBSTRING(TG003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-					                            AND TG023 = 'Y'
-					                            AND (
-						                            TG004 LIKE '3%'
-						                            OR TG004 LIKE 'A3%'
-						                            OR TG004 LIKE 'B3%'
-						                            )
-					                            AND TG006 IN (
-						                            '160155'
-						                            ,'120003'
-						                            )
-				                            ) + (
-				                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-				                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-					                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-				                            WHERE TI001 = TJ001
-					                            AND TI002 = TJ002
-					                            AND SUBSTRING(TI003, 1, 6) = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-					                            AND TI019 = 'Y'
-					                            AND (
-						                            TI004 LIKE '3%'
-						                            OR TI004 LIKE 'A3%'
-						                            OR TI004 LIKE 'B3%'
-						                            )
-					                            AND TI006 IN (
-						                            '160155'
-						                            ,'120003'
-						                            )
-				                            )
-			                            ) / (
-			                            SELECT ISNULL([OUTTARGETMONEYS], 0)
-			                            FROM [TK].[dbo].[ZTARGETMONEYS]
-			                            WHERE YEARSMOTNS = SUBSTRING(CONVERT(NVARCHAR, DATES, 112), 1, 6)
-			                            )
-		                            ) AS '國外月累績達成率'
-                            FROM (
-	                            SELECT CONVERT(NVARCHAR, DATES, 112) AS DATES
-		                            ,[RTSALEMONEYS] AS '全聯銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG006 = '200050'
-			                            ) AS '國內張釋予銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI006 = '200050'
-			                            ) AS '國內張釋予銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG006 = '140078'
-			                            ) AS '國內蔡顏鴻銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI006 = '140078'
-			                            ) AS '國內蔡顏鴻銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG006 = '100005'
-			                            ) AS '國內何姍怡銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI006 = '100005'
-			                            ) AS '國內何姍怡銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG006 = '160155'
-			                            ) AS '國內洪櫻芬銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI006 = '160155'
-			                            ) AS '國內洪櫻芬銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG006 = '240036'
-			                            ) AS '國內許湘舷銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI006 = '240036'
-			                            ) AS '國內許湘舷銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '1%'
-					                            OR TG004 LIKE '2%'
-					                            OR TG004 LIKE 'A2%'
-					                            OR TG004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TG004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TG001 IN (
-					                            'A230'
-					                            ,'A233'
-					                            ,'A234'
-					                            ,'A235'
-					                            ,'A23A'
-					                            ,'A23E'
-					                            )
-				                            AND TG006 NOT IN (
-					                            '200050'
-					                            ,'140078'
-					                            ,'100005'
-					                            ,'160155'
-					                            )
-			                            ) AS '官網及現銷銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '1%'
-					                            OR TI004 LIKE '2%'
-					                            OR TI004 LIKE 'A2%'
-					                            OR TI004 LIKE 'B2%'
-					                            )
-				                            AND (
-					                            TI004 NOT IN (
-						                            SELECT MA001
-						                            FROM [TK].dbo.COPMA
-						                            WHERE MA002 LIKE '%全聯%'
-						                            )
-					                            )
-				                            AND TI001 IN (
-					                            'A243'
-					                            ,'A246'
-					                            ,'A247'
-					                            ,'A248'
-					                            ,'A249'
-					                            )
-				                            AND TI006 NOT IN (
-					                            '200050'
-					                            ,'140078'
-					                            ,'100005'
-					                            ,'160155'
-					                            )
-			                            ) AS '官網及現銷銷退'
-		                            ,'-' AS '-'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND (
-					                            CASE 
-						                            WHEN ISDATE(COPTG.UDF01) = 1
-							                            THEN COPTG.UDF01
-						                            ELSE TG003
-						                            END = CONVERT(NVARCHAR, DATES, 112)
-					                            )
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '3%'
-					                            OR TG004 LIKE 'A3%'
-					                            OR TG004 LIKE 'B3%'
-					                            )
-				                            AND TG006 = '160155'
-			                            ) AS '國外洪櫻芬銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '3%'
-					                            OR TI004 LIKE 'A3%'
-					                            OR TI004 LIKE 'B3%'
-					                            )
-				                            AND TI006 = '160155'
-			                            ) AS '國外洪櫻芬銷退'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TH037), 0))
-			                            FROM [TK].dbo.COPTG WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTH WITH(NOLOCK) 
-			                            WHERE TG001 = TH001
-				                            AND TG002 = TH002
-				                            AND TG003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TG023 = 'Y'
-				                            AND (
-					                            TG004 LIKE '3%'
-					                            OR TG004 LIKE 'A3%'
-					                            OR TG004 LIKE 'B3%'
-					                            )
-				                            AND TG006 = '120003'
-			                            ) AS '國外葉枋俐銷貨'
-		                            ,(
-			                            SELECT CONVERT(INT, ISNULL(SUM(TJ033) * - 1, 0))
-			                            FROM [TK].dbo.COPTI WITH(NOLOCK) 
-				                            ,[TK].dbo.COPTJ WITH(NOLOCK) 
-			                            WHERE TI001 = TJ001
-				                            AND TI002 = TJ002
-				                            AND TI003 = CONVERT(NVARCHAR, DATES, 112)
-				                            AND TI019 = 'Y'
-				                            AND (
-					                            TI004 LIKE '3%'
-					                            OR TI004 LIKE 'A3%'
-					                            OR TI004 LIKE 'B3%'
-					                            )
-				                            AND TI006 = '120003'
-			                            ) AS '國外葉枋俐銷退'
-	                            FROM [TK].dbo.ZDATES
-	                            WHERE CONVERT(NVARCHAR, DATES, 112) >= '{0}'
-		                            AND CONVERT(NVARCHAR, DATES, 112) <= '{1}'
-	                            ) AS TEMP
-                                ORDER BY DATES
-                            ", firstDayOfMonth.ToString("yyyyMMdd"), lastDayOfMonth.ToString("yyyyMMdd"));
-
-
-            return SB;
-
         }
         public void SENDEMAIL_DAILY_SALES_MONEY(CancellationToken cancellationToken)
         {
@@ -13532,9 +10579,8 @@ namespace TKMQ
             SETPATH();
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
-            //pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".jpg";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            pathFile_SALES_MONEYS = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".pdf";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -13542,7 +10588,6 @@ namespace TKMQ
                 //新增資料夾
                 Directory.CreateDirectory(DirectoryNAME);
             }
-
 
             SAVEREPORT(pathFile_SALES_MONEYS, cancellationToken);
 
@@ -13563,45 +10608,28 @@ namespace TKMQ
             BODY.AppendFormat(Environment.NewLine + "TEL/ 05-295 6520 #4011    FAX/ 05-295 6519    E-MAIL/ tk660@tkfood.com.tw");
             BODY.AppendFormat(Environment.NewLine + "官網/ www.tkfood.com.tw    FB/ www.facebook.com/tkfood");
 
-            //BODY.AppendFormat("<br /><br />");
-            //BODY.AppendFormat("<img src=\"cid:image001\" alt=\"图片描述\" style=\"width:400px;\" />");
-            //BODY.AppendFormat("<br /><br />Thank you for your attention.");
-
-            //string emailBody = BODY.ToString();
             //// 创建 HTML 视图
-            //AlternateView htmlView = AlternateView.CreateAlternateViewFromString(emailBody, null, MediaTypeNames.Text.Html);
 
             //// 使用本地图片路径添加图片附件
-            //string imagePath = pathFile_SALES_MONEYS;  // 本地图片路径
-            //LinkedResource imageResource = new LinkedResource(imagePath, MediaTypeNames.Image.Jpeg);
-            //imageResource.ContentId = "image001";  // 设置 Content-ID
-            //imageResource.TransferEncoding = TransferEncoding.Base64;
-            //htmlView.LinkedResources.Add(imageResource);
 
             //// 将 HTML 视图添加到邮件
-            //System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            //MyMail.AlternateViews.Add(htmlView);
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk660@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM_SALES);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(pathFile_SALES_MONEYS);
             MyMail.Attachments.Add(attch);
-
 
             try
             {
@@ -13633,22 +10661,26 @@ namespace TKMQ
                     Task.Delay(5000); // 等待 5 秒再試
                 }
 
-                //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
 
         }
 
-
         public void SAVEREPORT(string pathFileSALESMONEYS, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             Report report1 = new Report();
             string FILENAME = pathFileSALESMONEYS;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             //報表單頭要改報表內的SQL，因為報表沒有放在DATA中，不會連動
@@ -13656,8 +10688,6 @@ namespace TKMQ
             StringBuilder SQL_OUT = new StringBuilder();
 
             //舊日報用表格各自業務計算
-            //SQL1 = SETSQL();
-            //report1.Load(@"REPORT\國內、外業務部業績日報表V8.frx");
 
             //新日報用業務+國內外，matrix表
             SQL1 = SETSQLNEW();
@@ -13665,24 +10695,16 @@ namespace TKMQ
             SQL_OUT = SETSQLNEW_OUT();
             report1.Load(@"REPORT\國內、外業務部業績日報表NEWV7.frx"); 
              
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-            //adapter1.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
             TableDataSource table1 = report1.GetDataSource("Table1") as TableDataSource;
             table1.SelectCommand = SQL_IN.ToString();
             table1.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
@@ -13694,37 +10716,27 @@ namespace TKMQ
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
 
         }
 
         public DataSet SERACHMAILSALESMONEYS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapterSALESMONEYS = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilderSALESMONEYS = new SqlCommandBuilder();
             DataSet dsSALESMONEYS = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -13742,8 +10754,6 @@ namespace TKMQ
                 adapterSALESMONEYS.Fill(dsSALESMONEYS, "dsSALESMONEYS");
                 sqlConn.Close();
 
-
-
                 if (dsSALESMONEYS.Tables["dsSALESMONEYS"].Rows.Count >= 1)
                 {
                     return dsSALESMONEYS;
@@ -13756,6 +10766,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAILSALESMONEYS", EX);
                 return null;
             }
             finally
@@ -13764,47 +10776,13 @@ namespace TKMQ
             }
         }
 
-
-        public void SETFASTREPORT_QC_CHECK()
-        {
-            StringBuilder SQL1 = new StringBuilder();
-
-            SQL1 = SETSQL_QC_CEHCK();
-            Report report1 = new Report();
-
-            report1.Load(@"REPORT\\溫溼度警報.frx");
-
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-            String connectionString;
-            sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
-            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
-            table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
-
-            report1.Preview = previewControl1;
-            report1.Show();
-        }
-
-        public StringBuilder SETSQL_QC_CEHCK()
+public StringBuilder SETSQL_QC_CEHCK()
         {
             DateTime now = DateTime.Now;
             now = now.AddDays(-1);
             string SDAYS = now.ToString("yyyyMMdd");
 
-
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"   
                           
@@ -13820,7 +10798,6 @@ namespace TKMQ
 
                             ", SDAYS);
 
-
             return SB;
 
         }
@@ -13834,9 +10811,8 @@ namespace TKMQ
             SETPATH();
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            //pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
-            pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".jpg";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            pathFile_QC_CHECK = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".jpg";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -13844,7 +10820,6 @@ namespace TKMQ
                 //新增資料夾
                 Directory.CreateDirectory(DirectoryNAME);
             }
-
 
             SAVEREPORT_QC_CHECK(pathFile_QC_CHECK, cancellationToken);
 
@@ -13878,22 +10853,17 @@ namespace TKMQ
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(pathFile_QC_CHECK);
             MyMail.Attachments.Add(attch);
-
 
             try
             {
@@ -13909,20 +10879,24 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
-
         public void SAVEREPORT_QC_CHECK(string pathFile, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1 = SETSQL_QC_CEHCK();
@@ -13930,30 +10904,18 @@ namespace TKMQ
 
             report1.Load(@"REPORT\溫溼度警報.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("TKA01");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
 
-
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
-
-            // prepare a report
             report1.Prepare();
-            // create an instance of HTML export filter
-            //FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
             FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
             // show the export options dialog and do the export
             report1.Export(ImageExport, FILENAME);
@@ -13962,29 +10924,21 @@ namespace TKMQ
 
         public DataSet SERACHMAIL_QC_CHECK()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -14002,8 +10956,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds;
@@ -14016,6 +10968,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACHMAIL_QC_CHECK", EX);
                 return null;
             }
             finally
@@ -14024,148 +10978,21 @@ namespace TKMQ
             }
         }
 
-        public void SAVEREPORT_NEWSLAES(string path_File_NEWSLAES)
-        {
-            string FILENAME = path_File_NEWSLAES;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
-            StringBuilder SQL1 = new StringBuilder();
-
-            StringBuilder SB = new StringBuilder();
-            string SDAYS = DateTime.Now.ToString("yyyy") + "0101";
-            string EDAYS = DateTime.Now.ToString("yyyyMMdd");
-            string ADDYEARSs = DateTime.Now.ToString("yyyy");
-            string ADD_DAYS = DateTime.Now.ToString("yyyy") + "0101";
-
-            SQL1.AppendFormat(@"                               
-                            SELECT  
-                            MB001 AS '品號'
-                            ,MB002 AS '品名'
-                            ,MB003 AS '規格'
-                            ,MB004 AS '單位'
-                            ,CREATE_DATE AS '新品建立日期'
-                            ,TOPTG003 AS '第1天業務銷貨日'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH008)), 1), '.00', '') AS '累計-業務銷貨數量'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTH037)), 1), '.00', '') AS '累計-業務銷貨金額'
-                            ,TOPTI003 AS '第1天業務銷退日'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ007)), 1), '.00', '') AS '累計-業務銷退數量'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTJ033)), 1), '.00', '') AS '累計-業務銷退金額'
-                            ,TOPTB001 AS '第1天POS銷售日'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB019)), 1), '.00', '') AS '累計-POS銷售數量'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,SUMTB031)), 1), '.00', '') AS '累計-POS銷售金額'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(DECIMAL(16,4),單位成本)), 1), '.00', '') AS '平均單位成本'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH008-SUMTJ007+SUMTB019))), 1), '.00', '')  AS '累計-總銷售數量'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031))), 1), '.00', '')  AS '累計-總銷售未稅金額'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(單位成本*(SUMTH008-SUMTJ007+SUMTB019)))), 1), '.00', '')  AS '累計-總成本'
-                            ,REPLACE(CONVERT(VARCHAR(20), CONVERT(MONEY,CONVERT(INT,(SUMTH037-SUMTJ033+SUMTB031-(單位成本*(SUMTH008-SUMTJ007+SUMTB019))))), 1), '.00', '')  AS '累計-總毛利'
-                            ,CONVERT(NVARCHAR,CONVERT(DECIMAL(16,2),(CASE WHEN (SUMTH037-SUMTJ033+SUMTB031-(單位成本*(SUMTH008-SUMTJ007+SUMTB019)))<>0 AND (SUMTH037-SUMTJ007+SUMTB031)<>0  THEN (SUMTH037-SUMTJ033+SUMTB031-(單位成本*(SUMTH008-SUMTJ007+SUMTB019)))/(SUMTH037+SUMTB031) ELSE  0 END )*100))+'%'  AS '累計-毛利率'
-                            FROM 
-                            (
-                            SELECT *
-                            ,ISNULL(
-                            (SELECT CASE WHEN SUM(LA024)<>0 AND SUM(LA016)<>0 THEN SUM(LA024)/SUM(LA016) ELSE 0 END
-                            FROM [TK].dbo.SASLA WITH(NOLOCK) 
-                            WHERE LA005=MB001
-                            AND CONVERT(NVARCHAR,LA015,112)>='{0}'
-                            AND CONVERT(NVARCHAR,LA015,112)<='{1}')
-                            ,0) AS PERCOSTS
-                            FROM (
-                            SELECT '{0}' SDATES,'{1}' AS EDATES,MB001,MB002,MB003,MB004,CREATE_DATE
-                            ,ISNULL((SELECT TOP 1 ISNULL(TG003,'') FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}' AND TH004=MB001 ORDER BY TG003 ),'') AS TOPTG003
-                            ,ISNULL((SELECT SUM((CASE WHEN TH009=MD002 THEN ((TH008+TH024)*MD004/MD003) ELSE (TH008+TH024) END)) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH WITH(NOLOCK)  LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TH004  AND TH009=MD002  WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}' AND TH004=MB001),0) AS SUMTH008
-                            ,ISNULL((SELECT SUM(TH037) FROM [TK].dbo.COPTG WITH(NOLOCK) ,[TK].dbo.COPTH  WITH(NOLOCK) WHERE TG001=TH001 AND TG002=TH002 AND TG023='Y' AND TG003>='{0}'  AND TG003<='{1}'  AND TH004=MB001),0) AS SUMTH037
-
-                            ,ISNULL((SELECT TOP 1 ISNULL(TI003,'') FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}' AND TJ004=MB001 ORDER BY TI003 ),'') AS TOPTI003
-                            ,ISNULL((SELECT SUM((CASE WHEN TJ008=MD002 THEN (TJ007*MD004/MD003) ELSE TJ007 END)) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ  WITH(NOLOCK) LEFT JOIN [TK].dbo.INVMD  WITH(NOLOCK) ON MD001=TJ004  AND TJ008=MD002 WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}'  AND TJ004=MB001),0) AS SUMTJ007
-                            ,ISNULL((SELECT SUM(TJ033) FROM [TK].dbo.COPTI WITH(NOLOCK) ,[TK].dbo.COPTJ WITH(NOLOCK)  WHERE TI001=TJ001 AND TI002=TJ002 AND TI019='Y' AND TI003>='{0}'  AND TI003<='{1}' AND TJ004=MB001),0) AS SUMTJ033
-
-                            ,ISNULL((SELECT TOP 1 ISNULL(TB001,'') FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' ORDER BY TB001),'') AS TOPTB001
-                            ,ISNULL((SELECT SUM(TB019) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}' ),0) AS SUMTB019
-                            ,ISNULL((SELECT SUM(TB031) FROM [TK].dbo.POSTB  WITH(NOLOCK) WHERE TB010=MB001 AND TB001>='{0}' AND TB001<='{1}'),0) AS SUMTB031
-                            FROM [TK].dbo.INVMB WITH(NOLOCK) 
-                            WHERE 1=1
-                            AND MB001 LIKE '4%'
-                            AND MB002 NOT LIKE '%試吃%'
-                            AND MB002 NOT LIKE '%空%'
-                            AND ISNULL(MB002,'')<>''
-                            AND CREATE_DATE>='{2}'
-                            ) AS TEMP
-                            LEFT JOIN
-                            (
-                            SELECT *
-                            FROM 
-                            (
-                            SELECT TA001 AS '品號',MB002 AS '品名',MB003 AS '規格',MB004 AS '單位'
-                            ,CONVERT(DECIMAL(16,2),AVG((ME007+ME008+ME009+ME010)/(生產入庫數+ME005))) 單位成本
-                            ,CONVERT(DECIMAL(16,2),AVG((ME007)/(生產入庫數+ME005))) 單位材料成本, CONVERT(DECIMAL(16,2),AVG((ME008)/(生產入庫數+ME005))) 單位人工成本,CONVERT(DECIMAL(16,2),AVG((ME009)/(生產入庫數+ME005))) 單位製造成本,CONVERT(DECIMAL(16,2),AVG((ME010)/(生產入庫數+ME005))) 單位加工成本
-                            FROM 
-                            (
-                            SELECT TA002,TA001,SUM(TA012) '生產入庫數',SUM(TA016-TA019) AS '本階人工成本',SUM(TA017-TA020) AS '本階製造費用'
-                            FROM [TK].dbo.CSTTA WITH(NOLOCK) 
-                            WHERE TA002 LIKE '{3}%'
-                            GROUP BY TA002,TA001
-                            ) AS TEMP
-                            LEFT JOIN [TK].dbo.CSTME ON ME001=TA001 AND ME002=TA002
-                            LEFT JOIN [TK].dbo.INVMB ON MB001=TA001
-                            WHERE 1=1
-                            AND (生產入庫數+ME005)>0      
-                            GROUP BY  TA001 ,MB002 ,MB003,MB004                                 
-                            ) AS TEMP2
-                            ) AS TEMP3 ON TEMP3.品號=TEMP.MB001
-                            ) AS TEMP2
-                            ORDER BY (SUMTH037-SUMTJ033+SUMTB031) DESC,新品建立日期
-                            ", SDAYS, EDAYS, ADD_DAYS, ADDYEARSs);
-            Report report1 = new Report();
-
-            report1.Load(@"REPORT\新品銷售資料.frx");
-
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-            String connectionString;
-            sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-            report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
-
-            TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
-            table.SelectCommand = SQL1.ToString();
-            table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
-
-
-            // prepare a report
-            report1.Prepare();
-            // create an instance of HTML export filter
-            FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            // show the export options dialog and do the export
-            report1.Export(export, FILENAME);
-
-        }
-
-        /// <summary>
+/// <summary>
         /// 更新已進貨的數量，用驗收數量>TOTALNUMS
         /// </summary>
         public void UDPATE_PURVERSIONSNUMS_TOTALNUMS()
         {
+            // 20261023 改用區域變數(sqlConn, tran, cmd)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
+            SqlTransaction tran = null;
+            SqlCommand cmd = new SqlCommand();
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sqlConn.Close();
                 sqlConn.Open();
@@ -14194,11 +11021,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UDPATE_PURVERSIONSNUMS_TOTALNUMS", EX);
 
             }
 
@@ -14208,11 +11036,6 @@ namespace TKMQ
             }
         }
 
-       
-
-        
-
-       
         public void SENDEMAIL_DAILY_TKWH_CALENDAR(CancellationToken cancellationToken)
         {
             DataSet DS_EMAIL_CALENDAR = new DataSet();
@@ -14231,20 +11054,10 @@ namespace TKMQ
             BODY.Clear();
 
             //// 创建一个DataTable来存储日期和内容
-            //DataTable eventsTable = new DataTable();
-            //eventsTable.Columns.Add("Date", typeof(DateTime));
-            //eventsTable.Columns.Add("Event", typeof(string));
 
             //// 假设这是从某个数据源获取的日期和内容，这里只是简单地手动添加了一些示例数据
-            //eventsTable.Rows.Add(new DateTime(2024, 4, 16), "会议");
-            //eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会1");
-            //eventsTable.Rows.Add(new DateTime(2024, 4, 17), "生日聚会2");
-            //eventsTable.Rows.Add(new DateTime(2024, 4, 18), "项目截止日期");
 
             // 创建电子邮件消息
-            //MailMessage mail = new MailMessage();
-            //mail.From = new MailAddress(senderEmail);
-            //mail.To.Add(new MailAddress(recipientEmail));
 
             SUBJEST.AppendFormat(@"系統通知-每日派車- {0}", DATES);
 
@@ -14270,16 +11083,13 @@ namespace TKMQ
                     int additionalYears = (DateTime.Now.Month + MONTHSCOUNT - 1) / 12;
                     firstDayOfMonth1 = new DateTime(DateTime.Now.Year + additionalYears, newMonth == 0 ? 12 : newMonth, 1);
                 }
-                //DateTime firstDayOfMonth1 = new DateTime(DateTime.Now.Year, DateTime.Now.Month + MONTHSCOUNT, 1);
                 DateTime lastDayOfMonth1 = firstDayOfMonth1.AddMonths(1).AddDays(-1);
 
                 //第1個月
                 DT_CALENDAR1 = SERACH_DT_CALENDAR(firstDayOfMonth1.ToString("yyyyMMdd"), lastDayOfMonth1.ToString("yyyyMMdd"));
 
-
                 // 确定第一个星期一的日期
                 DateTime firstMonday = firstDayOfMonth1.AddDays((7 - (int)firstDayOfMonth1.DayOfWeek + (int)DayOfWeek.Monday) % 7);
-
 
                 htmlBody.Append("<table border='1' cellpadding='5' cellspacing='0'>");
 
@@ -14295,14 +11105,12 @@ namespace TKMQ
                 DateTime currentDay = firstMonday;
 
                 DayOfWeek dayOfWeek = firstDayOfMonth1.DayOfWeek;
-                //int dayOfWeekNumber = (int)dayOfWeek-2;
                 int dayOfWeekNumber = ((int)firstDayOfMonth1.DayOfWeek - 2 + 7) % 7;
                 while (dayOfWeekNumber >= 0 && dayOfWeekNumber <= 5)
                 {
                     htmlBody.Append("<td></td>"); // 空单元格
                     dayOfWeekNumber--;
                 }
-
 
                 // 遍历当前月份的每一天
                 for (int day = 1; day <= lastDayOfMonth1.Day; day++)
@@ -14340,34 +11148,21 @@ namespace TKMQ
                 htmlBody.Append("<br><br>");
             }
 
-
-
-
             htmlBody.Append("</body></html>");
-
-            //mail.Body = htmlBody.ToString();
-            //mail.IsBodyHtml = true;
 
             string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = htmlBody.ToString();
             MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-            //Attachment attch = new Attachment(pathFile_SALES_MONEYS);
-            //MyMail.Attachments.Add(attch);
-
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             try
             {
@@ -14383,40 +11178,36 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
         public DataTable SERACH_DT_CALENDAR(string SDAYS, string EDAYS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                    SELECT
@@ -14440,8 +11231,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -14454,6 +11243,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_DT_CALENDAR", EX);
                 return null;
             }
             finally
@@ -14464,29 +11255,21 @@ namespace TKMQ
 
         public DataSet SERACH_MAIL_CALENDAR()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -14504,8 +11287,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds;
@@ -14518,6 +11299,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_CALENDAR", EX);
                 return null;
             }
             finally
@@ -14544,7 +11327,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-請查收-每週-業務活動記錄，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -14554,10 +11336,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-請查收-每週-業務活動記錄，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_TB_SALES_PROMOTIONS.Rows.Count > 0)
                     {
@@ -14571,7 +11349,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">出貨日</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">活動類型</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">活動內容及價格</th>");
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -14588,11 +11365,9 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
-
 
                     try
                     {
@@ -14601,22 +11376,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -14633,10 +11400,13 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
@@ -14648,8 +11418,6 @@ namespace TKMQ
 
                     }
                 }
-
-
 
             }
             catch (Exception EX)
@@ -14664,29 +11432,21 @@ namespace TKMQ
 
         public DataTable SERACH_TB_SALES_PROMOTIONS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT  
@@ -14714,8 +11474,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -14738,29 +11496,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TB_SALES_PROMOTIONS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -14783,8 +11533,6 @@ namespace TKMQ
                 adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
-
-
 
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
@@ -14819,10 +11567,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PURNOTIN();
                 DT_PURNOTIN = SERACH_PURNOTIN();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-7日前(含今日)-預計採購未到貨明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -14834,8 +11580,6 @@ namespace TKMQ
                     + " <br>"
                     );
 
-
-                 
                 if (DT_PURNOTIN != null && DT_PURNOTIN.Rows.Count >= 1)
                 {
 
@@ -14891,22 +11635,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -14923,14 +11659,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_PURNOTIN", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_PURNOTIN", EX);
 
                 }
                 finally
@@ -14938,12 +11681,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_PURNOTIN", EX);
 
             }
             finally
@@ -14954,24 +11696,18 @@ namespace TKMQ
 
         public DataTable SERACH_PURNOTIN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -15049,8 +11785,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15063,6 +11797,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_PURNOTIN", EX);
                 return null;
             }
             finally
@@ -15073,29 +11809,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_PURNOTIN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -15119,8 +11847,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15133,6 +11859,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_PURNOTIN", EX);
                 return null;
             }
             finally
@@ -15154,10 +11882,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TBPURCHECKFAX();
                 DT_DATAS = SERACH_TBPURCHECKFAX(cancellationToken);
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-預計採購未傳真明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -15168,9 +11894,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-預計採購未傳真明細，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -15209,7 +11932,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["單位"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -15226,22 +11948,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -15258,14 +11972,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_TBPURCHECKFAX", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_TBPURCHECKFAX", EX);
 
                 }
                 finally
@@ -15273,12 +11994,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_TBPURCHECKFAX", EX);
 
             }
             finally
@@ -15289,29 +12009,21 @@ namespace TKMQ
 
         public DataTable SERACH_TBPURCHECKFAX(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
                                    SELECT 
@@ -15345,8 +12057,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15359,6 +12069,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TBPURCHECKFAX", EX);
                 return null;
             }
             finally
@@ -15369,29 +12081,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TBPURCHECKFAX()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -15415,8 +12119,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15429,6 +12131,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TBPURCHECKFAX", EX);
                 return null;
             }
             finally
@@ -15455,7 +12159,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-請查收-每週-本月研發已開發的樣品，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -15465,10 +12168,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-請查收-每週-本月研發已開發的樣品，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
@@ -15503,7 +12202,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["F9FieldValue"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -15519,22 +12217,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -15551,14 +12241,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAIL_TB_DEVE_NEWLISTS", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_TB_DEVE_NEWLISTS", EX);
 
                     }
                     finally
@@ -15567,11 +12264,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_TB_DEVE_NEWLISTS", EX);
 
             }
             finally
@@ -15582,6 +12279,8 @@ namespace TKMQ
 
         public DataTable SERACH_TB_DEVE_NEWLISTS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
@@ -15593,23 +12292,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
                                    SELECT 
@@ -15651,8 +12340,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15665,6 +12352,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TB_DEVE_NEWLISTS", EX);
                 return null;
             }
             finally
@@ -15675,29 +12364,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TB_DEVE_NEWLISTS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -15721,8 +12402,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -15735,6 +12414,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TB_DEVE_NEWLISTS", EX);
                 return null;
             }
             finally
@@ -15752,15 +12433,14 @@ namespace TKMQ
             SETPATH();
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFileMOCMANULINE = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString() + ".pdf";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            pathFileMOCMANULINE = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日預排製令表" + DATES.ToString() + ".pdf";
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
             {
                 //新增資料夾
                 Directory.CreateDirectory(DirectoryNAME);
             }
-
 
             SAVEREPORT_DAILY_MOCMANULINE(pathFileMOCMANULINE);
 
@@ -15776,21 +12456,17 @@ namespace TKMQ
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(pathFileMOCMANULINE);
             MyMail.Attachments.Add(attch);
-
 
             try
             {
@@ -15806,19 +12482,24 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
         public void SAVEREPORT_DAILY_MOCMANULINE(string pathFile)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1 = SETSQL_DAILY_MOCMANULINE();
@@ -15826,27 +12507,17 @@ namespace TKMQ
 
             report1.Load(@"REPORT\每日預排製令表.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-            //adapter1.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = 300;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
-
-            // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
@@ -15864,9 +12535,7 @@ namespace TKMQ
             int daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
             DateTime lastDayOfMonth = new DateTime(now.Year, now.Month, daysInMonth);
 
-
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"  
                                   SELECT MANU AS '線別' ,TC053 AS '客戶',MV002 AS '業務員',MANUDATE AS '生產日',[MB002] AS '品名',BAR AS '桶數',NUM AS '數量',PACKAGE AS '包裝數',TD001 AS '訂單',TD002 AS '訂單單號',TD003 AS '訂單序號',MOCTA001 AS '製令',MOCTA002 AS '製令號'
@@ -15920,8 +12589,6 @@ namespace TKMQ
                                     ORDER BY  TEMP.[MANU],CONVERT(nvarchar, TEMP.[MANUDATE],112)    
                                     ", DateTime.Now.ToString("yyyyMMdd"));
 
-
-
             return SB;
 
         }
@@ -15935,9 +12602,8 @@ namespace TKMQ
             SETPATH();
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            //string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".pdf";
-            string pathFile_QC_TEMP_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".jpg";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            string pathFile_QC_TEMP_CHECK = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日溫溼度明細" + DATES.ToString() + ".jpg";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -15946,11 +12612,9 @@ namespace TKMQ
                 Directory.CreateDirectory(DirectoryNAME);
             }
 
-
             SAVEREPORT_QC_TEMP_CHECK(pathFile_QC_TEMP_CHECK, cancellationToken);
 
             ds = SERACHMAIL_QC_CHECK();
-
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
 
@@ -15981,22 +12645,17 @@ namespace TKMQ
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(pathFile_QC_TEMP_CHECK);
             MyMail.Attachments.Add(attch);
-
 
             try
             {
@@ -16012,25 +12671,28 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
         public void SAVEREPORT_QC_TEMP_CHECK(string pathFile, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             DateTime now = DateTime.Now;
             now = now.AddDays(-1);
             string SDAYS = now.ToString("yyyyMMdd");
-
-
 
             SQL1.AppendFormat(@"
                             --20240828 查溫溼度
@@ -16065,30 +12727,18 @@ namespace TKMQ
 
             report1.Load(@"REPORT\溫溼度明細.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["TKA01"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("TKA01");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
 
-
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
-            //report1.SetParameterValue("P1", dateTimePicker1.Value.ToString("yyyyMMdd"));
 
-
-            // prepare a report 
             report1.Prepare();
-            // create an instance of HTML export filter
-            //FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
             FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
 
             // show the export options dialog and do the export
@@ -16123,10 +12773,8 @@ namespace TKMQ
                     xmlString = stringWriter.GetStringBuilder().ToString();
 
                     // 輸出字串
-                    // Console.WriteLine(xmlString);
                 }
             }
-
 
             ////申請人的UserSet
             //// 創建 <UserSet> 標籤
@@ -16138,22 +12786,6 @@ namespace TKMQ
             //    )
             //);
             //// 創建 XDocument 並添加 <UserSet>
-            //XDocument xmlDoc_UserSet = new XDocument(userSetElement_UserSet);
-            //using (StringWriter stringWriter = new StringWriter())
-            //{
-            //    using (XmlTextWriter xmlTextWriter = new XmlTextWriter(stringWriter))
-            //    {
-            //        xmlTextWriter.Formatting = Formatting.Indented; // 如果你想要縮進的格式化
-            //        xmlDoc_UserSet.WriteTo(xmlTextWriter);
-            //        xmlTextWriter.Flush();
-
-            //        // 取得 XML 的字串表示
-            //        xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
-
-            //        // 輸出字串
-            //        // Console.WriteLine(xmlString);
-            //    }
-            //}
 
             string BULLETIN_GUID = Guid.NewGuid().ToString();
             string ANNOUNCER = "192f1ddd-f6ef-4725-81e0-dc15c15a10cf";
@@ -16196,7 +12828,6 @@ namespace TKMQ
             string IS_STICKY = "";
             string RECOMMEND_NUM = "";
 
-
             string ROLE_ID = "BulletinBrowser";
             string USER_SET = xmlString_UserSet;
 
@@ -16229,7 +12860,6 @@ namespace TKMQ
                             xmlString_UserSet = stringWriter.GetStringBuilder().ToString();
 
                             // 輸出字串
-                            // Console.WriteLine(xmlString);
                         }
                     }
 
@@ -16279,7 +12909,6 @@ namespace TKMQ
                      RECOMMEND_NUM
                     );
 
-                    //新增公告對象=申請人
                     ADD_UOF_TB_EB_SEC_ROLE_MEMBER(
                         RM_ID,
                         ROLE_ID,
@@ -16337,30 +12966,22 @@ namespace TKMQ
         }
 
         public DataTable FIND_TB_EB_USER_USER_GUID()
-        {           
+        {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();           
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"   
                                     SELECT 
@@ -16380,8 +13001,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -16394,6 +13013,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TB_EB_USER_USER_GUID", EX);
                 return null;
             }
             finally
@@ -16402,9 +13023,10 @@ namespace TKMQ
             }
         }
 
-    
         public DataTable SEARCHUOF_GRAFFAIRS_1005_NEW(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder MESS = new StringBuilder();
             DataSet DS_FIND_UOF_TASK_APPLICATION_FORM = new DataSet();
 
@@ -16415,22 +13037,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                 
@@ -16510,6 +13123,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHUOF_GRAFFAIRS_1005_NEW", EX);
                 return null;
             }
             finally
@@ -16556,25 +13171,18 @@ namespace TKMQ
             string RECOMMEND_NUM
             )
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
                 sqlConn.Close();
                 sqlConn.Open();
-
 
                 using (SqlConnection conn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -16704,6 +13312,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_UOF_TB_EIP_BULLETIN", EX);
 
             }
             finally
@@ -16718,25 +13328,18 @@ namespace TKMQ
             string USER_SET
             )
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
                 sqlConn.Close();
                 sqlConn.Open();
-
 
                 using (SqlConnection conn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -16770,6 +13373,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_UOF_TB_EB_SEC_ROLE_MEMBER", EX);
 
             }
             finally
@@ -16779,18 +13384,14 @@ namespace TKMQ
         }
         public void ADD_TO_UOF_Z_UOF_FORMS_COMMENTS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn, tran, cmd)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
+            SqlTransaction tran = null;
+            SqlCommand cmd = new SqlCommand();
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
@@ -16800,7 +13401,6 @@ namespace TKMQ
                 tran = sqlConn.BeginTransaction();
 
                 // 總經理
-                // ACTUAL_SIGNER='c0150d00-8e36-4c1f-ba65-97ba28c32393'
 
                 sbSql.Clear();
                 sbSql.AppendFormat(@"
@@ -16876,13 +13476,14 @@ namespace TKMQ
                 else
                 {
                     tran.Commit();      //執行交易  
-                    //Console.WriteLine("ADDTOUOFTB_EIP_SCH_MEMO_MOC OK");
 
                 }
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TO_UOF_Z_UOF_FORMS_COMMENTS", EX);
 
             }
 
@@ -16896,11 +13497,7 @@ namespace TKMQ
             try
             {
                 // Decrypt connection string information
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
@@ -16943,6 +13540,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS", EX);
 
             }
             finally
@@ -16953,6 +13552,10 @@ namespace TKMQ
 
         public void UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS_EXE(DataTable DT)
         {
+            // 20261023 改用區域變數(sqlConn, tran, cmd)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
+            SqlTransaction tran = null;
+            SqlCommand cmd = new SqlCommand();
             StringBuilder SQL = new StringBuilder();
             StringBuilder EXE_SQL = new StringBuilder();
 
@@ -16973,16 +13576,8 @@ namespace TKMQ
 
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
@@ -16994,7 +13589,6 @@ namespace TKMQ
                 EXE_SQL.Clear();
 
                 EXE_SQL = SQL;
-
 
                 cmd.Connection = sqlConn;
                 cmd.CommandTimeout = 60;
@@ -17009,13 +13603,14 @@ namespace TKMQ
                 else
                 {
                     tran.Commit();      //執行交易  
-                    //Console.WriteLine("ADDTOUOFTB_EIP_SCH_MEMO_MOC OK");
 
                 }
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UPDATE_UOF_Z_UOF_FORMS_COMMENTS_MANAGERS_EXE", EX);
 
             }
 
@@ -17038,11 +13633,7 @@ namespace TKMQ
             try
             {
                 // Decrypt connection string information
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
@@ -17090,6 +13681,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FINS_UOF_View_DEP_ALL_MANAGERS", EX);
                 return null;
             }
             finally
@@ -17123,15 +13716,12 @@ namespace TKMQ
                     string MANAGERS_EMAIL = "";
                     string LINK = "";
 
-
                     if (DT_DATAS.Rows.Count > 0)
                     {
 
                         SUBJEST.Clear();
                         BODY.Clear();
 
-
-                        //SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                         SUBJEST.AppendFormat(@"系統通知-表單的主管簽核意見-請查收 ");
                         //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -17141,7 +13731,6 @@ namespace TKMQ
                             + "<br>" + "系統通知-表單的主管簽核意見-請查收，謝謝"
                             + " <br>"
                             );
-
 
                         BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
 
@@ -17154,7 +13743,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">簽核時間</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">部門主管</th>");
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -17186,7 +13774,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
 
@@ -17205,31 +13792,18 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
-                            //foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
-                            //{
-                            //    MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
-                            //}
 
-                            //申請人=部門主管
                             if (APPLY_EMAIL.Equals(MANAGERS_EMAIL))
                             {
                                 MyMail.To.Add(MANAGERS_EMAIL);
@@ -17240,7 +13814,7 @@ namespace TKMQ
                                 MyMail.To.Add(APPLY_EMAIL);
                             }
 
-                            MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                            MyMail.To.Add(MAIL_IT_COPY); // 20261023 副本收件人改由 App.config 設定; //設定收件者Email
                             MySMTP.Send(MyMail);
 
                             MyMail.Dispose(); //釋放資源
@@ -17248,14 +13822,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SEND_UOF_Z_UOF_FORMS_COMMENTS", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_UOF_Z_UOF_FORMS_COMMENTS", EX);
 
                     }
                     finally
@@ -17264,11 +13845,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_UOF_Z_UOF_FORMS_COMMENTS", EX);
 
             }
             finally
@@ -17282,11 +13863,7 @@ namespace TKMQ
             try
             {
                 // Decrypt connection string information
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
@@ -17332,6 +13909,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_Z_UOF_FORMS_COMMENTS_ISEMAIL", EX);
                 return null;
             }
             finally
@@ -17342,19 +13921,15 @@ namespace TKMQ
 
         public void UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL()
         {
+            // 20261023 改用區域變數(sqlConn, tran, cmd)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
+            SqlTransaction tran = null;
+            SqlCommand cmd = new SqlCommand();
             StringBuilder EXE_SQL = new StringBuilder();
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
@@ -17371,7 +13946,6 @@ namespace TKMQ
                                       WHERE [ISEMAIL]='N'
                                     ");
 
-
                 cmd.Connection = sqlConn;
                 cmd.CommandTimeout = 60;
                 cmd.CommandText = EXE_SQL.ToString();
@@ -17385,13 +13959,14 @@ namespace TKMQ
                 else
                 {
                     tran.Commit();      //執行交易  
-                    //Console.WriteLine("ADDTOUOFTB_EIP_SCH_MEMO_MOC OK");
 
                 }
 
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("UPDATE_Z_UOF_FORMS_COMMENTS_FINISH_EMAIL", EX);
 
             }
 
@@ -17418,7 +13993,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-請查收-每日-進貨未核準及待品保驗收的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -17428,10 +14002,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-請查收-每日-進貨未核準及待品保驗收的明細，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
@@ -17462,7 +14032,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["目前簽核人"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -17478,22 +14047,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -17510,14 +14071,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAIL_TK_PUR_QC_CHECK", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_TK_PUR_QC_CHECK", EX);
 
                     }
                     finally
@@ -17526,11 +14094,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_TK_PUR_QC_CHECK", EX);
 
             }
             finally
@@ -17541,29 +14109,21 @@ namespace TKMQ
 
         public DataTable SERACH_TK_PUR_QC_CHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
                                   --20241120  查進貨+未驗收單
@@ -17671,8 +14231,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -17685,6 +14243,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TK_PUR_QC_CHECK", EX);
                 return null;
             }
             finally
@@ -17695,29 +14255,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TK_PUR_QC_CHECK()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -17741,8 +14293,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -17755,6 +14305,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TK_PUR_QC_CHECK", EX);
                 return null;
             }
             finally
@@ -17781,7 +14333,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-請查收-離職人員的未結案表單的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -17791,10 +14342,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-請查收-離職人員的未結案表單的明細，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
@@ -17807,8 +14354,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF單號</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單日期</th>");
-
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -17823,7 +14368,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["UOF表單日期"].ToString() + "</td>");
 
                             BODY.AppendFormat(@"</tr> ");
-
 
                         }
                         BODY.AppendFormat(@"</table> ");
@@ -17840,22 +14384,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -17872,14 +14408,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAIL_TK_IT_CHECK_FORMS", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_TK_IT_CHECK_FORMS", EX);
 
                     }
                     finally
@@ -17888,11 +14431,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_TK_IT_CHECK_FORMS", EX);
 
             }
             finally
@@ -17903,29 +14446,21 @@ namespace TKMQ
 
         public DataTable SERACH_TK_IT_CHECK_FORMS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"   
                                     SELECT
@@ -17969,8 +14504,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -17983,6 +14516,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TK_IT_CHECK_FORMS", EX);
                 return null;
             }
             finally
@@ -17993,29 +14528,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TK_IT_CHECK_FORMS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -18039,8 +14566,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -18053,6 +14578,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TK_IT_CHECK_FORMS", EX);
                 return null;
             }
             finally
@@ -18081,7 +14608,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-每日通知，UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -18091,10 +14617,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-每日通知，UOF簽核的「採購單」、「採購變更單」及ERP當日的「未送簽的採購單」、「未送簽採購變更單」，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
@@ -18107,8 +14629,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單號</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF表單</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">UOF單號</th>");
-
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -18123,7 +14643,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["DOC_NBR"].ToString() + "</td>");
 
                             BODY.AppendFormat(@"</tr> ");
-
 
                         }
                         BODY.AppendFormat(@"</table> ");
@@ -18140,22 +14659,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -18172,14 +14683,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDEMAIL_TK_UOF_ERP_PURTC_PURTE", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_TK_UOF_ERP_PURTC_PURTE", EX);
 
                     }
                     finally
@@ -18188,11 +14706,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_TK_UOF_ERP_PURTC_PURTE", EX);
 
             }
             finally
@@ -18202,6 +14720,8 @@ namespace TKMQ
         }
         public DataTable SERACH_TK_UOF_ERP_PURTC_PURTE(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -18210,23 +14730,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"   
                                     --20241220 查採購單當日核準的明細
@@ -18366,8 +14876,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -18380,6 +14888,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TK_UOF_ERP_PURTC_PURTE", EX);
                 return null;
             }
             finally
@@ -18390,29 +14900,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TK_UOF_ERP_PURTC_PURTE()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -18436,8 +14938,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -18450,6 +14950,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TK_UOF_ERP_PURTC_PURTE", EX);
                 return null;
             }
             finally
@@ -18477,7 +14979,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -18487,10 +14988,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-通知，UOF簽核的「1006.樣品試吃回覆單」還未回覆給研發的明細，謝謝"
                         + " <br>"
                         );
-
-
-
-
 
                     if (DT_DATAS.Rows.Count > 0)
                     {
@@ -18504,8 +15001,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">樣品編號</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">樣品名稱</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請日期</th>");
-
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -18522,7 +15017,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -18538,22 +15032,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -18570,14 +15056,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDMAIL_TK_UOF_DEV_NEW_SALES", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TK_UOF_DEV_NEW_SALES", EX);
 
                     }
                     finally
@@ -18586,11 +15079,11 @@ namespace TKMQ
                     }
                 }
 
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_TK_UOF_DEV_NEW_SALES", EX);
 
             }
             finally
@@ -18600,6 +15093,8 @@ namespace TKMQ
         }
         public DataTable SERACH_TK_UOF_ERP_DEV_NEW_SLAES(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -18608,23 +15103,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"   
                                     
@@ -18677,8 +15162,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -18691,6 +15174,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TK_UOF_ERP_DEV_NEW_SLAES", EX);
                 return null;
             }
             finally
@@ -18701,29 +15186,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TK_UOF_DEV_NEW_SLAES()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -18747,8 +15224,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -18761,6 +15236,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TK_UOF_DEV_NEW_SLAES", EX);
                 return null;
             }
             finally
@@ -18799,7 +15276,6 @@ namespace TKMQ
                                 SUBJEST.Clear();
                                 BODY.Clear();
 
-
                                 SUBJEST.AppendFormat(@"系統通知-每日通知，UOF未核「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -18809,10 +15285,6 @@ namespace TKMQ
                                     + "<br>" + "系統通知-每日通知，UOF未核「PUR10.請購單申請」' 「PUR20.請購單變更單」的明細，謝謝"
                                     + " <br>"
                                     );
-
-
-
-
 
                                 if (DT_DATAS.Rows.Count > 0)
                                 {
@@ -18831,7 +15303,6 @@ namespace TKMQ
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">需求數量</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請人名</th>");
                                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人還未核</th>");
-
 
                                     BODY.AppendFormat(@"</tr> ");
 
@@ -18853,7 +15324,6 @@ namespace TKMQ
 
                                         BODY.AppendFormat(@"</tr> ");
 
-
                                     }
                                     BODY.AppendFormat(@"</table> ");
                                 }
@@ -18869,22 +15339,14 @@ namespace TKMQ
                                     string PW = ConfigurationManager.AppSettings["PW"];
 
                                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                                     MyMail.Subject = SUBJEST.ToString();
                                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                                     MyMail.Body = BODY.ToString();
                                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                                    //加上附圖
-                                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                                     try
                                     {
@@ -18899,14 +15361,21 @@ namespace TKMQ
                                     }
                                     catch (Exception EX)
                                     {
-                                        //MessageBox.Show("有錯誤");
+                                        // 20261023 錯誤寫入 Log
+                                        WRITELOG("SENDMAIL_TK_UOF_PUR_NOT_APPROVED", EX);
 
-                                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                                        //EX.ToString();
+                                    }
+                                    finally
+                                    {
+                                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                                        MyMail.Dispose();
+                                        MySMTP.Dispose();
                                     }
                                 }
                                 catch (Exception EX)
                                 {
+                                    // 20261023 錯誤寫入 Log
+                                    WRITELOG("SENDMAIL_TK_UOF_PUR_NOT_APPROVED", EX);
 
                                 }
                                 finally
@@ -18915,18 +15384,17 @@ namespace TKMQ
                                 }
                             }
 
-
-
                         }
                         catch (Exception EX)
                         {
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDMAIL_TK_UOF_PUR_NOT_APPROVED", EX);
 
                         }
                         finally
                         {
 
                         }
-
 
                     }
                 }
@@ -18937,6 +15405,8 @@ namespace TKMQ
 
         public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_MAIN(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -18944,23 +15414,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"   
                                     
@@ -19044,8 +15504,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19058,6 +15516,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TK_UOF_PUR_NOT_APPROVED_MAIN", EX);
                 return null;
             }
             finally
@@ -19069,6 +15529,8 @@ namespace TKMQ
 
         public DataTable FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS(string DOC_NBR)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string SDATES = DateTime.Now.ToString("yyyyMMdd");
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
@@ -19076,23 +15538,13 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                       
                                     WITH TEMP AS (
@@ -19181,8 +15633,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19195,6 +15645,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TK_UOF_PUR_NOT_APPROVED_DETAILS", EX);
                 return null;
             }
             finally
@@ -19216,10 +15668,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PUR_MOC_OUT_NOT_IN();
                 DT_DATAS = SERACH_PUR_MOC_OUT_NOT_IN(cancellationToken);
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-託外未到貨通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -19230,9 +15680,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-託外未到貨通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -19253,8 +15700,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">已到貨數量</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">採購預計到貨日</th>");
                         BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">進貨單總進貨數量</th>");
-                        //BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">製令預計到貨日</th>");
-
 
                         BODY.AppendFormat(@"</tr> ");
 
@@ -19273,9 +15718,7 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["已到貨數量"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["採購預計到貨日"].ToString() + "</td>");
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["進貨單總進貨數量"].ToString() + "</td>");
-                            //BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["製令預計到貨日"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
-
 
                         }
                         BODY.AppendFormat(@"</table> ");
@@ -19293,22 +15736,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -19325,14 +15760,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TK_PUR_MOC_OUT_NOTIN", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_TK_PUR_MOC_OUT_NOTIN", EX);
 
                 }
                 finally
@@ -19340,12 +15782,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_TK_PUR_MOC_OUT_NOTIN", EX);
 
             }
             finally
@@ -19356,29 +15797,21 @@ namespace TKMQ
 
         public DataTable SERACH_PUR_MOC_OUT_NOT_IN(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                      
                                   SELECT 
@@ -19417,8 +15850,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19431,6 +15862,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_PUR_MOC_OUT_NOT_IN", EX);
                 return null;
             }
             finally
@@ -19441,29 +15874,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_PUR_MOC_OUT_NOT_IN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -19487,8 +15912,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19501,6 +15924,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_PUR_MOC_OUT_NOT_IN", EX);
                 return null;
             }
             finally
@@ -19522,10 +15947,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_TK_PUR_MONTHS_NO_IN();
                 DT_DATAS = SERACH_TK_PUR_MONTHS_NO_IN();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每月-採購未到貨通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -19536,9 +15959,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每月-採購未到貨通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -19577,7 +15997,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">" + DR["未到貨量"].ToString() + "</td>");
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -19594,22 +16013,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -19626,14 +16037,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TK_PUR_MONTHS_NO_IN", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_TK_PUR_MONTHS_NO_IN", EX);
 
                 }
                 finally
@@ -19641,12 +16059,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_TK_PUR_MONTHS_NO_IN", EX);
 
             }
             finally
@@ -19657,29 +16074,21 @@ namespace TKMQ
 
         public DataTable SERACH_TK_PUR_MONTHS_NO_IN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"    
                                     SELECT 
@@ -19729,8 +16138,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19743,6 +16150,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TK_PUR_MONTHS_NO_IN", EX);
                 return null;
             }
             finally
@@ -19753,29 +16162,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TK_PUR_MONTHS_NO_IN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -19799,8 +16200,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -19813,6 +16212,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TK_PUR_MONTHS_NO_IN", EX);
                 return null;
             }
             finally
@@ -19841,7 +16242,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-研發每日通知新品售價，及還未簽核完成，請在UOF簽核，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -19851,9 +16251,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-研發每日通知新品售價，及還未簽核完成，請在UOF簽核，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -19881,7 +16278,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -19901,22 +16297,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -19960,14 +16348,20 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
 
                             ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_DEC_NEW_PRODUCT_PRICES", EX);
 
                     }
                     finally
@@ -19979,6 +16373,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_DEC_NEW_PRODUCT_PRICES", EX);
 
             }
             finally
@@ -19989,29 +16385,21 @@ namespace TKMQ
 
         public DataTable SERACH_DEC_NEW_PRODUCT_PRICES_UOF(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                        
                                         WITH TEMP AS (
@@ -20054,8 +16442,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20068,6 +16454,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_DEC_NEW_PRODUCT_PRICES_UOF", EX);
                 return null;
             }
             finally
@@ -20078,29 +16466,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_DEC_NEW_PRODUCT_PRICES()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -20124,8 +16504,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20138,6 +16516,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_DEC_NEW_PRODUCT_PRICES", EX);
                 return null;
             }
             finally
@@ -20148,29 +16528,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_DEC_NEW_PRODUCT_PRICES_SPECIAL()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -20194,8 +16566,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20208,6 +16578,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_DEC_NEW_PRODUCT_PRICES_SPECIAL", EX);
                 return null;
             }
             finally
@@ -20232,7 +16604,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-寄送失敗的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -20242,9 +16613,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-寄送失敗的通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -20270,7 +16638,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -20287,22 +16654,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -20319,10 +16678,13 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
@@ -20334,9 +16696,6 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
@@ -20348,99 +16707,83 @@ namespace TKMQ
             }
         }
 
+        /// <summary>
+        /// 查詢今天的寄送失敗紀錄
+        /// 20261023 改為讀取今天的 Log 檔(原本查詢 [TKMQ].[dbo].[LOG] 資料表)，回傳欄位維持 ID、DATES、SOURCE、EX
+        /// </summary>
         public DataTable SERACH_IT_FAIL_DOTIFY()
         {
-            SqlDataAdapter adapter = new SqlDataAdapter();
-            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
-            DataSet ds = new DataSet();
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-                String connectionString;
-                sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
-
-                sbSql.Clear();
-                sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
-
-                sbSql.AppendFormat(@"                                        
-                                      SELECT 
-                                    [ID]
-                                    ,[DATES]
-                                    ,[SOURCE]
-                                    ,[EX]
-                                    FROM [TKMQ].[dbo].[LOG]
-                                    WHERE CONVERT(NVARCHAR,[DATES],112)=CONVERT(NVARCHAR,getdate(),112)
-                                    ");
-
-                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
-
-                sqlCmdBuilder = new SqlCommandBuilder(adapter);
-                sqlConn.Open();
-                ds.Clear();
-                // 設置查詢的超時時間，以秒為單位
-                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
-                adapter.Fill(ds, "ds");
-                sqlConn.Close();
-
-
-
-                if (ds.Tables["ds"].Rows.Count >= 1)
-                {
-                    return ds.Tables["ds"];
-                }
-                else
+                string file = Path.Combine(Application.StartupPath, "LOG", "FrmMQMAIL_" + DateTime.Now.ToString("yyyyMMdd") + ".log");
+                if (!File.Exists(file))
                 {
                     return null;
                 }
 
-            }
-            catch (Exception EX)
-            {
-                return null;
-            }
-            finally
-            {
+                DataTable dt = new DataTable();
+                dt.Columns.Add("ID", typeof(int));
+                dt.Columns.Add("DATES", typeof(string));
+                dt.Columns.Add("SOURCE", typeof(string));
+                dt.Columns.Add("EX", typeof(string));
 
+                string[] lines;
+                lock (LOG_LOCK)
+                {
+                    lines = File.ReadAllLines(file, Encoding.UTF8);
+                }
+
+                // 每筆 Log 以「yyyy/MM/dd HH:mm:ss [來源] 內容」開頭，例外訊息可能跨多行
+                System.Text.RegularExpressions.Regex head = new System.Text.RegularExpressions.Regex(@"^(\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(.*?)\] (.*)$");
+                DataRow current = null;
+                foreach (string line in lines)
+                {
+                    System.Text.RegularExpressions.Match m = head.Match(line);
+                    if (m.Success)
+                    {
+                        current = null;
+                        if (m.Groups[2].Value.StartsWith(MAIL_FAIL_TAG))
+                        {
+                            current = dt.NewRow();
+                            current["ID"] = dt.Rows.Count + 1;
+                            current["DATES"] = m.Groups[1].Value;
+                            current["SOURCE"] = m.Groups[2].Value.Substring(MAIL_FAIL_TAG.Length);
+                            current["EX"] = m.Groups[3].Value;
+                            dt.Rows.Add(current);
+                        }
+                    }
+                    else if (current != null)
+                    {
+                        current["EX"] = current["EX"].ToString() + Environment.NewLine + line;
+                    }
+                }
+
+                return dt.Rows.Count >= 1 ? dt : null;
+            }
+            catch (Exception ex)
+            {
+                WRITELOG("SERACH_IT_FAIL_DOTIFY", ex);
+                return null;
             }
         }
 
         public DataTable SERACH_MAIL_IT_FAIL_DOTIFY()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -20464,8 +16807,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20486,7 +16827,6 @@ namespace TKMQ
             }
         }
 
-
         public void SENDMAIL_STOCK_TBPURINCHECK(CancellationToken cancellationToken)
         {
 
@@ -20504,7 +16844,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-到貨跟進貨數量的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -20514,9 +16853,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-到貨跟進貨數量的通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -20553,7 +16889,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -20570,22 +16905,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -20602,14 +16929,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_STOCK_TBPURINCHECK", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_STOCK_TBPURINCHECK", EX);
 
                 }
                 finally
@@ -20617,12 +16951,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_STOCK_TBPURINCHECK", EX);
 
             }
             finally
@@ -20633,29 +16966,21 @@ namespace TKMQ
 
         public DataTable SERACH_STOCK_TBPURINCHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"                                   
                                     SELECT 
@@ -20695,8 +17020,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20709,6 +17032,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_STOCK_TBPURINCHECK", EX);
                 return null;
             }
             finally
@@ -20719,29 +17044,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_STOCK_TBPURINCHECK()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -20765,8 +17082,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -20779,6 +17094,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_STOCK_TBPURINCHECK", EX);
                 return null;
             }
             finally
@@ -20802,7 +17119,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-到貨未建進貨單的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -20812,9 +17128,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-到貨未建進貨單的通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -20846,7 +17159,6 @@ namespace TKMQ
 
                             BODY.AppendFormat(@"</tr> ");
 
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -20863,22 +17175,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -20895,14 +17199,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_STOCK_TBPURINCHECK_CONFIRM", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_STOCK_TBPURINCHECK_CONFIRM", EX);
 
                 }
                 finally
@@ -20910,12 +17221,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_STOCK_TBPURINCHECK_CONFIRM", EX);
 
             }
             finally
@@ -20926,29 +17236,21 @@ namespace TKMQ
 
         public DataTable SERACH_STOCK_TBPURINCHECK_CONFIRM(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 string yyyy = DateTime.Now.ToString("yyyy");
                 sbSql.AppendFormat(@"                                   
@@ -20989,8 +17291,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -21003,6 +17303,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_STOCK_TBPURINCHECK_CONFIRM", EX);
                 return null;
             }
             finally
@@ -21013,29 +17315,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_STOCK_TBPURINCHECK_CONFIRM()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -21059,8 +17353,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -21073,6 +17365,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_STOCK_TBPURINCHECK_CONFIRM", EX);
                 return null;
             }
             finally
@@ -21120,17 +17414,15 @@ namespace TKMQ
 
             SETPATH();
 
-            //DATES = DateTime.Now.ToString("yyyyMMdd");
             DATES = yesterday;
 
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            //pathFile_QC_CHECK = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日溫溼度警報" + DATES.ToString() + ".pdf";
-            string pathFile_DAILY = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日硯微墨統計表" + DATES.ToString() + ".pdf";
-            string pathFile_MONTH = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份硯微墨統計表" + DATES.ToString() + ".pdf";
-            string pathFile_DAILY_STORES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "烘培類每日商品統計表-門市" + DATES.ToString() + ".pdf";
-            string pathFile_MONTH_STORES = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "烘培類當月商品統計表-門市" + DATES.ToString() + ".pdf";
-            string pathFile_DAILY_FACTORYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日觀光工廠統計表" + DATES.ToString() + ".pdf";
-            string pathFile_MONTH_FACTORYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "月份觀光工廠統計表" + DATES.ToString() + ".pdf";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            string pathFile_DAILY = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日硯微墨統計表" + DATES.ToString() + ".pdf";
+            string pathFile_MONTH = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "月份硯微墨統計表" + DATES.ToString() + ".pdf";
+            string pathFile_DAILY_STORES = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "烘培類每日商品統計表-門市" + DATES.ToString() + ".pdf";
+            string pathFile_MONTH_STORES = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "烘培類當月商品統計表-門市" + DATES.ToString() + ".pdf";
+            string pathFile_DAILY_FACTORYS = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每日觀光工廠統計表" + DATES.ToString() + ".pdf";
+            string pathFile_MONTH_FACTORYS = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "月份觀光工廠統計表" + DATES.ToString() + ".pdf";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -21173,7 +17465,6 @@ namespace TKMQ
             BODY.AppendFormat(Environment.NewLine + "檢附每日及月份-觀光+硯微墨+門市的烘培商品-統計表，請參考，謝謝");
             BODY.AppendFormat(Environment.NewLine);
 
-
             string emailBody = BODY.ToString();
 
             // 将 HTML 视图添加到邮件
@@ -21183,18 +17474,14 @@ namespace TKMQ
             string NAME = ConfigurationManager.AppSettings["NAME"];
             string PW = ConfigurationManager.AppSettings["PW"];
 
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
-
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             // 添加附件
             Attachment attch = new Attachment(pathFile_DAILY);
@@ -21224,12 +17511,16 @@ namespace TKMQ
 
                 MyMail.Dispose(); //釋放資源
 
-
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
 
@@ -21261,6 +17552,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYDAYS_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21285,10 +17578,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -21312,6 +17602,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYDAYS_HasDataForDate", EX);
                 YN = false;
             }
 
@@ -21346,6 +17638,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYDAYSFACTORYS_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21360,7 +17654,6 @@ namespace TKMQ
 
             }
         }
-
 
         public void TBDAILYDAYSSTORES_RetryAddDailyPost(string yesterday)
         {
@@ -21390,6 +17683,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYDAYSSTORES_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21414,10 +17709,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -21441,6 +17733,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYDAYSSTORES_HasDataForDate", EX);
                 YN = false;
             }
 
@@ -21475,6 +17769,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYMONTHS_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21498,10 +17794,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -21525,6 +17818,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYMONTHS_HasDataForDate", EX);
                 YN = false;
             }
 
@@ -21559,6 +17854,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYMONTHSSTORES_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21602,6 +17899,8 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("TBDAILYMONTHSFACTORYS_RetryAddDailyPost", EX);
 
                     }
                 }
@@ -21626,10 +17925,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -21653,6 +17949,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYMONTHSSTORES_HasDataForDate", EX);
                 YN = false;
             }
 
@@ -21667,10 +17965,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -21694,6 +17989,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYMONTHSFACTORYS_HasDataForDate", EX);
                 YN = false;
             }
 
@@ -21702,6 +17999,8 @@ namespace TKMQ
 
         public void ADD_TBDAILYDAYS(string SDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -21720,23 +18019,15 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                     DELETE [TKMK].[dbo].[TBDAILYDAYS]
@@ -21880,11 +18171,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYDAYS", EX);
 
             }
 
@@ -21897,6 +18189,8 @@ namespace TKMQ
 
         public void ADD_TBDAILYDAYSSTORES(string SDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -21915,23 +18209,15 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                     DELETE [TKMK].[dbo].[TBDAILYDAYSSTORES]
@@ -22082,11 +18368,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYDAYSSTORES", EX);
 
             }
 
@@ -22099,6 +18386,8 @@ namespace TKMQ
 
         public void ADD_TBDAILYDAYSFACTORYS(string SDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -22115,26 +18404,17 @@ namespace TKMQ
 
             }
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                     DELETE [TKMK].[dbo].[TBDAILYDAYSFACTORYS]
@@ -22288,11 +18568,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYDAYSFACTORYS", EX);
 
             }
 
@@ -22301,9 +18582,7 @@ namespace TKMQ
                 sqlConn.Close();
             }
 
-
         }
-
 
         public bool TBDAILYDAYSFACTORYS_HasDataForDate(string SDATES)
         {
@@ -22313,10 +18592,7 @@ namespace TKMQ
             try
             {
                 // 解密連線字串
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 using (sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -22340,15 +18616,18 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("TBDAILYDAYSFACTORYS_HasDataForDate", EX);
                 YN = false;
             }
 
             return YN;
         }
 
-
         public void ADD_TBDAILYMONTHS(string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -22367,23 +18646,15 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                     DELETE [TKMK].[dbo].[TBDAILYMONTHS]
@@ -22528,11 +18799,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYMONTHS", EX);
 
             }
 
@@ -22545,6 +18817,8 @@ namespace TKMQ
 
         public void ADD_TBDAILYMONTHSSTORES(string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -22563,23 +18837,15 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                    DELETE [TKMK].[dbo].[TBDAILYMONTHSSTORES]
@@ -22729,11 +18995,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYMONTHSSTORES", EX);
 
             }
 
@@ -22746,6 +19013,8 @@ namespace TKMQ
 
         public void ADD_TBDAILYMONTHSFACTORYS(string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             StringBuilder sbSql = new StringBuilder();
             StringBuilder sbSql99 = new StringBuilder();
             SqlTransaction tran;
@@ -22764,23 +19033,15 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sqlConn.Close();
                 sqlConn.Open();
                 tran = sqlConn.BeginTransaction();
-
 
                 sbSql.AppendFormat(@" 
                                    DELETE [TKMK].[dbo].[TBDAILYMONTHSFACTORYS]
@@ -22931,11 +19192,12 @@ namespace TKMQ
                 {
                     tran.Commit();      //執行交易  
 
-
                 }
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("ADD_TBDAILYMONTHSFACTORYS", EX);
 
             }
 
@@ -22948,6 +19210,8 @@ namespace TKMQ
 
         public DataTable FIND_TBDAILYPOSTBNOTIN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataTable DT = new DataTable();
 
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -22960,17 +19224,10 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -22982,7 +19239,6 @@ namespace TKMQ
                                                                         
                                     ");
 
-
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
@@ -22990,7 +19246,6 @@ namespace TKMQ
                 ds1.Clear();
                 adapter1.Fill(ds1, "ds1");
                 sqlConn.Close();
-
 
                 if (ds1.Tables["ds1"].Rows.Count >= 1)
                 {
@@ -23004,6 +19259,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TBDAILYPOSTBNOTIN", EX);
                 return null;
             }
             finally
@@ -23011,13 +19268,12 @@ namespace TKMQ
                 sqlConn.Close();
             }
 
-
-
         }
-
 
         public DataTable FIND_TBDAILYDAYSFACTORYSNOTIN()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataTable DT = new DataTable();
 
             SqlDataAdapter adapter1 = new SqlDataAdapter();
@@ -23030,17 +19286,10 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -23052,7 +19301,6 @@ namespace TKMQ
                                                                         
                                     ");
 
-
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
@@ -23060,7 +19308,6 @@ namespace TKMQ
                 ds1.Clear();
                 adapter1.Fill(ds1, "ds1");
                 sqlConn.Close();
-
 
                 if (ds1.Tables["ds1"].Rows.Count >= 1)
                 {
@@ -23074,6 +19321,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_TBDAILYDAYSFACTORYSNOTIN", EX);
                 return null;
             }
             finally
@@ -23081,34 +19330,24 @@ namespace TKMQ
                 sqlConn.Close();
             }
 
-
-
         }
         public DataTable SERACH_MAIL_STORES_REPORTS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -23132,8 +19371,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -23146,6 +19383,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_STORES_REPORTS", EX);
                 return null;
             }
             finally
@@ -23156,8 +19395,9 @@ namespace TKMQ
 
         public void SAVEREPORT_STORES_REPORTS_DAILY(string pathFile, string SDAYS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
              
             SQL1 = SETSQL_STORES_REPORTS_DAILY(SDAYS);
@@ -23165,19 +19405,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\硯微墨每日商品統計表V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23188,8 +19421,6 @@ namespace TKMQ
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
         }
 
@@ -23197,7 +19428,6 @@ namespace TKMQ
         {
 
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"   
                             SELECT
@@ -23226,14 +19456,14 @@ namespace TKMQ
 
                             ", SDAYS);
 
-
             return SB;
         }
 
         public void SAVEREPORT_STORES_REPORTS_MONTH(string pathFile, string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1 = SETSQL_STORES_REPORTS_MONTH(SMONTHS, SDATES, EDATES);
@@ -23241,19 +19471,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\硯微墨當月商品統計表V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23261,13 +19484,10 @@ namespace TKMQ
             report1.SetParameterValue("P1", SDATES);
             report1.SetParameterValue("P2", EDATES);
 
-
             // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
         }
 
@@ -23275,7 +19495,6 @@ namespace TKMQ
         {
 
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"   
                            SELECT 
@@ -23301,14 +19520,14 @@ namespace TKMQ
 
                             ", SMONTHS, SDATES, EDATES);
 
-
             return SB;
         }
 
         public void SAVEREPORT_STORES_REPORTS_DAILY_STORES(string pathFile, string SDAYS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1 = SETSQL_STORES_REPORTS_DAILY_STORES(SDAYS);
@@ -23316,19 +19535,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\烘培類每日商品統計表-門市V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23339,8 +19551,6 @@ namespace TKMQ
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
         }
 
@@ -23348,7 +19558,6 @@ namespace TKMQ
         {
 
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"   
                             SELECT
@@ -23375,14 +19584,14 @@ namespace TKMQ
 
                             ", SDAYS);
 
-
             return SB;
         }
 
         public void SAVEREPORT_STORES_REPORTS_MONTH_STORES(string pathFile, string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1 = SETSQL_STORES_REPORTS_MONTH_STORES(SMONTHS, SDATES, EDATES);
@@ -23390,19 +19599,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\烘培類當月商品統計表-門市V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23410,13 +19612,10 @@ namespace TKMQ
             report1.SetParameterValue("P1", SDATES);
             report1.SetParameterValue("P2", EDATES);
 
-
             // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
         }
 
@@ -23424,7 +19623,6 @@ namespace TKMQ
         {
 
             StringBuilder SB = new StringBuilder();
-
 
             SB.AppendFormat(@"   
                            SELECT 
@@ -23450,14 +19648,14 @@ namespace TKMQ
 
                             ", SMONTHS, SDATES, EDATES);
 
-
             return SB;
         }
 
         public void SAVEREPORT_STORES_REPORTS_DAILY_FACTORYS(string pathFile, string SDAYS)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1.AppendFormat(@"   
@@ -23489,19 +19687,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\觀光工廠每日商品統計表V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23512,16 +19703,14 @@ namespace TKMQ
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME); 
         }
         
-
         public void SAVEREPORT_STORES_REPORTS_MONTH_FACTORYS(string pathFile, string SMONTHS, string SDATES, string EDATES)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             string FILENAME = pathFile;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             SQL1.AppendFormat(@"   
@@ -23553,19 +19742,12 @@ namespace TKMQ
 
             report1.Load(@"REPORT\觀光工廠當月商品統計表V2.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
@@ -23573,17 +19755,12 @@ namespace TKMQ
             report1.SetParameterValue("P1", SDATES);
             report1.SetParameterValue("P2", EDATES);
 
-
             // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
         }
-
-       
 
         public void SENDMAIL_PUR_VALIDCHECK(CancellationToken cancellationToken)
         {
@@ -23600,9 +19777,6 @@ namespace TKMQ
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
-
-             
 
                 try
                 {
@@ -23682,13 +19856,14 @@ namespace TKMQ
                 }
                 catch (Exception  EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_PUR_VALIDCHECK", EX);
                 }
                 finally
                 {
 
                 }
                 
-
                 try
                 {
                     string MySMTPCONFIG = ConfigurationManager.AppSettings["MySMTP"];
@@ -23696,22 +19871,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -23728,14 +19895,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_PUR_VALIDCHECK", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_PUR_VALIDCHECK", EX);
 
                 }
                 finally
@@ -23743,12 +19917,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_PUR_VALIDCHECK", EX);
 
             }
             finally
@@ -23759,29 +19932,21 @@ namespace TKMQ
 
         public DataTable SERACH_PUR_VALIDCHECK(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 string YESTERDAYS = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
 
@@ -23865,8 +20030,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -23879,6 +20042,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_PUR_VALIDCHECK", EX);
                 return null;
             }
             finally
@@ -23889,29 +20054,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_PUR_VALIDCHECK()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -23935,9 +20092,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -23950,6 +20104,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_PUR_VALIDCHECK", EX);
                 return null;
             }
             finally
@@ -23975,7 +20131,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-商品專案的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -23985,9 +20140,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-商品專案的通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -24011,7 +20163,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:4%;'>是否結案</th>");
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:8%;'>更新日</th>");
                         BODY.AppendFormat(@"</tr>");
-
 
                         foreach (DataRow DR in DT_DATAS.Rows)
                         {
@@ -24042,8 +20193,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<td style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:8%;'>" + DR["更新日"] + "</td>");
                             BODY.AppendFormat(@"</tr>");
 
-
-
                         }
                         BODY.AppendFormat(@"</table> ");
                     }
@@ -24060,22 +20209,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -24092,14 +20233,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TB_PROJECTS_PRODUCTS", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_TB_PROJECTS_PRODUCTS", EX);
 
                 }
                 finally
@@ -24107,12 +20255,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_TB_PROJECTS_PRODUCTS", EX);
 
             }
             finally
@@ -24123,24 +20270,18 @@ namespace TKMQ
 
         public DataTable SERACH_TB_PROJECTS_PRODUCTS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -24181,8 +20322,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -24195,6 +20334,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TB_PROJECTS_PRODUCTS", EX);
                 return null;
             }
             finally
@@ -24205,29 +20346,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TB_PROJECTS_PRODUCTS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -24251,8 +20384,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -24265,6 +20396,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_TB_PROJECTS_PRODUCTS", EX);
                 return null;
             }
             finally
@@ -24289,7 +20422,6 @@ namespace TKMQ
                 SUBJEST.Clear();
                 BODY.Clear();
 
-
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-商品專案-新申請的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -24299,9 +20431,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-商品專案-新申請的通知，謝謝"
                     + " <br>"
                     );
-
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -24317,7 +20446,6 @@ namespace TKMQ
                         BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:40%;'>商品名稱</th>");
 
                         BODY.AppendFormat(@"</tr>");
-
 
                         foreach (DataRow DR in DT_DATAS.Rows)
                         {
@@ -24345,22 +20473,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -24377,10 +20497,13 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
@@ -24391,9 +20514,6 @@ namespace TKMQ
                 {
 
                 }
-
-
-
 
             }
             catch (Exception EX)
@@ -24408,24 +20528,18 @@ namespace TKMQ
 
         public DataTable SERACH_TB_PROJECTS_PRODUCTS_UOF_APPLY(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -24474,8 +20588,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -24498,29 +20610,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_TB_PROJECTS_PRODUCTS_UOF_APPLY()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -24543,8 +20647,6 @@ namespace TKMQ
                 adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
-
-
 
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
@@ -24585,7 +20687,6 @@ namespace TKMQ
                     SUBJEST.Clear();
                     BODY.Clear();
 
-
                     SUBJEST.AppendFormat(@"系統通知-請查收-新申請[ 2001.產品開發+包裝設計申請單] 的通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                     //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
 
@@ -24595,9 +20696,6 @@ namespace TKMQ
                         + "<br>" + "系統通知-請查收-新申請[ 2001.產品開發+包裝設計申請單] 的通知，謝謝"
                         + " <br>"
                         );
-
-
-
 
                     if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                     {
@@ -24612,7 +20710,6 @@ namespace TKMQ
                             BODY.AppendFormat(@"<th style='border: 1px solid #999; font-size:12.0pt; font-family:微軟正黑體; width:60%;'>商品名稱</th>");
 
                             BODY.AppendFormat(@"</tr>");
-
 
                             foreach (DataRow DR in DT_DATAS.Rows)
                             {
@@ -24639,22 +20736,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -24671,14 +20760,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDMAIL_UOF_APPLY_DEV_DESIGN_2001", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_UOF_APPLY_DEV_DESIGN_2001", EX);
 
                     }
                     finally
@@ -24688,10 +20784,11 @@ namespace TKMQ
 
                 }
                 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_UOF_APPLY_DEV_DESIGN_2001", EX);
 
             }
             finally
@@ -24702,6 +20799,8 @@ namespace TKMQ
 
         public DataTable SERACH_UOF_APPLY_DEV_DESIGN_2001(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DateTime YESTERDYAS = DateTime.Now.AddDays(-1);
 
             SqlDataAdapter adapter = new SqlDataAdapter();
@@ -24710,18 +20809,10 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -24767,8 +20858,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -24781,6 +20870,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_UOF_APPLY_DEV_DESIGN_2001", EX);
                 return null;
             }
             finally
@@ -24791,29 +20882,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_UOF_APPLY_DEV_DESIGN_2001()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -24837,8 +20920,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -24851,6 +20932,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_UOF_APPLY_DEV_DESIGN_2001", EX);
                 return null;
             }
             finally
@@ -24874,38 +20957,31 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("PREPARE_UOF_TASK_QC_UOF_FORM", EX);
 
             }
 
         }
         public DataTable FIND_UOF_TASK_QC_UOF_FORM()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
 
             DataSet DS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                    -- 20250909 查業務所有未結案的品保表單
@@ -24996,8 +21072,6 @@ namespace TKMQ
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
-
-
                 if (DS.Tables["DS"].Rows.Count > 0)
                 {
 
@@ -25011,6 +21085,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_UOF_TASK_QC_UOF_FORM", EX);
                 return null;
             }
             finally
@@ -25021,31 +21097,22 @@ namespace TKMQ
 
         public DataTable FIND_EMAIL_QC_UOF_FORM()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //   AND DOC_NBR = 'GA1005230100006'
 
                 sbSql.AppendFormat(@"                                    
                                   SELECT [ID]
@@ -25068,8 +21135,6 @@ namespace TKMQ
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
-
-
                 if (DS.Tables["DS"].Rows.Count > 0)
                 {
 
@@ -25083,6 +21148,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_EMAIL_QC_UOF_FORM", EX);
                 return null;
             }
             finally
@@ -25099,13 +21166,9 @@ namespace TKMQ
                 StringBuilder BODY = new StringBuilder();
 
                 ////加上附圖
-                //string path = System.Environment.CurrentDirectory+@"/Images/emaillogo.jpg";
-                //LinkedResource res = new LinkedResource(path);
-                //res.ContentId = Guid.NewGuid().ToString();
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-每日-UOF表單中，品保未核單的簽核人及表單單號，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -25116,10 +21179,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-每日-UOF表單中，品保未核單的簽核人及表單單號，謝謝"
                     + " <br>"
                     );
-
-
-
-
 
                 if (DT.Rows.Count > 0)
                 {
@@ -25132,7 +21191,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">表單單號</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">申請時間</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">目前簽核人員</th>");
-
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -25148,15 +21206,9 @@ namespace TKMQ
 
                         BODY.AppendFormat(@"</tr> ");
 
-                        //BODY.AppendFormat("<span></span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br> " + "品名     " + DR["TD005"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購數量 " + DR["TD008"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>" + "採購單位 " + DR["TD009"].ToString() + "</span>");
-                        //BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體' > <br>");
                     }
                     BODY.AppendFormat(@"</table> ");
                 }
-
 
                 try
                 {
@@ -25165,24 +21217,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
-
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -25199,14 +21241,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SEND_QC_UOF_FORM", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SEND_QC_UOF_FORM", EX);
 
                 }
                 finally
@@ -25214,10 +21263,11 @@ namespace TKMQ
 
                 }
 
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEND_QC_UOF_FORM", EX);
 
             }
             finally
@@ -25243,34 +21293,26 @@ namespace TKMQ
 
             }
 
-
         }
 
         public DataTable FIND_Z_UOF_IT_ALARMS_SENDTO()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS= new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"                                     
                                     SELECT 
@@ -25285,7 +21327,6 @@ namespace TKMQ
                                     )
                                    ");
 
-
                 adapter = new SqlDataAdapter(@"" + sbSql.ToString(), sqlConn);
 
                 sqlCmdBuilder = new SqlCommandBuilder(adapter);
@@ -25295,8 +21336,6 @@ namespace TKMQ
                 adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
-
-
 
                 if (DS.Tables["DS"].Rows.Count > 0)
                 {
@@ -25310,6 +21349,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_Z_UOF_IT_ALARMS_SENDTO", EX);
                 return null;
             }
             finally
@@ -25321,29 +21362,22 @@ namespace TKMQ
 
         public DataTable FIND_IT_CHECKS_ALARM()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             DataSet DS = new DataSet();
 
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
 
-
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
 
                 sbSql.AppendFormat(@"                                     
                                     SELECT 
@@ -25376,8 +21410,6 @@ namespace TKMQ
                 adapter.Fill(DS, "DS");
                 sqlConn.Close();
 
-
-
                 if (DS.Tables["DS"].Rows.Count > 0)
                 {
                     return DS.Tables["DS"];
@@ -25390,120 +21422,14 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("FIND_IT_CHECKS_ALARM", EX);
                 return null;
             }
             finally
             {
 
             }
-
-        }
-        public void ADD_TB_EIP_PRIV_MESS_IT(string USER_GUID, string MESS)
-        {
-            Guid NEW = Guid.NewGuid();
-            string MESSAGE_GUID = NEW.ToString();
-            string TOPIC = "系統通知-機房-" + MESS +" "+ DateTime.Now.ToString("yyyyMMdd HH:mm:ss");
-            string MESSAGE_CONTENT = MESS;
-            string MESSAGE_TO = USER_GUID;
-            string MESSAGE_FROM = "916e213c-7b2e-46e3-8821-b7066378042b";
-            string REPLY_MESSAGE_GUID = null;
-            string CREATE_TIME = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fffffffK");
-            string READED_TIME = null;
-            string REPLY_TIME = null;
-            string FROM_DELETED = "0";
-            string TO_DELETED = "0";
-            string FILE_GROUP_ID = null;
-            string MASTER_GUID = NEW.ToString();
-            string EVENT_ID = null;
-
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
-
-            String connectionString;
-            sqlConn = new SqlConnection(sqlsb.ConnectionString);
-            connectionString = sqlConn.ConnectionString.ToString();
-
-            StringBuilder queryString = new StringBuilder();
-
-
-
-
-            queryString.AppendFormat(@"                     
-                                        INSERT INTO [UOF].[dbo].[TB_EIP_PRIV_MESS]
-                                        (
-                                        [MESSAGE_GUID]
-                                        ,[TOPIC]
-                                        ,[MESSAGE_CONTENT]
-                                        ,[MESSAGE_TO]
-                                        ,[MESSAGE_FROM]
-                                        ,[REPLY_MESSAGE_GUID]
-                                        ,[CREATE_TIME]
-                                        ,[READED_TIME]
-                                        ,[REPLY_TIME]
-                                        ,[FROM_DELETED]
-                                        ,[TO_DELETED]
-                                        ,[FILE_GROUP_ID]
-                                        ,[MASTER_GUID]
-                                        ,[EVENT_ID]
-                                        )
-                                        VALUES
-                                        (
-                                        '{0}'
-                                        ,'{1}' 
-                                        ,'{2}' 
-                                        , '{3}'
-                                        , '{4}'
-                                        , NULL
-                                        , '{5}'
-                                        , NULL
-                                        , NULL
-                                        , '0'
-                                        , '0'
-                                        , ''
-                                        , '{6}'
-                                        , ''
-                                        )
-                                        ", MESSAGE_GUID
-                                        , TOPIC
-                                        , MESSAGE_CONTENT
-                                        , MESSAGE_TO
-                                        , MESSAGE_FROM
-                                        , CREATE_TIME
-                                        , MASTER_GUID
-
-                                        );
-
-
-            try
-            {
-                using (SqlConnection connection = new SqlConnection(connectionString))
-                {
-
-                    SqlCommand command = new SqlCommand(queryString.ToString(), connection);
-
-                    command.Connection.Open();
-
-                    int count = command.ExecuteNonQuery();
-
-                    connection.Close();
-                    connection.Dispose();
-
-                }
-            }
-            catch (Exception EX)
-            {
-
-            }
-            finally
-            {
-
-            }
-
 
         }
 
@@ -25522,7 +21448,6 @@ namespace TKMQ
             DEPNAME = IT_USERDEP.Rows[0]["DEPNAME"].ToString();
             DEPNO = IT_USERDEP.Rows[0]["DEPNO"].ToString();
             
-
             string EXTERNAL_FORM_NBR = "A001.資訊通知單"+DateTime.Now.ToString("yyyyMMddHHmmss");
             int rowscounts = 0;
 
@@ -25553,12 +21478,8 @@ namespace TKMQ
             AddFieldItem(xmlDoc, FormFieldValue, "ID", "", fillerName, fillerUserGuid, account);
             AddFieldItem(xmlDoc, FormFieldValue, "ID1", MESSAGES, fillerName, fillerUserGuid, account);
            
-
             // 寫入資料庫
-            Class1 TKID = new Class1();
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
             using (SqlConnection connection = new SqlConnection(sqlsb.ConnectionString))
             {
@@ -25576,25 +21497,18 @@ namespace TKMQ
             }
         }
 
-    
         public DataTable SEARCHUOFUSERDEP(string NAME)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter1 = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder1 = new SqlCommandBuilder();
             DataSet ds1 = new DataSet();
 
             try
             {
-                //connectionString = ConfigurationManager.ConnectionStrings["dberp"].ConnectionString;
-                //sqlConn = new SqlConnection(connectionString);
 
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
@@ -25622,7 +21536,6 @@ namespace TKMQ
                               
                                     ", NAME);
 
-
                 adapter1 = new SqlDataAdapter(@"" + sbSql, sqlConn);
 
                 sqlCmdBuilder1 = new SqlCommandBuilder(adapter1);
@@ -25642,8 +21555,10 @@ namespace TKMQ
                 }
 
             }
-            catch
+            catch (Exception exLog)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHUOFUSERDEP", exLog);
                 return null;
             }
             finally
@@ -25655,11 +21570,7 @@ namespace TKMQ
         {
             try
             {
-                Class1 TKID = new Class1();
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbUOF"].ConnectionString);
-
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbUOF");
 
                 using (SqlConnection sqlConn = new SqlConnection(sqlsb.ConnectionString))
                 {
@@ -25688,8 +21599,10 @@ namespace TKMQ
 
                 return "";
             }
-            catch
+            catch (Exception exLog)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SEARCHFORM_UOF_VERSION_ID", exLog);
                 return "";
             }
         }
@@ -25730,9 +21643,8 @@ namespace TKMQ
             SETPATH();
 
             DATES = DateTime.Now.ToString("yyyyMMdd");
-            DirectoryNAME = @"C:\MQTEMP\" + DATES.ToString() + @"\";
-            pathFile_INVLA_NOUSED = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每週-原料、物料呆滯報表" + DATES.ToString() + ".pdf";
-            //pathFile_SALES_MONEYS = @"C:\MQTEMP\" + DATES.ToString() + @"\" + "每日業務單位業績日報表" + DATES.ToString() + ".jpg";
+            DirectoryNAME = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\";
+            pathFile_INVLA_NOUSED = MQTEMP_ROOT + @"\" + DATES.ToString() + @"\" + "每週-原料、物料呆滯報表" + DATES.ToString() + ".pdf";
 
             //如果日期資料夾不存在就新增
             if (!Directory.Exists(DirectoryNAME))
@@ -25740,7 +21652,6 @@ namespace TKMQ
                 //新增資料夾
                 Directory.CreateDirectory(DirectoryNAME);
             }
-
 
             SAVEREPORT_INVLA_NOUSED(pathFile_INVLA_NOUSED, cancellationToken);
 
@@ -25757,21 +21668,17 @@ namespace TKMQ
             string PW = ConfigurationManager.AppSettings["PW"];
 
             System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-            MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+            MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-            //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-            //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
             MyMail.Subject = SUBJEST.ToString();
             //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
             MyMail.Body = BODY.ToString();
             //MyMail.IsBodyHtml = true; //是否使用html格式
 
-            System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-            MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
+            System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
             Attachment attch = new Attachment(pathFile_INVLA_NOUSED);
             MyMail.Attachments.Add(attch);
-
 
             try
             {
@@ -25803,39 +21710,35 @@ namespace TKMQ
                     Task.Delay(5000); // 等待 5 秒再試
                 }
 
-                //ADDLOG(DateTime.Now, SUBJEST.ToString(), "log");
             }
             catch (Exception EX)
             {
                 ADDLOG(DateTime.Now, SUBJEST.ToString(), EX.ToString());
-                //EX.ToString();
+            }
+            finally
+            {
+                // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                MyMail.Dispose();
+                MySMTP.Dispose();
             }
         }
         public DataSet SERACH_INVLA_NOUSED()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT [SENDTO],[MAIL] 
@@ -25853,8 +21756,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds;
@@ -25867,6 +21768,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_INVLA_NOUSED", EX);
                 return null;
             }
             finally
@@ -25877,9 +21780,10 @@ namespace TKMQ
 
         public void SAVEREPORT_INVLA_NOUSED(string pathFileSALESMONEYS, CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             Report report1 = new Report();
             string FILENAME = pathFileSALESMONEYS;
-            //string FILENAME = @"C:\MQTEMP\20210915\每日業務單位業績日報表20210915.pdf";
             StringBuilder SQL1 = new StringBuilder();
 
             //報表單頭要改報表內的SQL，因為報表沒有放在DATA中，不會連動
@@ -25887,39 +21791,27 @@ namespace TKMQ
             StringBuilder SQL_OUT = new StringBuilder();
 
             //舊日報用表格各自業務計算
-            //SQL1 = SETSQL();
-            //report1.Load(@"REPORT\國內、外業務部業績日報表V8.frx");
 
             //新日報用業務+國內外，matrix表
             SQL1 = SETSQL_INVLA_NOUSED();
           
             report1.Load(@"REPORT\呆滯原物料報表.frx");
 
-            //20210902密
-            Class1 TKID = new Class1();//用new 建立類別實體
-            SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-            //資料庫使用者密碼解密
-            sqlsb.Password = TKID.Decryption(sqlsb.Password);
-            sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+            SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
             String connectionString;
             sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
             report1.Dictionary.Connections[0].ConnectionString = sqlsb.ConnectionString;
-            //adapter1.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
 
             TableDataSource table = report1.GetDataSource("Table") as TableDataSource;
             table.SelectCommand = SQL1.ToString();
             table.Connection.CommandTimeout = SQL_TIMEOUT_LIMITS;
           
-
             // prepare a report
             report1.Prepare();
             // create an instance of HTML export filter
             FastReport.Export.Pdf.PDFExport export = new FastReport.Export.Pdf.PDFExport();
-            //FastReport.Export.Image.ImageExport ImageExport = new FastReport.Export.Image.ImageExport();
-            // show the export options dialog and do the export
             report1.Export(export, FILENAME);
 
         }
@@ -25967,7 +21859,6 @@ namespace TKMQ
                             ORDER BY LA001;
                             ");
 
-
             return SB;
         }
 
@@ -25986,9 +21877,6 @@ namespace TKMQ
 
                 SUBJEST.Clear();
                 BODY.Clear();
-
-
-
 
                 try
                 {
@@ -26041,12 +21929,13 @@ namespace TKMQ
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_INVLA_PUR_NO_USED", EX);
                 }
                 finally
                 {
 
                 }
-
 
                 try
                 {
@@ -26055,22 +21944,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -26087,14 +21968,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_INVLA_PUR_NO_USED", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDMAIL_INVLA_PUR_NO_USED", EX);
 
                 }
                 finally
@@ -26102,12 +21990,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_INVLA_PUR_NO_USED", EX);
 
             }
             finally
@@ -26117,29 +22004,21 @@ namespace TKMQ
         }
         public DataTable SERACH_EMAIL_INVLA_PUR_NO_USED()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -26163,9 +22042,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26178,6 +22054,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_EMAIL_INVLA_PUR_NO_USED", EX);
                 return null;
             }
             finally
@@ -26188,23 +22066,18 @@ namespace TKMQ
 
         public DataTable SERACH_INVLA_PUR_NO_USED(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -26235,8 +22108,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26249,6 +22120,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_INVLA_PUR_NO_USED", EX);
                 return null;
             }
             finally
@@ -26333,12 +22206,13 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TBPURGOODS", EX);
                     }
                     finally
                     {
 
                     }
-
 
                     try
                     {
@@ -26347,22 +22221,14 @@ namespace TKMQ
                         string PW = ConfigurationManager.AppSettings["PW"];
 
                         System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                        MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                        MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                        //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                        //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                         MyMail.Subject = SUBJEST.ToString();
                         //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                         MyMail.Body = BODY.ToString();
                         MyMail.IsBodyHtml = true; //是否使用html格式
 
-                        //加上附圖
-                        //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                        //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                        System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                        MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                        System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                         try
                         {
@@ -26379,14 +22245,21 @@ namespace TKMQ
                         }
                         catch (Exception EX)
                         {
-                            //MessageBox.Show("有錯誤");
+                            // 20261023 錯誤寫入 Log
+                            WRITELOG("SENDMAIL_TBPURGOODS", EX);
 
-                            //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                            //EX.ToString();
+                        }
+                        finally
+                        {
+                            // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                            MyMail.Dispose();
+                            MySMTP.Dispose();
                         }
                     }
                     catch (Exception EX)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDMAIL_TBPURGOODS", EX);
 
                     }
                     finally
@@ -26397,6 +22270,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDMAIL_TBPURGOODS", EX);
 
             }
             finally
@@ -26406,29 +22281,21 @@ namespace TKMQ
         }
         public DataTable SERACH_EMAIL_TBPURGOODS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -26452,9 +22319,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26467,6 +22331,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_EMAIL_TBPURGOODS", EX);
                 return null;
             }
             finally
@@ -26477,23 +22343,18 @@ namespace TKMQ
 
         public DataTable SERACH_TBPURGOODS(CancellationToken cancellationToken)
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -26524,8 +22385,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26538,6 +22397,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_TBPURGOODS", EX);
                 return null;
             }
             finally
@@ -26548,23 +22409,18 @@ namespace TKMQ
 
         public DataTable CHECK_USE_TBPURGOODS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dberp"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dberp");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -26594,8 +22450,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26608,6 +22462,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("CHECK_USE_TBPURGOODS", EX);
                 return null;
             }
             finally
@@ -26629,10 +22485,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_PUR_CHECK_INVLA();
                 DT_PUR_CHECK_INVLA = SERACH_PUR_CHECK_INVLA();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-預計採購的目前庫存量，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -26643,8 +22497,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-預計採購的目前庫存量，謝謝"
                     + " <br>"
                     );
-
-
 
                 if (DT_PUR_CHECK_INVLA != null && DT_PUR_CHECK_INVLA.Rows.Count >= 1)
                 {
@@ -26701,22 +22553,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -26733,14 +22577,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_PUR_CHECK_INVLA", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_PUR_CHECK_INVLA", EX);
 
                 }
                 finally
@@ -26748,12 +22599,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_PUR_CHECK_INVLA", EX);
 
             }
             finally
@@ -26763,24 +22613,18 @@ namespace TKMQ
         }
         public DataTable SERACH_PUR_CHECK_INVLA()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -26851,8 +22695,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26865,6 +22707,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_PUR_CHECK_INVLA", EX);
                 return null;
             }
             finally
@@ -26875,29 +22719,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_PUR_CHECK_INVLA()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -26921,8 +22757,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -26935,6 +22769,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_PUR_CHECK_INVLA", EX);
                 return null;
             }
             finally
@@ -26958,10 +22794,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = DS.Tables[0];
                 DT_DATAS = SERACH_PURVERSIONS_NUMS();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-版費提醒退費，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -26972,8 +22806,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-版費提醒退費，謝謝"
                     + " <br>"
                     );
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -27023,22 +22855,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -27055,14 +22879,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_PURVERSIONS_NUMS", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_PURVERSIONS_NUMS", EX);
 
                 }
                 finally
@@ -27070,12 +22901,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_PURVERSIONS_NUMS", EX);
 
             }
             finally
@@ -27085,24 +22915,18 @@ namespace TKMQ
         }
         public DataTable SERACH_PURVERSIONS_NUMS()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -27139,8 +22963,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -27153,6 +22975,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_PURVERSIONS_NUMS", EX);
                 return null;
             }
             finally
@@ -27174,10 +22998,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_COP_CHECK_INVLA();
                 DT_DATAS = SERACH_COP_CHECK_INVLA();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-呆滯庫存，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -27188,8 +23010,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-呆滯庫存，謝謝"
                     + " <br>"
                     );
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -27206,7 +23026,6 @@ namespace TKMQ
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">庫存量</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">單位</th>");
                     BODY.AppendFormat(@"<th style=""border: 1px solid #999;font-size:12.0pt;font-family:微軟正黑體' "">業務</th>");
-
 
                     BODY.AppendFormat(@"</tr> ");
 
@@ -27241,22 +23060,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -27273,14 +23084,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_COP_CHECK_INVLA", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_COP_CHECK_INVLA", EX);
 
                 }
                 finally
@@ -27288,12 +23106,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_COP_CHECK_INVLA", EX);
 
             }
             finally
@@ -27303,6 +23120,8 @@ namespace TKMQ
         }
         public DataTable SERACH_COP_CHECK_INVLA()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
@@ -27311,18 +23130,10 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -27449,8 +23260,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -27463,6 +23272,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_COP_CHECK_INVLA", EX);
                 return null;
             }
             finally
@@ -27473,29 +23284,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_COP_CHECK_INVLA()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -27519,8 +23322,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -27533,6 +23334,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_COP_CHECK_INVLA", EX);
                 return null;
             }
             finally
@@ -27555,10 +23358,8 @@ namespace TKMQ
                 DS_EMAIL_TO_EMAIL = SERACH_MAIL_DY_COPTCTD();
                 DT_DATAS = SERACH_DY_COPTCD();
 
-
                 SUBJEST.Clear();
                 BODY.Clear();
-
 
                 SUBJEST.AppendFormat(@"系統通知-請查收-大潁訂單結案通知，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
                 //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為老楊食品-採購單" + Environment.NewLine + "請將附件用印回簽" + Environment.NewLine + "謝謝" + Environment.NewLine);
@@ -27569,8 +23370,6 @@ namespace TKMQ
                     + "<br>" + "系統通知-請查收-大潁訂單結案通知，謝謝"
                     + " <br>"
                     );
-
-
 
                 if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
                 {
@@ -27616,22 +23415,14 @@ namespace TKMQ
                     string PW = ConfigurationManager.AppSettings["PW"];
 
                     System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
-                    MyMail.From = new System.Net.Mail.MailAddress("tk290@tkfood.com.tw");
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
 
-                    //MyMail.Bcc.Add("密件副本的收件者Mail"); //加入密件副本的Mail          
-                    //MyMail.Subject = "每日訂單-製令追踨表"+DateTime.Now.ToString("yyyy/MM/dd");
                     MyMail.Subject = SUBJEST.ToString();
                     //MyMail.Body = "<h1>Dear SIR</h1>" + Environment.NewLine + "<h1>附件為每日訂單-製令追踨表，請查收</h1>" + Environment.NewLine + "<h1>若訂單沒有相對的製令則需通知製造生管開立</h1>"; //設定信件內容
                     MyMail.Body = BODY.ToString();
                     MyMail.IsBodyHtml = true; //是否使用html格式
 
-                    //加上附圖
-                    //string path = System.Environment.CurrentDirectory + @"/Images/emaillogo.jpg";
-                    //MyMail.AlternateViews.Add(GetEmbeddedImage(path, Body));
-
-                    System.Net.Mail.SmtpClient MySMTP = new System.Net.Mail.SmtpClient(MySMTPCONFIG, 25);
-                    MySMTP.Credentials = new System.Net.NetworkCredential(NAME, PW);
-
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 20261023 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
 
                     try
                     {
@@ -27648,14 +23439,21 @@ namespace TKMQ
                     }
                     catch (Exception EX)
                     {
-                        //MessageBox.Show("有錯誤");
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("SENDEMAIL_DY_COPTCTD", EX);
 
-                        //ADDLOG(DateTime.Now, Subject.ToString(), EX.ToString());
-                        //EX.ToString();
+                    }
+                    finally
+                    {
+                        // 20261023 不論成功或失敗都釋放寄信資源(附件檔才不會被鎖住)
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
                     }
                 }
                 catch (Exception EX)
                 {
+                    // 20261023 錯誤寫入 Log
+                    WRITELOG("SENDEMAIL_DY_COPTCTD", EX);
 
                 }
                 finally
@@ -27663,12 +23461,11 @@ namespace TKMQ
 
                 }
 
-
-
-
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SENDEMAIL_DY_COPTCTD", EX);
 
             }
             finally
@@ -27678,6 +23475,8 @@ namespace TKMQ
         }
         public DataTable SERACH_DY_COPTCD()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
@@ -27686,18 +23485,10 @@ namespace TKMQ
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
-
-
 
                 sbSql.Clear();
                 sbSqlQuery.Clear();
@@ -27733,8 +23524,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -27747,6 +23536,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_DY_COPTCD", EX);
                 return null;
             }
             finally
@@ -27757,29 +23548,21 @@ namespace TKMQ
 
         public DataTable SERACH_MAIL_DY_COPTCTD()
         {
+            // 20261023 改用區域變數(sqlConn)，避免和其他方法共用同一個物件而互相覆蓋
+            SqlConnection sqlConn = new SqlConnection();
             SqlDataAdapter adapter = new SqlDataAdapter();
             SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
             DataSet ds = new DataSet();
 
             try
             {
-                //20210902密
-                Class1 TKID = new Class1();//用new 建立類別實體
-                SqlConnectionStringBuilder sqlsb = new SqlConnectionStringBuilder(ConfigurationManager.ConnectionStrings["dbconn"].ConnectionString);
-
-                //資料庫使用者密碼解密
-                sqlsb.Password = TKID.Decryption(sqlsb.Password);
-                sqlsb.UserID = TKID.Decryption(sqlsb.UserID);
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
 
                 String connectionString;
                 sqlConn = new SqlConnection(sqlsb.ConnectionString);
 
-
-
                 sbSql.Clear();
                 sbSqlQuery.Clear();
-
-                //sbSql.AppendFormat(@"  WHERE [SENDTO]='COP' AND [MAIL]='tk290@tkfood.com.tw' ");
 
                 sbSql.AppendFormat(@"  
                                     SELECT 
@@ -27803,8 +23586,6 @@ namespace TKMQ
                 adapter.Fill(ds, "ds");
                 sqlConn.Close();
 
-
-
                 if (ds.Tables["ds"].Rows.Count >= 1)
                 {
                     return ds.Tables["ds"];
@@ -27817,6 +23598,8 @@ namespace TKMQ
             }
             catch (Exception EX)
             {
+                // 20261023 錯誤寫入 Log
+                WRITELOG("SERACH_MAIL_DY_COPTCTD", EX);
                 return null;
             }
             finally
@@ -27825,11 +23608,241 @@ namespace TKMQ
             }
         }
 
+        //庫存未核單明細
+        public void SENDEMAIL_INVTANOTAPPROVED(CancellationToken cancellationToken)
+        {
+            DataTable DS_EMAIL_TO_EMAIL = new DataTable();
+            DataTable DT_DATAS = new DataTable();
+
+            StringBuilder SUBJEST = new StringBuilder();
+            StringBuilder BODY = new StringBuilder();
+
+            try
+            {
+                DS_EMAIL_TO_EMAIL = SERACH_MAIL_INVTANOTAPPROVED();
+                DT_DATAS = SERACH_INVTANOTAPPROVED();
+
+                SUBJEST.Clear();
+                BODY.Clear();
+
+                SUBJEST.AppendFormat(@"系統通知-請查收-庫存未核單明細，謝謝。 " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));
+
+                BODY.AppendFormat("<span style='font-size:12.0pt;font-family:微軟正黑體'> <br>" + "Dear SIR:" + "<br>"
+                    + "<br>" + "系統通知-請查收-庫存未核單明細(報廢單、原料耗損單、研發領料單)，請儘速確認核單，謝謝"
+                    + " <br>"
+                    );
+
+                if (DT_DATAS != null && DT_DATAS.Rows.Count >= 1)
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "明細");
+
+                    // 先定義好重複使用的樣式，方便後續維護
+                    string thStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+                    string tdStyle = @"style=""border: 1px solid #999; font-size: 12pt; font-family: '微軟正黑體';""";
+
+                    string[] COLUMNS = { "單名", "單別", "單號", "日期", "部門代號", "部門", "品號", "品名", "數量", "單位" };
+
+                    BODY.Append("<table>");
+                    BODY.Append("<tr>");
+                    foreach (string COL in COLUMNS)
+                    {
+                        BODY.AppendFormat("<th {0}>{1}</th>", thStyle, COL);
+                    }
+                    BODY.Append("</tr>");
+
+                    foreach (DataRow DR in DT_DATAS.Rows)
+                    {
+                        BODY.Append("<tr>");
+                        foreach (string COL in COLUMNS)
+                        {
+                            BODY.AppendFormat("<td {0}>{1}</td>", tdStyle, System.Net.WebUtility.HtmlEncode(DR[COL].ToString()));
+                        }
+                        BODY.Append("</tr>");
+                    }
+                    BODY.Append("</table>");
+                }
+                else
+                {
+                    BODY.AppendFormat("<span style = 'font-size:12.0pt;font-family:微軟正黑體'><br>" + "本日無資料");
+                }
+
+                // 沒有收件人就不寄
+                if (DS_EMAIL_TO_EMAIL == null || DS_EMAIL_TO_EMAIL.Rows.Count == 0)
+                {
+                    WRITELOG("SENDEMAIL_INVTANOTAPPROVED", new Exception("MQSENDMAIL 找不到 SENDTO='INVTANOTAPPROVED' 的收件人"));
+                    return;
+                }
+
+                try
+                {
+                    System.Net.Mail.MailMessage MyMail = new System.Net.Mail.MailMessage();
+                    MyMail.From = new System.Net.Mail.MailAddress(MAIL_FROM);
+
+                    MyMail.Subject = SUBJEST.ToString();
+                    MyMail.Body = BODY.ToString();
+                    MyMail.IsBodyHtml = true; //是否使用html格式
+
+                    System.Net.Mail.SmtpClient MySMTP = CREATE_SMTP(); // 主機/port/SSL/帳密統一由 CREATE_SMTP 設定
+
+                    try
+                    {
+                        foreach (DataRow DR in DS_EMAIL_TO_EMAIL.Rows)
+                        {
+                            MyMail.To.Add(DR["MAIL"].ToString()); //設定收件者Email，多筆mail
+                        }
+
+                        //MyMail.To.Add("tk290@tkfood.com.tw"); //設定收件者Email
+                        MySMTP.Send(MyMail);
+                    }
+                    catch (Exception EX)
+                    {
+                        WRITELOG("SENDEMAIL_INVTANOTAPPROVED", EX);
+                    }
+                    finally
+                    {
+                        // 不論成功或失敗都釋放寄信資源
+                        MyMail.Dispose();
+                        MySMTP.Dispose();
+                    }
+                }
+                catch (Exception EX)
+                {
+                    WRITELOG("SENDEMAIL_INVTANOTAPPROVED", EX);
+                }
+            }
+            catch (Exception EX)
+            {
+                WRITELOG("SENDEMAIL_INVTANOTAPPROVED", EX);
+            }
+        }
+
+        public DataTable SERACH_INVTANOTAPPROVED()
+        {
+            SqlConnection sqlConn = new SqlConnection();
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                //庫存異動單未核單：TA003 今天前後 1 個月
+                //A116報廢單+103400、A11G原料耗損單+103400、A11C研發領料單+105300
+                sbSql.AppendFormat(@"
+                                    SELECT
+                                    MQ002 AS '單名'
+                                    ,TA001 AS '單別'
+                                    ,TA002 AS '單號'
+                                    ,TA003 AS '日期'
+                                    ,TA004 AS '部門代號'
+                                    ,ME002 AS '部門'
+                                    ,TB004 AS '品號'
+                                    ,TB005 AS '品名'
+                                    ,TB007 AS '數量'
+                                    ,TB008 AS '單位'
+                                    FROM [TK].dbo.INVTA, [TK].dbo.INVTB, [TK].dbo.CMSME, [TK].dbo.CMSMQ
+                                    WHERE TA001 = TB001 AND TA002 = TB002
+                                    AND ME001 = TA004
+                                    AND MQ001 = TA001
+                                    AND TA009 IN ('11')
+                                    AND TA006 IN ('N')
+                                    AND TA003 >= CONVERT(NVARCHAR(8), DATEADD(MONTH, -1, GETDATE()), 112)
+                                    AND TA003 <= CONVERT(NVARCHAR(8), DATEADD(MONTH,  1, GETDATE()), 112)
+                                    AND (
+                                           (TA001 = 'A116' AND TA004 = '103400')
+                                        OR (TA001 = 'A11G' AND TA004 = '103400')
+                                        OR (TA001 = 'A11C' AND TA004 = '105300')
+                                    )
+                                    ORDER BY TA001, TA002, TB003
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception EX)
+            {
+                WRITELOG("SERACH_INVTANOTAPPROVED", EX);
+                return null;
+            }
+        }
+
+        public DataTable SERACH_MAIL_INVTANOTAPPROVED()
+        {
+            SqlConnection sqlConn = new SqlConnection();
+            SqlDataAdapter adapter = new SqlDataAdapter();
+            SqlCommandBuilder sqlCmdBuilder = new SqlCommandBuilder();
+            DataSet ds = new DataSet();
+
+            try
+            {
+                SqlConnectionStringBuilder sqlsb = GETCONNSTRBUILDER("dbconn");
+                sqlConn = new SqlConnection(sqlsb.ConnectionString);
+
+                sbSql.Clear();
+                sbSqlQuery.Clear();
+
+                sbSql.AppendFormat(@"
+                                    SELECT
+                                    [ID]
+                                    ,[SENDTO]
+                                    ,[MAIL]
+                                    ,[NAME]
+                                    ,[COMMENTS]
+                                    FROM [TKMQ].[dbo].[MQSENDMAIL]
+                                    WHERE [SENDTO]='INVTANOTAPPROVED'
+                                    ");
+
+                adapter = new SqlDataAdapter(@"" + sbSql, sqlConn);
+
+                sqlCmdBuilder = new SqlCommandBuilder(adapter);
+                sqlConn.Open();
+                ds.Clear();
+                // 設置查詢的超時時間，以秒為單位
+                adapter.SelectCommand.CommandTimeout = SQL_TIMEOUT_LIMITS;
+                adapter.Fill(ds, "ds");
+                sqlConn.Close();
+
+                if (ds.Tables["ds"].Rows.Count >= 1)
+                {
+                    return ds.Tables["ds"];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            catch (Exception EX)
+            {
+                WRITELOG("SERACH_MAIL_INVTANOTAPPROVED", EX);
+                return null;
+            }
+        }
 
         //會檢查 C:\MQTEMP 目錄，並將超過 7 天的檔案與子資料夾進行遞迴刪除
         public void CleanMqTempFolder()
         {
-            string targetPath = @"C:\MQTEMP";
+            string targetPath = MQTEMP_ROOT;
 
             try
             {
@@ -27855,8 +23868,10 @@ namespace TKMQ
                             fileInfo.Delete();
                         }
                     }
-                    catch
+                    catch (Exception exLog)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("CleanMqTempFolder", exLog);
                         // 略過正被佔用或無權限刪除的檔案，避免中斷整體流程
                     }
                 }
@@ -27874,15 +23889,18 @@ namespace TKMQ
                             dirInfo.Delete(true);
                         }
                     }
-                    catch
+                    catch (Exception exLog)
                     {
+                        // 20261023 錯誤寫入 Log
+                        WRITELOG("CleanMqTempFolder", exLog);
                         // 略過正被佔用的資料夾
                     }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"清理暫存資料夾時發生未預期的錯誤：{ex.Message}", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // 20261023 排程中不可跳出視窗，改寫 Log
+                WRITELOG("CleanMqTempFolder", "清理暫存資料夾時發生未預期的錯誤：" + ex.ToString());
             }
         }
 
@@ -27921,7 +23939,6 @@ namespace TKMQ
             SETPATH();
             //CAN"T USE SQL-CTE QUERY
             SETFILEPURTA(cts1.Token);
-            //SETFILEPURTA2();
 
             CLEAREXCEL();
             MessageBox.Show("OK");
@@ -28022,7 +24039,6 @@ namespace TKMQ
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
             // 模擬延遲  秒
-            //Thread.Sleep(1000*61);
             try
             {
                 SETPATH();
@@ -28046,32 +24062,15 @@ namespace TKMQ
             }
             catch (OperationCanceledException)
             {
-                //MessageBox.Show("資料查詢超時，操作已被取消。");
             }
             catch (Exception EX)
             {
-                //MessageBox.Show("發生錯誤：" + ex.Message);
             }
 
             MessageBox.Show("OK");
 
-            //SETPATH();
-            //SETFILELOTCHECK();
-
-            //CLEAREXCEL();
-
-            //StringBuilder SUBJEST = new StringBuilder();
-            //StringBuilder BODY = new StringBuilder();
             ////LOTCHECK
-            //SERACHMAILLOTCHECK();
-            //SUBJEST.Clear();
-            //BODY.Clear();
-            //SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-            //SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
 
-
-            //MessageBox.Show("OK");
         }
 
         private void button15_Click(object sender, EventArgs e)
@@ -28101,8 +24100,6 @@ namespace TKMQ
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
-
-            //WEBTEST();
 
             PREPAREITCHECK(cts1.Token);
         }
@@ -28151,7 +24148,6 @@ namespace TKMQ
             //通知副總，總務未簽核的表單
             PREPARE_UOF_TASK_TASK_GRAFFIR(cts1.Token);
 
-
         }
         private async void button23_Click(object sender, EventArgs e)
         {
@@ -28159,13 +24155,10 @@ namespace TKMQ
             //2025/3月停止
             //SEND_LINE("Hello, world! " + DateTime.Now.ToString("yyyyMMddHHmmss"));
 
-
         }
         private void button24_Click(object sender, EventArgs e)
         {
             SEND_TEST_MAIL();
-            //SEND_TEST_MAIL_2();
-
 
         }
         private void button25_Click(object sender, EventArgs e)
@@ -28190,7 +24183,6 @@ namespace TKMQ
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
             
-
             SETPATH();
             SETFILE_NEWSLAES(path_File_NEWSLAES, cts1.Token);
             CLEAREXCEL();
@@ -28230,13 +24222,11 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
-
         private void button31_Click(object sender, EventArgs e)
         {
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
-            //SETFASTREPORT(); 
             SENDEMAIL_DAILY_SALES_MONEY(cts.Token);
 
             MessageBox.Show("完成");
@@ -28248,7 +24238,6 @@ namespace TKMQ
             CancellationTokenSource cts1 = new CancellationTokenSource();
             cts1.CancelAfter(timeoutMilliseconds);
             
-            //SETFASTREPORT_QC_CHECK();
             SENDEMAIL_DAILY_QC_CHECK(cts1.Token);
         }
         private void button33_Click(object sender, EventArgs e)
@@ -28418,7 +24407,6 @@ namespace TKMQ
 
             MessageBox.Show("OK");
 
-
         }
 
         private void button48_Click(object sender, EventArgs e)
@@ -28472,7 +24460,6 @@ namespace TKMQ
             MessageBox.Show("OK");
         }
 
-
         private void button52_Click(object sender, EventArgs e)
         {
             int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
@@ -28490,56 +24477,12 @@ namespace TKMQ
 
         private void button53_Click(object sender, EventArgs e)
         {
-            //int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
-            //CancellationTokenSource cts = new CancellationTokenSource();
-            //cts.CancelAfter(timeoutMilliseconds); // 到時間自動取消
 
             ////資訊-寄送失敗的重寄
             ////先對「每日-國內外業務業績日報」、「系統通知-每日批號檢查表」重寄
 
             ////檢查當日是否有寄送失敗
             ////[TKMQ].[dbo].[LOG]
-            //DataTable DT = SERACH_IT_FAIL_DOTIFY();
-
-            //if (DT != null && DT.Rows.Count >= 1)
-            //{
-            //    foreach (DataRow DR in DT.Rows)
-            //    {
-            //        //找出是那些mail寄送失敗
-            //        string SOURCE = DR["SOURCE"].ToString();
-
-            //        //國內外業務業績日報
-            //        if (SOURCE.Contains("國內外業務業績日報"))
-            //        {
-            //            SENDEMAIL_DAILY_SALES_MONEY();
-            //        }
-
-            //        //每日批號檢查表
-            //        if (SOURCE.Contains("每日批號檢查表"))
-            //        {
-            //            SETPATH();
-            //            SETFILELOTCHECK(cts.Token);
-
-            //            CLEAREXCEL();
-
-            //            StringBuilder SUBJEST = new StringBuilder();
-            //            StringBuilder BODY = new StringBuilder();
-            //            //LOTCHECK
-            //            SERACHMAILLOTCHECK();
-            //            SUBJEST.Clear();
-            //            BODY.Clear();
-            //            SUBJEST.AppendFormat(@"每日批號檢查表" + DateTime.Now.ToString("yyyy/MM/dd"));
-            //            BODY.AppendFormat("Dear SIR" + Environment.NewLine + "附件為每日批號檢查表，請查收 (批號錯誤時，要檢查「批號資料建立作業」內的有效日期、複檢日期是否也錯誤)" + Environment.NewLine + " ");
-            //            SENDMAIL(SUBJEST, BODY, dsMAILLOTCHECK, pathFileLOTCHECK);
-            //        }
-
-
-            //    }
-
-
-            //}
-
-            //MessageBox.Show("OK");
 
         }
 
@@ -28551,7 +24494,6 @@ namespace TKMQ
             //寄送MAIL，硯微墨+門市+觀光商品銷進統計表 
             SENDMAIL_STORES_REPORTS(cts.Token);
           
-
             MessageBox.Show("OK"); 
         }
 
@@ -28692,6 +24634,16 @@ namespace TKMQ
             cts1.CancelAfter(timeoutMilliseconds);
 
             SENDEMAIL_DY_COPTCTD(cts1.Token);
+            MessageBox.Show("完成");
+        }
+        private void button69_Click(object sender, EventArgs e)
+        {
+            //庫存未核單明細
+            int timeoutMilliseconds = EXE_timeoutMilliseconds; // 設定超時時間 5 分鐘
+            CancellationTokenSource cts1 = new CancellationTokenSource();
+            cts1.CancelAfter(timeoutMilliseconds);
+
+            SENDEMAIL_INVTANOTAPPROVED(cts1.Token);
             MessageBox.Show("完成");
         }
         #endregion
